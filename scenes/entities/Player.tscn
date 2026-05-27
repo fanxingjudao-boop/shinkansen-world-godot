@@ -1,0 +1,53 @@
+[gd_scene load_steps=8 format=3 uid="uid://b1plyts000001"]
+
+[ext_resource type="Script" path="res://scripts/entities/player.gd" id="1_ply"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_body"]
+height = 1.6
+radius = 0.35
+
+[sub_resource type="StandardMaterial3D" id="Material_body"]
+albedo_color = Color(1, 0.62, 0.753, 1)
+roughness = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_head"]
+radius = 0.32
+height = 0.64
+
+[sub_resource type="StandardMaterial3D" id="Material_head"]
+albedo_color = Color(1, 0.878, 0.753, 1)
+roughness = 0.7
+
+[sub_resource type="SphereMesh" id="SphereMesh_nose"]
+radius = 0.06
+height = 0.12
+
+[sub_resource type="StandardMaterial3D" id="Material_nose"]
+albedo_color = Color(0.937, 0.376, 0.541, 1)
+roughness = 0.6
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_collision"]
+height = 1.6
+radius = 0.35
+
+[node name="Player" type="CharacterBody3D" groups=["player"]]
+script = ExtResource("1_ply")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CapsuleMesh_body")
+surface_material_override/0 = SubResource("Material_body")
+
+[node name="Head" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.85, 0)
+mesh = SubResource("SphereMesh_head")
+surface_material_override/0 = SubResource("Material_head")
+
+[node name="Nose" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.82, -0.3)
+mesh = SubResource("SphereMesh_nose")
+surface_material_override/0 = SubResource("Material_nose")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("CapsuleShape3D_collision")

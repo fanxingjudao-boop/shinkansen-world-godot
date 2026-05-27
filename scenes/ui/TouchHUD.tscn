@@ -1,0 +1,176 @@
+[gd_scene load_steps=8 format=3 uid="uid://b1hudts000001"]
+
+[ext_resource type="Script" path="res://scripts/ui/touch_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="Style_dpad_normal"]
+bg_color = Color(0.494, 0.784, 0.961, 0.88)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.157, 0.408, 0.788, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="Style_dpad_pressed"]
+bg_color = Color(0.157, 0.408, 0.788, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="Style_jump_normal"]
+bg_color = Color(1, 0.62, 0.753, 0.92)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.937, 0.376, 0.541, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="Style_jump_pressed"]
+bg_color = Color(0.937, 0.376, 0.541, 0.95)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
+[sub_resource type="StyleBoxFlat" id="Style_touch_normal"]
+bg_color = Color(1, 0.878, 0.4, 0.92)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.929, 0.659, 0.302, 0.95)
+
+[sub_resource type="StyleBoxFlat" id="Style_touch_pressed"]
+bg_color = Color(0.929, 0.659, 0.302, 0.95)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+
+[node name="TouchHUD" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_hud")
+
+[node name="DPad" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 60.0
+offset_top = -300.0
+offset_right = 300.0
+offset_bottom = -60.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Up" type="Button" parent="DPad"]
+layout_mode = 0
+offset_left = 84.0
+offset_right = 156.0
+offset_bottom = 72.0
+text = "▲"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
+[node name="Down" type="Button" parent="DPad"]
+layout_mode = 0
+offset_left = 84.0
+offset_top = 168.0
+offset_right = 156.0
+offset_bottom = 240.0
+text = "▼"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
+[node name="Left" type="Button" parent="DPad"]
+layout_mode = 0
+offset_top = 84.0
+offset_right = 72.0
+offset_bottom = 156.0
+text = "◀"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
+[node name="Right" type="Button" parent="DPad"]
+layout_mode = 0
+offset_left = 168.0
+offset_top = 84.0
+offset_right = 240.0
+offset_bottom = 156.0
+text = "▶"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
+[node name="ActionButtons" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = -156.0
+offset_right = -60.0
+offset_bottom = -60.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Touch" type="Button" parent="ActionButtons"]
+layout_mode = 0
+offset_right = 96.0
+offset_bottom = 96.0
+text = "タッチ"
+theme_override_colors/font_color = Color(0.4, 0.27, 0.06, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_touch_normal")
+theme_override_styles/hover = SubResource("Style_touch_normal")
+theme_override_styles/normal = SubResource("Style_touch_normal")
+theme_override_styles/pressed = SubResource("Style_touch_pressed")
+
+[node name="Jump" type="Button" parent="ActionButtons"]
+layout_mode = 0
+offset_left = 104.0
+offset_right = 200.0
+offset_bottom = 96.0
+text = "ジャンプ"
+theme_override_colors/font_color = Color(0.6, 0.13, 0.27, 1)
+theme_override_font_sizes/font_size = 26
+theme_override_styles/focus = SubResource("Style_jump_normal")
+theme_override_styles/hover = SubResource("Style_jump_normal")
+theme_override_styles/normal = SubResource("Style_jump_normal")
+theme_override_styles/pressed = SubResource("Style_jump_pressed")

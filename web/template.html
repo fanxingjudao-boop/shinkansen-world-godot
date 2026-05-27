@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="default">
+	<meta name="apple-mobile-web-app-title" content="しんかんせん">
+	<meta name="mobile-web-app-capable" content="yes">
+	<meta name="theme-color" content="#7ec8f5">
+	<title>$GODOT_PROJECT_NAME</title>
+	<style>
+		:root { color-scheme: light; }
+		html, body {
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100dvh;
+			background: #7ec8f5;
+			overflow: hidden;
+			touch-action: none;
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-webkit-tap-highlight-color: transparent;
+			user-select: none;
+			font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif;
+		}
+		body { display: flex; align-items: center; justify-content: center; }
+		#canvas {
+			display: block;
+			width: 100%;
+			height: 100%;
+			outline: none;
+			touch-action: none;
+		}
+		#status {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			color: #2868c9;
+			font-size: 26px;
+			font-weight: bold;
+			text-align: center;
+			pointer-events: none;
+			transition: opacity 0.5s ease;
+		}
+		#status.hidden { opacity: 0; }
+		#status-progress {
+			margin: 16px auto 0;
+			width: 240px;
+			height: 16px;
+			background: rgba(255, 255, 255, 0.7);
+			border-radius: 8px;
+			overflow: hidden;
+			border: 2px solid #ffffff;
+		}
+		#status-progress-fill {
+			height: 100%;
+			width: 0%;
+			background: linear-gradient(90deg, #ff9ec0 0%, #ffe066 50%, #7ec850 100%);
+			transition: width 0.2s ease;
+			border-radius: 8px;
+		}
+		#status-message {
+			margin-top: 12px;
+			font-size: 18px;
+			color: #2868c9;
+			opacity: 0.85;
+		}
+	</style>
+	$GODOT_HEAD_INCLUDE
+</head>
+<body>
+	<canvas id="canvas">
+		この ブラウザ では しんかんせんワールド を ひょうじ できません。<br />
+		さいしんの サファリ や クローム を つかってください。
+	</canvas>
+	<div id="status">
+		<div>よみこみちゅう...</div>
+		<div id="status-progress"><div id="status-progress-fill"></div></div>
+		<div id="status-message">しゅっぱつ じゅんびちゅう</div>
+	</div>
+
+	<script src="$GODOT_URL"></script>
+	<script>
+		const GODOT_CONFIG = $GODOT_CONFIG;
+		const GODOT_THREADS_ENABLED = $GODOT_THREADS_ENABLED;
+		const engine = new Engine(GODOT_CONFIG);
+
+		const statusEl = document.getElementById('status');
+		const fillEl = document.getElementById('status-progress-fill');
+		const msgEl = document.getElementById('status-message');
+
+		function setProgress(current, total) {
+			if (total > 0) {
+				const pct = Math.min(100, (current / total) * 100);
+				fillEl.style.width = pct + '%';
+				if (pct < 50) msgEl.textContent = 'しゅっぱつ じゅんびちゅう';
+				else if (pct < 95) msgEl.textContent = 'もうすぐ です';
+				else msgEl.textContent = 'いってきまーす!';
+			}
+		}
+
+		function showError(err) {
+			statusEl.innerHTML = '<div>あれ? うまく ひょうじ できません。</div>'
+				+ '<div style="font-size:15px;margin-top:12px;opacity:0.7">' + String(err).replace(/</g, '&lt;') + '</div>';
+		}
+
+		(function () {
+			const missing = Engine.getMissingFeatures({
+				threads: GODOT_THREADS_ENABLED,
+			});
+			if (missing.length !== 0) {
+				showError('ブラウザが たいおう していない きのう: ' + missing.join(', '));
+				return;
+			}
+			engine.startGame({
+				'onProgress': setProgress,
+			}).then(() => {
+				statusEl.classList.add('hidden');
+				setTimeout(() => { statusEl.style.display = 'none'; }, 700);
+			}).catch((err) => {
+				showError(err && err.message ? err.message : err);
+			});
+		})();
+	</script>
+</body>
+</html>

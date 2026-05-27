@@ -1,0 +1,2674 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>しんかんせんワールド</title>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sky: #7ec8f5; --sky-light: #b8e0fa;
+    --grass: #7ec850; --pink: #ff9ec0; --pink-deep: #ff6b9a;
+    --yellow: #ffe066; --orange: #ffa94d;
+    --blue: #4d8fea; --blue-dark: #2868c9;
+    --white: #ffffff; --ink: #3a3a5e; --ink-soft: #6b6b9c;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: var(--sky); color: var(--ink);
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    user-select: none; -webkit-user-select: none;
+    touch-action: none; overscroll-behavior: none;
+  }
+  #game { position: fixed; inset: 0; touch-action: none; }
+  canvas { display: block; }
+
+  /* === LOADER === */
+  #loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(180deg, #b8e0fa 0%, #7ec8f5 50%, #c8e8a0 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px; transition: opacity 0.6s ease;
+    overflow: hidden;
+  }
+  /* Animated background clouds */
+  .loader-cloud {
+    position: absolute; background: white; border-radius: 50%; opacity: 0.85;
+    pointer-events: none;
+  }
+  .loader-cloud::before, .loader-cloud::after {
+    content: ""; position: absolute; background: white; border-radius: 50%;
+  }
+  .lc1 { top: 14%; left: 12%; width: 60px; height: 60px; animation: lcfloat 12s linear infinite; }
+  .lc1::before { width: 50px; height: 50px; top: -20px; left: 20px; }
+  .lc1::after { width: 40px; height: 40px; top: 10px; left: 50px; }
+  .lc2 { top: 22%; right: 15%; width: 70px; height: 70px; animation: lcfloat 16s linear infinite reverse; }
+  .lc2::before { width: 50px; height: 50px; top: -15px; left: 25px; }
+  .lc2::after { width: 45px; height: 45px; top: 15px; left: 55px; }
+  .lc3 { top: 65%; left: 25%; width: 50px; height: 50px; animation: lcfloat 18s linear infinite; }
+  .lc3::before { width: 40px; height: 40px; top: -10px; left: 20px; }
+  @keyframes lcfloat {
+    0% { transform: translateX(-20vw); }
+    100% { transform: translateX(120vw); }
+  }
+  /* Floor for loader train */
+  .loader-floor {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 35%;
+    background: linear-gradient(180deg, #c8e8a0 0%, #5fb04a 100%);
+    pointer-events: none;
+  }
+  .loader-floor::before {
+    content: ""; position: absolute; top: 40%; left: 0; right: 0; height: 6px;
+    background: repeating-linear-gradient(90deg, #6b4423 0 8px, transparent 8px 18px);
+  }
+  .loader-floor::after {
+    content: ""; position: absolute; top: 38%; left: 0; right: 0; height: 2px;
+    background: #555; box-shadow: 0 8px 0 #555;
+  }
+
+  #loader .title {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: clamp(36px, 11vw, 80px);
+    color: var(--white);
+    text-shadow: 4px 4px 0 var(--blue-dark), -2px -2px 0 var(--blue), 0 6px 12px rgba(0,0,0,0.15);
+    text-align: center; line-height: 1.1; letter-spacing: 0.05em;
+    position: relative; z-index: 2;
+    animation: titleBounce 2s ease-in-out infinite;
+  }
+  @keyframes titleBounce {
+    0%, 100% { transform: translateY(0) rotate(-1deg); }
+    50% { transform: translateY(-12px) rotate(1deg); }
+  }
+  #loader .sub {
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 900;
+    font-size: 16px; color: var(--blue-dark); margin-top: 12px;
+    text-align: center; position: relative; z-index: 2;
+    letter-spacing: 0.1em;
+  }
+  /* Animated train */
+  .load-train-wrap {
+    margin-top: 28px; position: relative; z-index: 2;
+    width: min(380px, 80vw); height: 80px;
+    overflow: visible;
+  }
+  .load-train {
+    position: absolute; top: 0; left: -200px;
+    height: 70px; animation: trainRun 6s linear infinite;
+  }
+  @keyframes trainRun {
+    0% { left: -200px; }
+    100% { left: calc(100% + 50px); }
+  }
+  .load-train svg { width: 200px; height: 70px; }
+
+  #statusLine {
+    margin-top: 12px; font-weight: 900; font-size: 14px;
+    color: var(--blue-dark); position: relative; z-index: 2;
+    letter-spacing: 0.1em;
+  }
+
+  #start-btn {
+    margin-top: 28px;
+    padding: 22px 56px; min-height: 70px;
+    background: linear-gradient(180deg, var(--yellow) 0%, var(--orange) 100%);
+    border: 5px solid var(--white); color: var(--ink);
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 26px; letter-spacing: 0.1em;
+    cursor: pointer; border-radius: 50px;
+    box-shadow: 0 6px 0 #c97c2a, 0 12px 24px rgba(0,0,0,0.25);
+    pointer-events: auto !important; touch-action: manipulation;
+    user-select: none; position: relative; z-index: 10000;
+    animation: startPulse 1.5s ease-in-out infinite;
+    transition: transform 0.1s;
+  }
+  #start-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #c97c2a; }
+  @keyframes startPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+
+  #errorBox {
+    display: none; margin-top: 14px; padding: 12px 18px;
+    background: rgba(255,255,255,0.95); border: 2px solid #ff6b6b;
+    color: var(--ink); font-weight: 700; font-size: 12px;
+    border-radius: 12px; max-width: min(420px, 85vw);
+    position: relative; z-index: 2;
+  }
+  #errorBox.show { display: block; }
+
+  /* === HUD === */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 50; display: none; }
+  #hud.active { display: block; }
+
+  /* Top counters */
+  .counter {
+    background: var(--white); border-radius: 30px;
+    padding: 8px 18px 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 22px; color: var(--ink);
+    pointer-events: none;
+  }
+  .counter.star {
+    position: absolute; top: calc(14px + var(--safe-top)); left: calc(14px + var(--safe-left));
+    border: 4px solid var(--yellow);
+    box-shadow: 0 4px 0 #c9a83d, 0 8px 12px rgba(0,0,0,0.15);
+  }
+  .counter.friend {
+    position: absolute; top: calc(14px + var(--safe-top));
+    left: calc(150px + var(--safe-left));
+    border: 4px solid var(--pink);
+    box-shadow: 0 4px 0 #c95a8a, 0 8px 12px rgba(0,0,0,0.15);
+  }
+  .counter .icon { font-size: 26px; display: inline-block; }
+  .counter.star .icon { animation: starSpin 3s ease-in-out infinite; }
+  @keyframes starSpin {
+    0%, 80%, 100% { transform: rotate(0deg) scale(1); }
+    85% { transform: rotate(0deg) scale(1.3); }
+    92% { transform: rotate(20deg) scale(1.3); }
+    97% { transform: rotate(-20deg) scale(1.3); }
+  }
+  .counter.friend .icon { animation: heartBeat 1.5s ease-in-out infinite; }
+  @keyframes heartBeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
+
+  /* Train dex top center */
+  .train-dex {
+    position: absolute; top: calc(14px + var(--safe-top));
+    right: calc(70px + var(--safe-right));
+    background: var(--white); border: 4px solid var(--blue);
+    border-radius: 24px; padding: 8px 16px;
+    box-shadow: 0 4px 0 var(--blue-dark), 0 8px 12px rgba(0,0,0,0.15);
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 18px; color: var(--ink); pointer-events: none;
+  }
+  .train-dex .icon { font-size: 22px; }
+  .train-dex .label { font-size: 10px; color: var(--blue-dark); letter-spacing: 0.1em; }
+
+  /* Time of day indicator */
+  .time-indicator {
+    position: absolute; top: calc(78px + var(--safe-top));
+    left: calc(14px + var(--safe-left));
+    background: var(--white); border: 3px solid var(--orange);
+    border-radius: 20px; padding: 6px 12px;
+    box-shadow: 0 3px 0 #c97c2a;
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 14px; color: var(--ink);
+    display: flex; align-items: center; gap: 6px;
+    pointer-events: none;
+  }
+  .time-indicator .icon { font-size: 18px; }
+
+  /* Right side icons (sound, book, photo) */
+  .top-actions {
+    position: absolute; top: calc(14px + var(--safe-top));
+    right: calc(14px + var(--safe-right));
+    display: flex; gap: 6px; pointer-events: none;
+  }
+  .icon-btn {
+    pointer-events: auto; touch-action: manipulation;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--white); border: 3px solid var(--blue);
+    color: var(--blue-dark); font-size: 22px;
+    box-shadow: 0 3px 0 var(--blue-dark);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--blue-dark); }
+  .icon-btn.pink { border-color: var(--pink); color: var(--pink-deep); box-shadow: 0 3px 0 #c95a8a; }
+  .icon-btn.pink:active { box-shadow: 0 1px 0 #c95a8a; }
+
+  /* === BIG CONTROL BUTTONS === */
+  .big-btn {
+    pointer-events: auto; touch-action: manipulation;
+    background: var(--white); border: 5px solid var(--blue);
+    color: var(--blue-dark); font-family: 'Mochiy Pop One', sans-serif;
+    border-radius: 50%; cursor: pointer;
+    box-shadow: 0 6px 0 var(--blue-dark), 0 12px 20px rgba(0,0,0,0.2);
+    user-select: none; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.08s, box-shadow 0.08s;
+    font-size: 36px; line-height: 1;
+  }
+  .big-btn:active, .big-btn.pressed {
+    background: var(--blue); color: var(--white);
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 var(--blue-dark), 0 4px 8px rgba(0,0,0,0.2);
+  }
+
+  /* D-pad */
+  .dpad {
+    position: absolute;
+    bottom: calc(20px + var(--safe-bottom));
+    left: calc(20px + var(--safe-left));
+    width: 200px; height: 200px;
+    pointer-events: none;
+  }
+  .dpad .big-btn { position: absolute; width: 64px; height: 64px; }
+  .dpad .up    { top: 0; left: 68px; }
+  .dpad .down  { bottom: 0; left: 68px; }
+  .dpad .left  { top: 68px; left: 0; }
+  .dpad .right { top: 68px; right: 0; }
+  .dpad .arrow { font-size: 30px; font-weight: 900; }
+
+  /* Camera turn buttons */
+  .cam-buttons {
+    position: absolute;
+    bottom: calc(240px + var(--safe-bottom));
+    left: calc(20px + var(--safe-left));
+    display: flex; gap: 12px; pointer-events: none;
+  }
+  .cam-btn {
+    pointer-events: auto; touch-action: manipulation;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--white); border: 4px solid var(--orange);
+    color: var(--orange); font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 22px;
+    box-shadow: 0 4px 0 #c97c2a, 0 8px 12px rgba(0,0,0,0.15);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cam-btn:active, .cam-btn.pressed {
+    background: var(--orange); color: var(--white);
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 #c97c2a;
+  }
+
+  /* Touch button */
+  .touch-btn-wrap {
+    position: absolute;
+    bottom: calc(60px + var(--safe-bottom));
+    right: calc(30px + var(--safe-right));
+    pointer-events: none;
+  }
+  .touch-btn {
+    pointer-events: auto; touch-action: manipulation;
+    width: 110px; height: 110px; border-radius: 50%;
+    background: linear-gradient(180deg, var(--pink) 0%, var(--pink-deep) 100%);
+    border: 5px solid var(--white); color: var(--white);
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 22px;
+    box-shadow: 0 6px 0 #c95a8a, 0 12px 20px rgba(0,0,0,0.2);
+    cursor: pointer; user-select: none;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; transition: transform 0.08s, box-shadow 0.08s;
+    animation: touchPulse 2s ease-in-out infinite;
+  }
+  .touch-btn .emo { font-size: 32px; }
+  .touch-btn .label { font-size: 16px; }
+  .touch-btn:active, .touch-btn.pressed {
+    transform: translateY(4px);
+    box-shadow: 0 2px 0 #c95a8a;
+    animation: none;
+  }
+  @keyframes touchPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+  }
+  .touch-btn.glow {
+    animation: touchGlow 0.6s ease-in-out infinite;
+  }
+  @keyframes touchGlow {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 6px 0 #c95a8a, 0 0 30px 10px rgba(255, 158, 192, 0.7);
+    }
+    50% {
+      transform: scale(1.1);
+      box-shadow: 0 6px 0 #c95a8a, 0 0 50px 20px rgba(255, 158, 192, 0.9);
+    }
+  }
+
+  /* Jump button (extra fun) */
+  .jump-btn-wrap {
+    position: absolute;
+    bottom: calc(180px + var(--safe-bottom));
+    right: calc(40px + var(--safe-right));
+    pointer-events: none;
+  }
+  .jump-btn {
+    pointer-events: auto; touch-action: manipulation;
+    width: 70px; height: 70px; border-radius: 50%;
+    background: linear-gradient(180deg, #b6ff5b 0%, #5fb04a 100%);
+    border: 4px solid var(--white); color: var(--white);
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 26px;
+    box-shadow: 0 5px 0 #4a8e3a, 0 10px 16px rgba(0,0,0,0.2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .jump-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #4a8e3a; }
+
+  /* Interact prompt */
+  .interact-prompt {
+    position: absolute; top: 30%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--white); border: 4px solid var(--pink);
+    color: var(--pink-deep);
+    padding: 12px 24px;
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 20px;
+    border-radius: 30px;
+    box-shadow: 0 4px 0 #c95a8a, 0 8px 16px rgba(0,0,0,0.2);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    max-width: 80vw; text-align: center;
+  }
+  .interact-prompt.show {
+    opacity: 1;
+    animation: promptBob 0.8s ease-in-out infinite;
+  }
+  @keyframes promptBob {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.08); }
+  }
+
+  /* Notifications */
+  .notif-stack {
+    position: absolute;
+    top: calc(140px + var(--safe-top));
+    left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; gap: 8px;
+    pointer-events: none;
+    width: min(380px, 85vw);
+    align-items: center;
+  }
+  .notif {
+    background: var(--white); border: 4px solid var(--yellow);
+    padding: 10px 20px; border-radius: 24px;
+    box-shadow: 0 4px 0 #c9a83d, 0 8px 12px rgba(0,0,0,0.15);
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 16px; color: var(--ink);
+    animation: notifPop 0.5s ease, notifFade 0.5s ease 3s forwards;
+    display: flex; align-items: center; gap: 10px;
+    white-space: nowrap;
+  }
+  .notif.heart { border-color: var(--pink); box-shadow: 0 4px 0 #c95a8a, 0 8px 12px rgba(0,0,0,0.15); }
+  .notif.train { border-color: var(--blue); box-shadow: 0 4px 0 var(--blue-dark), 0 8px 12px rgba(0,0,0,0.15); }
+  .notif.quest { border-color: var(--orange); box-shadow: 0 4px 0 #c97c2a, 0 8px 12px rgba(0,0,0,0.15); }
+  .notif .emo { font-size: 24px; }
+  @keyframes notifPop {
+    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  @keyframes notifFade { to { opacity: 0; transform: translateY(-30px) scale(0.85); } }
+
+  /* Dialog bubble */
+  .dialog-bubble {
+    position: absolute;
+    bottom: calc(200px + var(--safe-bottom));
+    left: 50%; transform: translateX(-50%);
+    background: var(--white); border: 5px solid var(--pink);
+    border-radius: 24px; padding: 14px 22px;
+    max-width: min(360px, 78vw); text-align: center;
+    box-shadow: 0 6px 0 #c95a8a, 0 12px 20px rgba(0,0,0,0.2);
+    opacity: 0; transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+  }
+  .dialog-bubble.show {
+    opacity: 1; transform: translateX(-50%) translateY(-10px);
+  }
+  .dialog-bubble::after {
+    content: ""; position: absolute;
+    bottom: -16px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 14px solid transparent;
+    border-right: 14px solid transparent;
+    border-top: 16px solid var(--pink);
+  }
+  .dialog-bubble .speaker {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 14px; color: var(--pink-deep); margin-bottom: 4px;
+  }
+  .dialog-bubble .text {
+    font-weight: 900; font-size: 16px; color: var(--ink); line-height: 1.4;
+  }
+
+  /* Station name plate */
+  .station-plate {
+    position: absolute; top: 30%; left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    background: var(--white); border: 5px solid var(--orange);
+    border-radius: 24px; padding: 16px 32px;
+    text-align: center; pointer-events: none;
+    box-shadow: 0 6px 0 #c97c2a, 0 12px 20px rgba(0,0,0,0.25);
+    transition: transform 0.5s cubic-bezier(.34,1.56,.64,1);
+  }
+  .station-plate.show { transform: translate(-50%, -50%) scale(1); }
+  .station-plate .sub {
+    font-family: 'M PLUS Rounded 1c', sans-serif; font-weight: 700;
+    font-size: 12px; color: var(--orange); letter-spacing: 0.2em;
+  }
+  .station-plate .name {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 32px; color: var(--ink); margin-top: 6px;
+    text-shadow: 2px 2px 0 var(--yellow);
+  }
+
+  /* Book overlay (collection book) */
+  .book-overlay {
+    position: fixed; inset: 0;
+    background: rgba(60, 100, 160, 0.9);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    z-index: 80; display: none;
+    align-items: center; justify-content: center;
+    pointer-events: auto; padding: 20px;
+  }
+  .book-overlay.show { display: flex; animation: bookFade 0.3s ease; }
+  @keyframes bookFade { from { opacity: 0; } to { opacity: 1; } }
+  .book-panel {
+    width: min(560px, 92vw); max-height: 88vh; overflow-y: auto;
+    background: linear-gradient(180deg, #fff8e8 0%, #ffeec8 100%);
+    border: 5px solid var(--orange); border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 8px 0 #c97c2a, 0 16px 40px rgba(0,0,0,0.4);
+    animation: bookPop 0.4s ease;
+  }
+  @keyframes bookPop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .book-panel h2 {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 24px; color: var(--orange);
+    text-align: center; margin-bottom: 16px;
+    text-shadow: 2px 2px 0 var(--yellow);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .book-panel .close-x {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--white); border: 3px solid var(--ink);
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 16px;
+    color: var(--ink); cursor: pointer;
+    box-shadow: 0 3px 0 var(--ink);
+    pointer-events: auto;
+  }
+  .book-tabs {
+    display: flex; gap: 6px; margin-bottom: 16px;
+  }
+  .book-tab {
+    flex: 1; padding: 10px;
+    background: var(--white); border: 3px solid var(--blue);
+    color: var(--blue-dark); border-radius: 14px;
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 14px;
+    cursor: pointer; pointer-events: auto;
+    transition: all 0.2s;
+  }
+  .book-tab.active {
+    background: var(--blue); color: var(--white);
+    transform: translateY(2px);
+  }
+  .book-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 10px;
+  }
+  .book-item {
+    background: var(--white); border: 3px solid #ddd;
+    border-radius: 14px; padding: 10px;
+    text-align: center; opacity: 0.5;
+    transition: all 0.2s;
+  }
+  .book-item.found {
+    border-color: var(--pink); opacity: 1;
+    box-shadow: 0 3px 0 #c95a8a;
+  }
+  .book-item .b-icon { font-size: 32px; }
+  .book-item .b-name {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 12px; color: var(--ink); margin-top: 4px;
+  }
+  .book-item.found .b-name { color: var(--pink-deep); }
+
+  /* Mission badge */
+  .mission-badge {
+    position: absolute;
+    bottom: calc(280px + var(--safe-bottom));
+    right: calc(20px + var(--safe-right));
+    background: var(--white); border: 4px solid var(--orange);
+    border-radius: 16px; padding: 8px 12px;
+    box-shadow: 0 4px 0 #c97c2a, 0 8px 12px rgba(0,0,0,0.15);
+    max-width: 160px; pointer-events: none;
+    display: none;
+  }
+  .mission-badge.show { display: block; animation: missionSlide 0.4s ease; }
+  @keyframes missionSlide {
+    from { transform: translateX(40px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .mission-badge .title {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 11px; color: var(--orange);
+    letter-spacing: 0.15em;
+  }
+  .mission-badge .desc {
+    font-weight: 900; font-size: 13px; color: var(--ink);
+    margin-top: 2px; line-height: 1.3;
+  }
+
+  /* Photo flash */
+  .photo-flash {
+    position: fixed; inset: 0;
+    background: white; opacity: 0;
+    pointer-events: none; z-index: 90;
+  }
+  .photo-flash.flash { animation: photoFlash 0.4s ease; }
+  @keyframes photoFlash {
+    0% { opacity: 0; }
+    20% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Win screen */
+  .win-overlay {
+    position: fixed; inset: 0;
+    background: rgba(255, 240, 180, 0.95);
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+    z-index: 80; display: none;
+    align-items: center; justify-content: center;
+    pointer-events: auto;
+  }
+  .win-overlay.show { display: flex; animation: bookFade 0.5s ease; }
+  .win-card {
+    background: var(--white); border: 6px solid var(--yellow);
+    border-radius: 32px; padding: 36px 28px;
+    text-align: center;
+    box-shadow: 0 8px 0 #c9a83d, 0 16px 32px rgba(0,0,0,0.25);
+    max-width: min(420px, 88vw);
+    animation: winPop 0.6s ease;
+  }
+  @keyframes winPop {
+    0% { transform: scale(0) rotate(-15deg); }
+    60% { transform: scale(1.1) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .win-card .crown {
+    font-size: 80px;
+    animation: crownBounce 0.8s ease-in-out infinite;
+    display: block;
+  }
+  @keyframes crownBounce {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-12px) rotate(5deg); }
+  }
+  .win-card h2 {
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 36px; color: var(--orange); margin-top: 12px;
+    text-shadow: 3px 3px 0 var(--yellow);
+  }
+  .win-card p {
+    font-weight: 900; font-size: 16px; color: var(--ink-soft);
+    margin-top: 16px; line-height: 1.6;
+  }
+  .win-card button {
+    margin-top: 24px; padding: 14px 36px;
+    background: var(--orange); color: var(--white);
+    border: 4px solid var(--white); border-radius: 30px;
+    font-family: 'Mochiy Pop One', sans-serif; font-size: 18px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #c97c2a; pointer-events: auto;
+  }
+  .win-card button:active { transform: translateY(2px); box-shadow: 0 2px 0 #c97c2a; }
+
+  /* Confetti */
+  .confetti {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 75; overflow: hidden;
+  }
+  .confetti-piece {
+    position: absolute; width: 14px; height: 14px;
+    top: -20px;
+    animation: confettiFall linear forwards;
+  }
+  @keyframes confettiFall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  /* Riding overlay (cab view indicator) */
+  .ride-indicator {
+    position: absolute; top: calc(14px + var(--safe-top));
+    left: 50%; transform: translateX(-50%);
+    background: var(--orange); color: var(--white);
+    border: 4px solid var(--white);
+    border-radius: 30px; padding: 10px 20px;
+    font-family: 'Mochiy Pop One', sans-serif;
+    font-size: 16px;
+    box-shadow: 0 4px 0 #c97c2a, 0 8px 12px rgba(0,0,0,0.2);
+    display: none; pointer-events: none;
+    animation: rideBob 1s ease-in-out infinite;
+  }
+  .ride-indicator.show { display: block; }
+  @keyframes rideBob { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-3px); } }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-floor"></div>
+  <div class="loader-cloud lc1"></div>
+  <div class="loader-cloud lc2"></div>
+  <div class="loader-cloud lc3"></div>
+  <div class="title">しんかんせん<br/>ワールド</div>
+  <div class="sub">わくわく どきどき たんけん!</div>
+  <div class="load-train-wrap">
+    <div class="load-train">
+      <svg viewBox="0 0 200 70" xmlns="http://www.w3.org/2000/svg">
+        <!-- Lead car (nose) -->
+        <path d="M 5 40 Q 5 25, 25 22 L 65 22 L 65 50 L 5 50 Z" fill="#009944" stroke="#005a28" stroke-width="2"/>
+        <rect x="10" y="28" width="50" height="10" fill="#66ccff" stroke="#005a28" stroke-width="1.5"/>
+        <rect x="5" y="35" width="60" height="4" fill="#ff6b9a"/>
+        <circle cx="20" cy="55" r="6" fill="#222"/>
+        <circle cx="50" cy="55" r="6" fill="#222"/>
+        <!-- Mid car -->
+        <rect x="70" y="22" width="50" height="28" fill="#009944" stroke="#005a28" stroke-width="2"/>
+        <rect x="73" y="28" width="44" height="10" fill="#66ccff" stroke="#005a28" stroke-width="1.5"/>
+        <rect x="70" y="35" width="50" height="4" fill="#ff6b9a"/>
+        <circle cx="80" cy="55" r="6" fill="#222"/>
+        <circle cx="110" cy="55" r="6" fill="#222"/>
+        <!-- Tail -->
+        <path d="M 195 40 Q 195 25, 175 22 L 125 22 L 125 50 L 195 50 Z" fill="#009944" stroke="#005a28" stroke-width="2"/>
+        <rect x="130" y="28" width="50" height="10" fill="#66ccff" stroke="#005a28" stroke-width="1.5"/>
+        <rect x="125" y="35" width="60" height="4" fill="#ff6b9a"/>
+        <circle cx="140" cy="55" r="6" fill="#222"/>
+        <circle cx="175" cy="55" r="6" fill="#222"/>
+        <!-- Steam -->
+        <circle cx="0" cy="15" r="6" fill="white" opacity="0.8"/>
+        <circle cx="-5" cy="10" r="4" fill="white" opacity="0.6"/>
+      </svg>
+    </div>
+  </div>
+  <div id="statusLine">じゅんびちゅう...</div>
+  <button id="start-btn" type="button">スタート!</button>
+  <div id="errorBox"></div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="counter star"><span class="icon">⭐</span><span id="starCount">0/12</span></div>
+  <div class="counter friend"><span class="icon">💖</span><span id="friendCount">0/8</span></div>
+
+  <div class="train-dex">
+    <span class="icon">🚄</span>
+    <div>
+      <div class="label">でんしゃずかん</div>
+      <div id="dexCount">0 / 9</div>
+    </div>
+  </div>
+
+  <div class="time-indicator">
+    <span class="icon" id="timeIcon">☀️</span>
+    <span id="timeLabel">あさ</span>
+  </div>
+
+  <div class="top-actions">
+    <button class="icon-btn" id="btnPhoto" type="button">📷</button>
+    <button class="icon-btn pink" id="btnBook" type="button">📖</button>
+    <button class="icon-btn" id="btnSound" type="button">🔊</button>
+  </div>
+
+  <div class="ride-indicator" id="rideIndicator">🚄 でんしゃに のっているよ! 🚄</div>
+
+  <div class="dpad">
+    <button class="big-btn up" id="btnUp" type="button"><span class="arrow">▲</span></button>
+    <button class="big-btn down" id="btnDown" type="button"><span class="arrow">▼</span></button>
+    <button class="big-btn left" id="btnLeft" type="button"><span class="arrow">◀</span></button>
+    <button class="big-btn right" id="btnRight" type="button"><span class="arrow">▶</span></button>
+  </div>
+
+  <div class="cam-buttons">
+    <button class="cam-btn" id="btnCamL" type="button">↶</button>
+    <button class="cam-btn" id="btnCamR" type="button">↷</button>
+  </div>
+
+  <div class="jump-btn-wrap">
+    <button class="jump-btn" id="btnJump" type="button">↑</button>
+  </div>
+
+  <div class="touch-btn-wrap">
+    <button class="touch-btn" id="btnTouch" type="button">
+      <span class="emo">👆</span><span class="label">タッチ</span>
+    </button>
+  </div>
+
+  <div class="interact-prompt" id="interactPrompt">
+    <span id="interactText">タッチしてみよう!</span>
+  </div>
+
+  <div class="notif-stack" id="notifStack"></div>
+
+  <div class="dialog-bubble" id="dialog">
+    <div class="speaker" id="dlgSpeaker"></div>
+    <div class="text" id="dlgText"></div>
+  </div>
+
+  <div class="station-plate" id="stationPlate">
+    <div class="sub">~~~ STATION ~~~</div>
+    <div class="name" id="stationName"></div>
+  </div>
+
+  <div class="mission-badge" id="missionBadge">
+    <div class="title">★ おねがい ★</div>
+    <div class="desc" id="missionDesc"></div>
+  </div>
+</div>
+
+<div class="book-overlay" id="bookOverlay">
+  <div class="book-panel">
+    <h2>
+      <span>ずかん</span>
+      <button class="close-x" id="bookClose" type="button">✕</button>
+    </h2>
+    <div class="book-tabs">
+      <button class="book-tab active" data-tab="trains" type="button">🚄 でんしゃ</button>
+      <button class="book-tab" data-tab="friends" type="button">💖 ともだち</button>
+      <button class="book-tab" data-tab="stations" type="button">🚉 えき</button>
+    </div>
+    <div class="book-grid" id="bookGrid"></div>
+  </div>
+</div>
+
+<div class="win-overlay" id="winOverlay">
+  <div class="win-card">
+    <span class="crown">👑</span>
+    <h2>すごい!</h2>
+    <p>ぜんぶ あつめたよ!<br/>でんしゃ ともだち たくさん できたね!<br/>また あそびに きてね!</p>
+    <button id="winClose" type="button">もういちど あそぶ</button>
+  </div>
+</div>
+
+<div class="confetti" id="confetti"></div>
+<div class="photo-flash" id="photoFlash"></div>
+
+<script>
+function showError(msg) {
+  var box = document.getElementById('errorBox');
+  if (!box) return;
+  box.classList.add('show');
+  box.textContent = 'エラー: ' + String(msg);
+}
+window.addEventListener('error', function(e) { showError(e.message || 'Unknown'); });
+
+window.__bootState = { threeLoaded: false, engineStarted: false, pendingStart: false };
+function setStatus(msg) { var s = document.getElementById('statusLine'); if (s) s.textContent = msg; }
+
+(function() {
+  var btn = document.getElementById('start-btn');
+  if (!btn) return;
+  function handleStart(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (window.__bootState.engineStarted) return;
+    if (!window.__bootState.threeLoaded) {
+      window.__bootState.pendingStart = true;
+      setStatus('まってね...');
+      btn.style.opacity = '0.5';
+      btn.textContent = 'まってね';
+      return;
+    }
+    if (typeof window.__startEngine === 'function') {
+      window.__bootState.engineStarted = true;
+      window.__startEngine();
+    }
+  }
+  btn.addEventListener('touchend', handleStart, { passive: false });
+  btn.addEventListener('click', handleStart);
+})();
+</script>
+
+<script>
+(function loadThree() {
+  var sources = [
+    'https://unpkg.com/three@0.160.0/build/three.min.js',
+    'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js'
+  ];
+  var idx = 0;
+  function tryLoad() {
+    if (idx >= sources.length) { setStatus('よみこみ しっぱい'); return; }
+    var s = document.createElement('script');
+    s.src = sources[idx]; s.async = true;
+    s.onload = function() {
+      if (typeof THREE !== 'undefined') {
+        window.__bootState.threeLoaded = true;
+        setStatus('スタートを おしてね!');
+        if (window.__bootState.pendingStart && !window.__bootState.engineStarted) {
+          window.__bootState.engineStarted = true;
+          if (typeof window.__startEngine === 'function') window.__startEngine();
+        }
+      } else { idx++; tryLoad(); }
+    };
+    s.onerror = function() { idx++; tryLoad(); };
+    document.head.appendChild(s);
+  }
+  tryLoad();
+})();
+</script>
+
+<script>
+window.__startEngine = function() {
+  if (typeof THREE === 'undefined') return;
+
+  var loader = document.getElementById('loader');
+  loader.style.opacity = '0';
+  setTimeout(function() {
+    loader.style.display = 'none';
+    document.getElementById('hud').classList.add('active');
+  }, 600);
+
+  var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || ('ontouchstart' in window);
+  var canvas = document.getElementById('game');
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0xb8e0fa, 100, 350);
+  scene.background = new THREE.Color(0xb8e0fa);
+
+  var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 600);
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: !isMobile });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.shadowMap.enabled = !isMobile;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // ====================== AUDIO ======================
+  var audioCtx = null;
+  var soundOn = true;
+  function ensureAudio() {
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+  function playTone(freq, dur, type, vol, delay) {
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    delay = delay || 0;
+    setTimeout(function() {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(vol || 0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + dur);
+    }, delay);
+  }
+  function playSparkle() {
+    playTone(880, 0.1, 'sine', 0.2, 0);
+    playTone(1320, 0.12, 'sine', 0.2, 60);
+    playTone(1760, 0.18, 'sine', 0.18, 120);
+    playTone(2349, 0.2, 'sine', 0.15, 180);
+  }
+  function playHeart() {
+    [523, 659, 784, 1047].forEach(function(n, i) {
+      playTone(n, 0.15, 'sine', 0.18, i * 80);
+    });
+  }
+  function playToot() {
+    playTone(294, 0.25, 'square', 0.12, 0);
+    playTone(440, 0.35, 'square', 0.12, 180);
+  }
+  function playWin() {
+    [523, 587, 659, 784, 880, 1047, 1175, 1319].forEach(function(n, i) {
+      playTone(n, 0.25, 'triangle', 0.2, i * 130);
+    });
+  }
+  function playJump() {
+    playTone(440, 0.08, 'sine', 0.15, 0);
+    playTone(659, 0.1, 'sine', 0.15, 60);
+  }
+  function playChime() {
+    [659, 880, 1175].forEach(function(n, i) {
+      playTone(n, 0.4, 'sine', 0.15, i * 100);
+    });
+  }
+  function playWoosh() {
+    if (!soundOn) return;
+    ensureAudio();
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.5);
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+  }
+  function playPhoto() {
+    playTone(2000, 0.05, 'sine', 0.2, 0);
+    playTone(1000, 0.08, 'sine', 0.15, 50);
+  }
+  document.getElementById('btnSound').addEventListener('click', function() {
+    soundOn = !soundOn;
+    this.textContent = soundOn ? '🔊' : '🔇';
+    if (soundOn) playTone(660, 0.1, 'sine', 0.15);
+  });
+
+  // ====================== TERRAIN ======================
+  var WORLD_SIZE = 400;
+  var SEG = isMobile ? 80 : 120;
+
+  // Featured locations (used by height + features)
+  var FEAT = {
+    mountainA: { x: 90, z: -100, h: 18, r: 25 },
+    mountainB: { x: -110, z: -70, h: 22, r: 28 },
+    mountainC: { x: 30, z: 130, h: 14, r: 20 },
+    lakeA:     { x: -50, z: 80, r: 22 },
+    riverY:    -10 // Y position of water
+  };
+
+  function heightAt(x, z) {
+    var h1 = Math.sin(x * 0.025) * Math.cos(z * 0.03) * 1.8;
+    var h2 = Math.sin(x * 0.05) * Math.cos(z * 0.04) * 0.8;
+    // Mountains
+    var d1 = Math.sqrt((x - FEAT.mountainA.x) * (x - FEAT.mountainA.x) + (z - FEAT.mountainA.z) * (z - FEAT.mountainA.z));
+    var m1 = Math.max(0, FEAT.mountainA.h * Math.exp(-d1 * d1 / (FEAT.mountainA.r * FEAT.mountainA.r * 0.5)));
+    var d2 = Math.sqrt((x - FEAT.mountainB.x) * (x - FEAT.mountainB.x) + (z - FEAT.mountainB.z) * (z - FEAT.mountainB.z));
+    var m2 = Math.max(0, FEAT.mountainB.h * Math.exp(-d2 * d2 / (FEAT.mountainB.r * FEAT.mountainB.r * 0.5)));
+    var d3 = Math.sqrt((x - FEAT.mountainC.x) * (x - FEAT.mountainC.x) + (z - FEAT.mountainC.z) * (z - FEAT.mountainC.z));
+    var m3 = Math.max(0, FEAT.mountainC.h * Math.exp(-d3 * d3 / (FEAT.mountainC.r * FEAT.mountainC.r * 0.5)));
+    // Lake depression
+    var dL = Math.sqrt((x - FEAT.lakeA.x) * (x - FEAT.lakeA.x) + (z - FEAT.lakeA.z) * (z - FEAT.lakeA.z));
+    var lakeDepth = dL < FEAT.lakeA.r ? -(FEAT.lakeA.r - dL) * 0.25 : 0;
+    return h1 + h2 + m1 + m2 + m3 + lakeDepth;
+  }
+
+  var terrainGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, SEG, SEG);
+  terrainGeo.rotateX(-Math.PI / 2);
+  var tposAttr = terrainGeo.attributes.position;
+  var tcolors = [];
+  for (var i = 0; i < tposAttr.count; i++) {
+    var tx = tposAttr.getX(i), tz = tposAttr.getZ(i);
+    var ty = heightAt(tx, tz);
+    tposAttr.setY(i, ty);
+    var noise = Math.sin(tx * 0.3) * Math.cos(tz * 0.3) * 0.04;
+    // Mountain snowy tops
+    if (ty > 10) {
+      var snowMix = Math.min(1, (ty - 10) / 8);
+      tcolors.push(0.55 + snowMix * 0.4 + noise, 0.7 + snowMix * 0.3 + noise, 0.4 + snowMix * 0.5 + noise);
+    } else if (ty < -2) {
+      // Sandy near water
+      tcolors.push(0.85 + noise, 0.78 + noise, 0.55 + noise);
+    } else {
+      // Grass
+      tcolors.push(0.5 + noise, 0.78 + noise, 0.35 + noise);
+    }
+  }
+  terrainGeo.setAttribute('color', new THREE.Float32BufferAttribute(tcolors, 3));
+  terrainGeo.computeVertexNormals();
+  var terrain = new THREE.Mesh(terrainGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  terrain.receiveShadow = true;
+  scene.add(terrain);
+
+  // ====================== WATER (LAKE) ======================
+  var waterGeo = new THREE.CircleGeometry(FEAT.lakeA.r, 32);
+  waterGeo.rotateX(-Math.PI / 2);
+  var waterMat = new THREE.MeshPhongMaterial({
+    color: 0x4d9fea, transparent: true, opacity: 0.85,
+    shininess: 100, specular: 0xffffff
+  });
+  var water = new THREE.Mesh(waterGeo, waterMat);
+  water.position.set(FEAT.lakeA.x, -1.5, FEAT.lakeA.z);
+  scene.add(water);
+
+  // ====================== RAILWAY: complex track ======================
+  var trackRadius = 100;
+  var trackPoints = [];
+  for (var t = 0; t < Math.PI * 2; t += 0.04) {
+    // Slightly wavy oval, NOT through mountains
+    var rx = trackRadius;
+    var rz = trackRadius * 0.78;
+    var x = Math.cos(t) * rx;
+    var z = Math.sin(t) * rz;
+    // Adjust to avoid going INTO mountains: push outward if too close
+    trackPoints.push({ x: x, z: z, t: t });
+  }
+
+  function trackPoint(t) {
+    var rx = trackRadius;
+    var rz = trackRadius * 0.78;
+    var x = Math.cos(t) * rx;
+    var z = Math.sin(t) * rz;
+    return { x: x, z: z, y: heightAt(x, z) };
+  }
+
+  // Rails
+  function makeRail(offset) {
+    var pts = [];
+    for (var i = 0; i < trackPoints.length; i++) {
+      var p = trackPoints[i];
+      var ang = Math.atan2(p.z * (trackRadius / (trackRadius * 0.78)), p.x);
+      var nx = -Math.sin(ang) * offset;
+      var nz = Math.cos(ang) * offset;
+      // Actually, use direction perpendicular to track curve
+      var p2 = trackPoints[(i + 1) % trackPoints.length];
+      var dx = p2.x - p.x, dz = p2.z - p.z;
+      var dlen = Math.sqrt(dx*dx + dz*dz);
+      var perpX = -dz / dlen;
+      var perpZ = dx / dlen;
+      var y = heightAt(p.x + perpX * offset, p.z + perpZ * offset);
+      pts.push(new THREE.Vector3(p.x + perpX * offset, y + 0.3, p.z + perpZ * offset));
+    }
+    pts.push(pts[0].clone());
+    var curve = new THREE.CatmullRomCurve3(pts, true);
+    var geo = new THREE.TubeGeometry(curve, 300, 0.14, 6, true);
+    var mat = new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.8, roughness: 0.3 });
+    var rail = new THREE.Mesh(geo, mat);
+    if (!isMobile) rail.receiveShadow = true;
+    scene.add(rail);
+  }
+  makeRail(0.75);
+  makeRail(-0.75);
+
+  // Ties
+  var tieGeo = new THREE.BoxGeometry(2.5, 0.18, 0.5);
+  var tieMat = new THREE.MeshLambertMaterial({ color: 0x6b4423 });
+  for (var ti = 0; ti < trackPoints.length; ti += 1) {
+    var tp = trackPoints[ti];
+    var tp2 = trackPoints[(ti + 1) % trackPoints.length];
+    var tdx = tp2.x - tp.x, tdz = tp2.z - tp.z;
+    var tang = Math.atan2(tdz, tdx);
+    var tie = new THREE.Mesh(tieGeo, tieMat);
+    tie.position.set(tp.x, heightAt(tp.x, tp.z) + 0.18, tp.z);
+    tie.rotation.y = tang;
+    scene.add(tie);
+  }
+
+  // ====================== TUNNEL ======================
+  var tunnelGroup = new THREE.Group();
+  // Tunnel through Mountain A
+  var tunnelAngle = Math.PI * 0.25; // Where tunnel passes through
+  var tunPos = trackPoint(tunnelAngle);
+  var tunPos2 = trackPoint(tunnelAngle + 0.15);
+  var tunAng = Math.atan2(tunPos2.z - tunPos.z, tunPos2.x - tunPos.x);
+  var tunnel = new THREE.Mesh(
+    new THREE.CylinderGeometry(3.5, 3.5, 12, 12, 1, true, 0, Math.PI),
+    new THREE.MeshLambertMaterial({ color: 0x666666, side: THREE.DoubleSide })
+  );
+  tunnel.rotation.z = Math.PI / 2;
+  tunnel.rotation.y = tunAng;
+  tunnel.position.set((tunPos.x + tunPos2.x) / 2, tunPos.y + 3.5, (tunPos.z + tunPos2.z) / 2);
+  tunnelGroup.add(tunnel);
+  // Tunnel entrance arches (decorative stone rings)
+  for (var ta = 0; ta < 2; ta++) {
+    var tp3 = ta === 0 ? trackPoint(tunnelAngle - 0.05) : trackPoint(tunnelAngle + 0.20);
+    var arch = new THREE.Mesh(
+      new THREE.TorusGeometry(3.7, 0.4, 6, 12, Math.PI),
+      new THREE.MeshLambertMaterial({ color: 0x888888 })
+    );
+    arch.rotation.z = Math.PI;
+    arch.position.set(tp3.x, tp3.y + 3.5, tp3.z);
+    arch.rotation.y = tunAng;
+    tunnelGroup.add(arch);
+  }
+  scene.add(tunnelGroup);
+
+  // ====================== BRIDGE ======================
+  // Bridge over the lake region
+  var bridgeAngle = Math.PI * 1.2; // Lake-side angle
+  var bridgePts = [];
+  for (var ba = -0.15; ba <= 0.15; ba += 0.05) {
+    bridgePts.push(trackPoint(bridgeAngle + ba));
+  }
+  bridgePts.forEach(function(bp) {
+    // Bridge support
+    var support = new THREE.Mesh(
+      new THREE.BoxGeometry(0.5, 6, 0.5),
+      new THREE.MeshLambertMaterial({ color: 0xc0392b })
+    );
+    support.position.set(bp.x, bp.y - 3, bp.z);
+    scene.add(support);
+    // Cross brace
+    var brace = new THREE.Mesh(
+      new THREE.BoxGeometry(4, 0.3, 0.3),
+      new THREE.MeshLambertMaterial({ color: 0xc0392b })
+    );
+    brace.position.set(bp.x, bp.y - 1, bp.z);
+    scene.add(brace);
+  });
+
+  // ====================== STATIONS ======================
+  var stationConfig = [
+    { angle: 0,                name: 'みどりえき',   color: 0xff6b6b, deco: 'tree',    sub: 'GREEN' },
+    { angle: Math.PI * 0.5,    name: 'はなえき',     color: 0xff9ec0, deco: 'flower',  sub: 'FLOWER' },
+    { angle: Math.PI * 0.83,   name: 'やまえき',     color: 0x9b6b3d, deco: 'mountain',sub: 'MOUNTAIN' },
+    { angle: Math.PI * 1.17,   name: 'みずうみえき', color: 0x4d9fea, deco: 'water',   sub: 'LAKE' },
+    { angle: Math.PI * 1.5,    name: 'おかしえき',   color: 0xffe066, deco: 'candy',   sub: 'SWEETS' },
+    { angle: Math.PI * 1.83,   name: 'にじえき',     color: 0xb35eff, deco: 'rainbow', sub: 'RAINBOW' }
+  ];
+  var stations = [];
+
+  function makeStation(cfg) {
+    var tp = trackPoint(cfg.angle);
+    var group = new THREE.Group();
+
+    // Platform
+    var plat = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 0.5, 3.2),
+      new THREE.MeshLambertMaterial({ color: 0xeeeeee })
+    );
+    plat.position.set(0, 0.55, 2.2);
+    if (!isMobile) plat.receiveShadow = true;
+    group.add(plat);
+
+    // Platform edge stripe (yellow safety)
+    var stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(10, 0.06, 0.3),
+      new THREE.MeshLambertMaterial({ color: 0xffe066 })
+    );
+    stripe.position.set(0, 0.82, 0.75);
+    group.add(stripe);
+
+    // Roof posts
+    var postMat = new THREE.MeshLambertMaterial({ color: cfg.color });
+    for (var px = -4; px <= 4; px += 4) {
+      var post = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 3.2, 6), postMat);
+      post.position.set(px, 2.3, 2.2);
+      group.add(post);
+    }
+
+    // Roof (sloped)
+    var roof = new THREE.Mesh(
+      new THREE.BoxGeometry(10.5, 0.35, 3.8),
+      new THREE.MeshLambertMaterial({ color: cfg.color })
+    );
+    roof.position.set(0, 3.9, 2.2);
+    roof.rotation.x = -0.1;
+    group.add(roof);
+
+    // Roof edge
+    var roofEdge = new THREE.Mesh(
+      new THREE.BoxGeometry(10.5, 0.15, 0.15),
+      new THREE.MeshLambertMaterial({ color: 0xffffff })
+    );
+    roofEdge.position.set(0, 3.7, 0.4);
+    group.add(roofEdge);
+
+    // Station name sign with texture
+    var canv = document.createElement('canvas');
+    canv.width = 512; canv.height = 128;
+    var ctx = canv.getContext('2d');
+    ctx.fillStyle = 'white'; ctx.fillRect(0, 0, 512, 128);
+    ctx.strokeStyle = '#' + cfg.color.toString(16).padStart(6, '0');
+    ctx.lineWidth = 6; ctx.strokeRect(8, 8, 496, 112);
+    ctx.fillStyle = '#3a3a5e';
+    ctx.font = 'bold 64px "M PLUS Rounded 1c", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(cfg.name, 256, 64);
+    var tex = new THREE.CanvasTexture(canv);
+    var signFace = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.5, 0.9),
+      new THREE.MeshBasicMaterial({ map: tex })
+    );
+    signFace.position.set(0, 3.1, 0.5);
+    group.add(signFace);
+
+    // Station decorations based on type
+    if (cfg.deco === 'tree') {
+      var tree = new THREE.Group();
+      var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.3, 1.5, 6), new THREE.MeshLambertMaterial({ color: 0x8b6f47 }));
+      trunk.position.y = 0.75;
+      tree.add(trunk);
+      var top = new THREE.Mesh(new THREE.SphereGeometry(1.2, 8, 8), new THREE.MeshLambertMaterial({ color: 0x5fb04a }));
+      top.position.y = 2.2;
+      tree.add(top);
+      tree.position.set(-6, 0, 4);
+      group.add(tree);
+    } else if (cfg.deco === 'flower') {
+      for (var fc = 0; fc < 5; fc++) {
+        var flw = new THREE.Mesh(
+          new THREE.ConeGeometry(0.4, 0.8, 6),
+          new THREE.MeshLambertMaterial({ color: [0xff6b9a, 0xffe066, 0xff9ec0, 0xb35eff][fc % 4] })
+        );
+        flw.position.set(-7 + fc * 0.7, 0.5, 4);
+        group.add(flw);
+      }
+    } else if (cfg.deco === 'candy') {
+      var candy = new THREE.Mesh(
+        new THREE.TorusGeometry(0.6, 0.25, 6, 12),
+        new THREE.MeshLambertMaterial({ color: 0xff6b9a })
+      );
+      candy.position.set(-6, 1, 4);
+      candy.rotation.x = Math.PI / 2;
+      group.add(candy);
+      var lollipop = new THREE.Mesh(
+        new THREE.SphereGeometry(0.5, 8, 8),
+        new THREE.MeshLambertMaterial({ color: 0xff9ec0 })
+      );
+      lollipop.position.set(6, 1.5, 4);
+      group.add(lollipop);
+      var stick = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.05, 0.05, 1.5, 6),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+      );
+      stick.position.set(6, 0.75, 4);
+      group.add(stick);
+    } else if (cfg.deco === 'rainbow') {
+      var colors = [0xff6b6b, 0xffa94d, 0xffe066, 0x5fb04a, 0x4d9fea, 0xb35eff];
+      for (var rc = 0; rc < colors.length; rc++) {
+        var arc = new THREE.Mesh(
+          new THREE.TorusGeometry(1.5 + rc * 0.2, 0.08, 6, 16, Math.PI),
+          new THREE.MeshLambertMaterial({ color: colors[rc] })
+        );
+        arc.position.set(-6, 1, 4);
+        arc.rotation.x = Math.PI / 2;
+        group.add(arc);
+      }
+    } else if (cfg.deco === 'water') {
+      var fountain = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.6, 0.8, 0.6, 12),
+        new THREE.MeshLambertMaterial({ color: 0x88aaff })
+      );
+      fountain.position.set(-6, 0.5, 4);
+      group.add(fountain);
+    }
+
+    // Position station outside the track
+    var ang = cfg.angle;
+    var tp_inner = trackPoint(ang);
+    var tp_next = trackPoint(ang + 0.05);
+    var pdx = tp_next.x - tp_inner.x, pdz = tp_next.z - tp_inner.z;
+    var pdlen = Math.sqrt(pdx*pdx + pdz*pdz);
+    // Perpendicular outward
+    var perpX = -pdz / pdlen, perpZ = pdx / pdlen;
+    // Make sure perpendicular points OUTWARD (away from origin)
+    if ((tp_inner.x * perpX + tp_inner.z * perpZ) < 0) { perpX = -perpX; perpZ = -perpZ; }
+    var sx = tp_inner.x + perpX * 3;
+    var sz = tp_inner.z + perpZ * 3;
+    var sy = heightAt(sx, sz);
+    group.position.set(sx, sy, sz);
+    var stationFacingAngle = Math.atan2(-perpX, -perpZ);
+    group.rotation.y = stationFacingAngle;
+    scene.add(group);
+
+    stations.push({
+      group: group, angle: cfg.angle, name: cfg.name, sub: cfg.sub,
+      color: cfg.color, x: sx, z: sz, y: sy, visited: false
+    });
+  }
+  stationConfig.forEach(makeStation);
+
+  // ====================== TRAINS ======================
+  var trains = [];
+  var trainConfigs = [
+    { name: 'はやぶさ',         body: 0x009944, accent: 0xff6b9a, nose: 'sharp',  speed: 0.13, offset: 0,    found: false },
+    { name: 'こまち',           body: 0xff5577, accent: 0xffffff, nose: 'sharp',  speed: 0.11, offset: 0.9, found: false },
+    { name: 'かがやき',         body: 0xfafafa, accent: 0xc9a44d, nose: 'sharp',  speed: 0.14, offset: 1.8, found: false },
+    { name: 'N700',             body: 0xffffff, accent: 0x0066cc, nose: 'rounded',speed: 0.12, offset: 2.7, found: false },
+    { name: 'ドクターイエロー', body: 0xffe066, accent: 0x0066cc, nose: 'rounded',speed: 0.09, offset: 3.6, found: false },
+    { name: 'つばさ',           body: 0xb6a4ff, accent: 0xffd700, nose: 'sharp',  speed: 0.10, offset: 4.5, found: false },
+    { name: 'つばめ',           body: 0x222244, accent: 0xc9a44d, nose: 'sharp',  speed: 0.13, offset: 1.4, found: false },
+    { name: 'SL人吉',           body: 0x1a1a1a, accent: 0xc0392b, nose: 'steam',  speed: 0.07, offset: 5.0, found: false },
+    { name: 'E235やまのて',     body: 0xb5e853, accent: 0xffffff, nose: 'rounded',speed: 0.15, offset: 3.0, found: false }
+  ];
+
+  function makeTrainCar(cfg, isLead, isSL) {
+    var carGroup = new THREE.Group();
+    var carLen = isLead ? 5.5 : 4.5;
+
+    // Main body
+    var body = new THREE.Mesh(
+      new THREE.BoxGeometry(1.9, 1.5, carLen),
+      new THREE.MeshLambertMaterial({ color: cfg.body })
+    );
+    body.position.y = 1.1;
+    if (!isMobile) body.castShadow = true;
+    carGroup.add(body);
+
+    // Nose for lead car
+    if (isLead) {
+      if (cfg.nose === 'sharp') {
+        // Sharp pointed nose (shinkansen style)
+        var nose = new THREE.Mesh(
+          new THREE.ConeGeometry(1.0, 2.5, 12),
+          new THREE.MeshLambertMaterial({ color: cfg.body })
+        );
+        nose.position.set(0, 1.1, -carLen / 2 - 1.2);
+        nose.rotation.x = -Math.PI / 2;
+        nose.scale.set(1, 1.8, 1);
+        carGroup.add(nose);
+        // Headlight (white)
+        var hl = new THREE.Mesh(
+          new THREE.SphereGeometry(0.15, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xffffcc })
+        );
+        hl.position.set(0, 0.9, -carLen / 2 - 1.8);
+        hl.userData.headlight = true;
+        carGroup.add(hl);
+      } else if (cfg.nose === 'rounded') {
+        // Rounded nose
+        var nose = new THREE.Mesh(
+          new THREE.SphereGeometry(1.0, 12, 8),
+          new THREE.MeshLambertMaterial({ color: cfg.body })
+        );
+        nose.position.set(0, 1.1, -carLen / 2 - 0.8);
+        nose.scale.set(1, 0.85, 1.5);
+        carGroup.add(nose);
+        var hl = new THREE.Mesh(
+          new THREE.SphereGeometry(0.15, 8, 8),
+          new THREE.MeshBasicMaterial({ color: 0xffffcc })
+        );
+        hl.position.set(0, 0.9, -carLen / 2 - 1.6);
+        hl.userData.headlight = true;
+        carGroup.add(hl);
+      } else if (cfg.nose === 'steam') {
+        // Steam locomotive front
+        var smokebox = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.8, 0.8, 1.5, 12),
+          new THREE.MeshLambertMaterial({ color: cfg.body })
+        );
+        smokebox.rotation.x = Math.PI / 2;
+        smokebox.position.set(0, 1.0, -carLen / 2 - 0.8);
+        carGroup.add(smokebox);
+        var stack = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.25, 0.3, 0.8, 8),
+          new THREE.MeshLambertMaterial({ color: cfg.body })
+        );
+        stack.position.set(0, 2.2, -carLen / 2 - 0.8);
+        carGroup.add(stack);
+        carGroup.userData.steamSource = stack;
+      }
+    }
+
+    // Accent stripe
+    var stripe = new THREE.Mesh(
+      new THREE.BoxGeometry(1.95, 0.25, carLen - 0.2),
+      new THREE.MeshLambertMaterial({ color: cfg.accent })
+    );
+    stripe.position.y = 1.15;
+    carGroup.add(stripe);
+
+    // Window strip
+    var win = new THREE.Mesh(
+      new THREE.BoxGeometry(1.96, 0.5, carLen - 0.6),
+      new THREE.MeshBasicMaterial({ color: 0x66ccff })
+    );
+    win.position.y = 1.55;
+    carGroup.add(win);
+
+    // Window frames (cute look)
+    for (var wf = -carLen / 2 + 1; wf < carLen / 2 - 0.5; wf += 1.2) {
+      var frame = new THREE.Mesh(
+        new THREE.BoxGeometry(2.0, 0.06, 0.06),
+        new THREE.MeshLambertMaterial({ color: cfg.body })
+      );
+      frame.position.set(0, 1.55, wf);
+      frame.rotation.z = Math.PI / 2;
+      carGroup.add(frame);
+    }
+
+    // Pantograph (for electric trains)
+    if (cfg.nose !== 'steam' && !isLead) {
+      var pant = new THREE.Mesh(
+        new THREE.BoxGeometry(0.8, 0.04, 0.1),
+        new THREE.MeshLambertMaterial({ color: 0x444444 })
+      );
+      pant.position.set(0, 2.3, 0);
+      carGroup.add(pant);
+      var pantArmL = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.7, 6),
+        new THREE.MeshLambertMaterial({ color: 0x666666 })
+      );
+      pantArmL.position.set(0, 1.95, 0);
+      pantArmL.rotation.z = 0.3;
+      carGroup.add(pantArmL);
+    }
+
+    // Wheels
+    var wheelMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
+    var wheelGeo = new THREE.CylinderGeometry(0.32, 0.32, 0.18, 12);
+    var wheelGroup = new THREE.Group();
+    for (var wz = -carLen / 2 + 1.0; wz <= carLen / 2 - 1.0; wz += 1.4) {
+      for (var wx = -1; wx <= 1; wx += 2) {
+        var wheel = new THREE.Mesh(wheelGeo, wheelMat);
+        wheel.rotation.z = Math.PI / 2;
+        wheel.position.set(wx * 0.75, 0.32, wz);
+        wheelGroup.add(wheel);
+      }
+    }
+    carGroup.add(wheelGroup);
+    carGroup.userData.wheels = wheelGroup;
+
+    return carGroup;
+  }
+
+  function makeTrain(cfg) {
+    var group = new THREE.Group();
+    var isSL = cfg.nose === 'steam';
+    var lead = makeTrainCar(cfg, true, isSL);
+    lead.position.z = 0;
+    group.add(lead);
+    var mid = makeTrainCar(cfg, false, isSL);
+    mid.position.z = 5;
+    group.add(mid);
+    var tail = makeTrainCar(cfg, true, isSL);
+    tail.position.z = 10;
+    tail.rotation.y = Math.PI;
+    group.add(tail);
+    scene.add(group);
+
+    trains.push({
+      group: group, config: cfg, cars: [lead, mid, tail],
+      t: cfg.offset, baseSpeed: cfg.speed, speed: cfg.speed,
+      found: false, label: cfg.name, isSL: isSL,
+      stopTimer: 0, atStation: false
+    });
+  }
+  trainConfigs.forEach(makeTrain);
+
+  // ====================== STARS ======================
+  var stars = [];
+  var STAR_COUNT = 12;
+  var starGeo = new THREE.OctahedronGeometry(0.55, 0);
+  var starMat = new THREE.MeshStandardMaterial({
+    color: 0xffe066, emissive: 0xffaa00, emissiveIntensity: 0.9,
+    metalness: 0.6, roughness: 0.2
+  });
+  // Place stars at varied locations
+  var starPositions = [
+    { x: 25, z: 30 }, { x: -30, z: 40 }, { x: 50, z: -20 },
+    { x: -60, z: -30 }, { x: 70, z: 60 }, { x: -80, z: 50 },
+    { x: 20, z: -70 }, { x: -20, z: -60 }, { x: 110, z: 20 },
+    { x: -110, z: 30 }, { x: 0, z: 90 }, { x: 0, z: -110 }
+  ];
+  for (var si = 0; si < STAR_COUNT; si++) {
+    var sp_ = starPositions[si];
+    var sy = heightAt(sp_.x, sp_.z) + 1.8 + Math.random() * 0.5;
+    var star = new THREE.Mesh(starGeo, starMat);
+    star.position.set(sp_.x, sy, sp_.z);
+    star.userData = { type: 'star', collected: false, baseY: sy, label: 'おほしさま' };
+    var halo = new THREE.Mesh(
+      new THREE.SphereGeometry(1.3, 12, 12),
+      new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, opacity: 0.3 })
+    );
+    star.add(halo);
+    scene.add(star);
+    stars.push(star);
+  }
+
+  // ====================== ANIMAL NPCs ======================
+  var animals = [];
+  var animalData = [
+    { id: 'rabbit', emoji: '🐰', color: 0xffd0e0, name: 'うさぎさん',  dialog: 'おはよう! きょうも いいてんき!',     hop: true },
+    { id: 'bear',   emoji: '🐻', color: 0xc9a07a, name: 'くまさん',    dialog: 'でんしゃ だいすき なんだ!',             hop: false },
+    { id: 'fox',    emoji: '🦊', color: 0xffa94d, name: 'きつねさん',  dialog: 'おほしさま ぜんぶ さがそう!',           hop: false },
+    { id: 'cat',    emoji: '🐱', color: 0xffe0a0, name: 'ねこさん',    dialog: 'やまの むこうに なにかが あるよ?',     hop: false },
+    { id: 'panda',  emoji: '🐼', color: 0xffffff, name: 'ぱんださん',  dialog: 'きみは えきいんさん みたい!',           hop: false },
+    { id: 'dog',    emoji: '🐶', color: 0xc9805a, name: 'いぬさん',    dialog: 'いっしょに あそぼうよ! ワンワン!',     hop: true },
+    { id: 'penguin',emoji: '🐧', color: 0x444466, name: 'ぺんぎんさん',dialog: 'ドクターイエローを みたよ!',           hop: false },
+    { id: 'pig',    emoji: '🐷', color: 0xffb3c1, name: 'ぶたさん',    dialog: 'にじえきで にじが みえるよ!',          hop: false }
+  ];
+
+  function makeAnimal(x, z, data) {
+    var group = new THREE.Group();
+
+    // Body
+    var body = new THREE.Mesh(
+      new THREE.SphereGeometry(0.65, 14, 14),
+      new THREE.MeshLambertMaterial({ color: data.color })
+    );
+    body.position.y = 0.75;
+    body.scale.set(1, 0.9, 1.1);
+    if (!isMobile) body.castShadow = true;
+    group.add(body);
+
+    // Head
+    var head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.55, 14, 14),
+      new THREE.MeshLambertMaterial({ color: data.color })
+    );
+    head.position.y = 1.7;
+    if (!isMobile) head.castShadow = true;
+    group.add(head);
+
+    // Ears - different per animal
+    if (data.id === 'rabbit') {
+      for (var er = -1; er <= 1; er += 2) {
+        var ear = new THREE.Mesh(
+          new THREE.SphereGeometry(0.12, 8, 8),
+          new THREE.MeshLambertMaterial({ color: data.color })
+        );
+        ear.position.set(er * 0.2, 2.3, 0);
+        ear.scale.set(0.6, 2.5, 0.4);
+        group.add(ear);
+        // Pink inner ear
+        var innerEar = new THREE.Mesh(
+          new THREE.SphereGeometry(0.08, 8, 8),
+          new THREE.MeshLambertMaterial({ color: 0xff9ec0 })
+        );
+        innerEar.position.set(er * 0.2, 2.3, 0.05);
+        innerEar.scale.set(0.4, 2.0, 0.3);
+        group.add(innerEar);
+      }
+    } else if (data.id === 'cat' || data.id === 'fox') {
+      for (var ec = -1; ec <= 1; ec += 2) {
+        var earC = new THREE.Mesh(
+          new THREE.ConeGeometry(0.18, 0.35, 6),
+          new THREE.MeshLambertMaterial({ color: data.color })
+        );
+        earC.position.set(ec * 0.35, 2.15, 0);
+        group.add(earC);
+      }
+    } else if (data.id === 'bear' || data.id === 'dog' || data.id === 'pig') {
+      for (var eb = -1; eb <= 1; eb += 2) {
+        var earB = new THREE.Mesh(
+          new THREE.SphereGeometry(0.17, 8, 8),
+          new THREE.MeshLambertMaterial({ color: data.color })
+        );
+        earB.position.set(eb * 0.4, 2.05, 0);
+        group.add(earB);
+      }
+    } else if (data.id === 'panda') {
+      for (var ep = -1; ep <= 1; ep += 2) {
+        var earP = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 8, 8),
+          new THREE.MeshLambertMaterial({ color: 0x222222 })
+        );
+        earP.position.set(ep * 0.42, 2.05, 0);
+        group.add(earP);
+      }
+      // Panda eye patches
+      for (var pp = -1; pp <= 1; pp += 2) {
+        var patch = new THREE.Mesh(
+          new THREE.SphereGeometry(0.18, 10, 10),
+          new THREE.MeshLambertMaterial({ color: 0x222222 })
+        );
+        patch.position.set(pp * 0.2, 1.7, 0.4);
+        patch.scale.set(1, 1.2, 0.6);
+        group.add(patch);
+      }
+    } else if (data.id === 'penguin') {
+      // Penguin: white belly
+      var belly = new THREE.Mesh(
+        new THREE.SphereGeometry(0.55, 14, 14),
+        new THREE.MeshLambertMaterial({ color: 0xffffff })
+      );
+      belly.position.set(0, 0.75, 0.2);
+      belly.scale.set(0.8, 0.9, 0.7);
+      group.add(belly);
+      // Orange beak
+      var beak = new THREE.Mesh(
+        new THREE.ConeGeometry(0.08, 0.2, 6),
+        new THREE.MeshLambertMaterial({ color: 0xffa94d })
+      );
+      beak.position.set(0, 1.65, 0.55);
+      beak.rotation.x = Math.PI / 2;
+      group.add(beak);
+    }
+
+    // Eyes
+    var eyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+    for (var ey = -1; ey <= 1; ey += 2) {
+      var eye = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), eyeMat);
+      eye.position.set(ey * 0.18, 1.78, 0.46);
+      group.add(eye);
+      // Eye highlight
+      var eyeHi = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      eyeHi.position.set(ey * 0.18 + 0.02, 1.81, 0.52);
+      group.add(eyeHi);
+    }
+
+    // Cheek blush
+    var blushMat = new THREE.MeshBasicMaterial({ color: 0xff9ec0, transparent: true, opacity: 0.7 });
+    for (var bl = -1; bl <= 1; bl += 2) {
+      var blush = new THREE.Mesh(new THREE.SphereGeometry(0.1, 6, 6), blushMat);
+      blush.position.set(bl * 0.32, 1.55, 0.45);
+      group.add(blush);
+    }
+
+    // Smile (mouth)
+    var smileMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+    var smile = new THREE.Mesh(
+      new THREE.TorusGeometry(0.08, 0.018, 4, 8, Math.PI),
+      smileMat
+    );
+    smile.position.set(0, 1.55, 0.5);
+    smile.rotation.x = Math.PI / 2;
+    smile.rotation.z = Math.PI;
+    group.add(smile);
+
+    // Tail (for some)
+    if (data.id === 'cat' || data.id === 'fox' || data.id === 'dog') {
+      var tail = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.12, 0.8, 6),
+        new THREE.MeshLambertMaterial({ color: data.color })
+      );
+      tail.position.set(0, 1.0, -0.6);
+      tail.rotation.x = -0.6;
+      group.add(tail);
+      group.userData.tail = tail;
+    }
+
+    group.position.set(x, heightAt(x, z), z);
+    var tx = x + (Math.random() - 0.5) * 16;
+    var tz = z + (Math.random() - 0.5) * 16;
+    group.userData = Object.assign(group.userData || {}, {
+      type: 'animal', label: data.name, data: data,
+      target: { x: tx, z: tz },
+      speed: 0.7 + Math.random() * 0.5,
+      met: false,
+      bobOffset: Math.random() * Math.PI * 2,
+      hop: data.hop
+    });
+    scene.add(group);
+    animals.push(group);
+  }
+
+  // Position animals around the world
+  var animalSpawnPositions = [
+    { x: 30, z: 25 }, { x: -25, z: 35 }, { x: 60, z: -40 },
+    { x: -50, z: -50 }, { x: 80, z: 70 }, { x: -90, z: 70 },
+    { x: 10, z: -80 }, { x: -10, z: 80 }
+  ];
+  for (var a = 0; a < animalData.length; a++) {
+    var asp = animalSpawnPositions[a];
+    makeAnimal(asp.x, asp.z, animalData[a]);
+  }
+
+  // ====================== CLOUDS ======================
+  var clouds = [];
+  function makeCloud(x, y, z, scale) {
+    var group = new THREE.Group();
+    var cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+    for (var c = 0; c < 6; c++) {
+      var ball = new THREE.Mesh(new THREE.SphereGeometry(2.2 + Math.random(), 8, 6), cloudMat);
+      ball.position.set((Math.random() - 0.5) * 5, (Math.random() - 0.5) * 1.2, (Math.random() - 0.5) * 5);
+      group.add(ball);
+    }
+    group.position.set(x, y, z);
+    group.scale.set(scale, scale * 0.55, scale);
+    scene.add(group);
+    clouds.push({ group: group, speed: 0.6 + Math.random() * 0.6 });
+  }
+  for (var c = 0; c < 18; c++) {
+    makeCloud(
+      (Math.random() - 0.5) * 400,
+      35 + Math.random() * 25,
+      (Math.random() - 0.5) * 400,
+      0.9 + Math.random() * 0.6
+    );
+  }
+
+  // ====================== TREES (cherry blossom + regular) ======================
+  var trees = [];
+  var TREE_COUNT = isMobile ? 80 : 150;
+  for (var tr = 0; tr < TREE_COUNT; tr++) {
+    var tx3, tz3, attempts = 0;
+    do {
+      tx3 = (Math.random() - 0.5) * 360;
+      tz3 = (Math.random() - 0.5) * 360;
+      attempts++;
+      if (attempts > 10) break;
+    } while (Math.abs(Math.sqrt(tx3 * tx3 + tz3 * tz3 / 0.61) - trackRadius) < 5);
+    var ty3 = heightAt(tx3, tz3);
+    if (ty3 < -1) continue; // skip water
+    var isCherry = Math.random() < 0.3;
+    var group = new THREE.Group();
+    var trunk = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.16, 0.24, 1.3, 6),
+      new THREE.MeshLambertMaterial({ color: 0x8b6f47 })
+    );
+    trunk.position.y = 0.65;
+    if (!isMobile) trunk.castShadow = true;
+    group.add(trunk);
+    var leafColor = isCherry ? 0xffb3d1 : (Math.random() < 0.2 ? 0x4a8e3a : 0x5fb04a);
+    var leaves = new THREE.Mesh(
+      new THREE.SphereGeometry(1.0, 8, 8),
+      new THREE.MeshLambertMaterial({ color: leafColor })
+    );
+    leaves.position.y = 1.9;
+    leaves.scale.set(1, 1.1, 1);
+    if (!isMobile) leaves.castShadow = true;
+    group.add(leaves);
+    group.position.set(tx3, ty3, tz3);
+    group.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(group);
+    trees.push({ group: group, isCherry: isCherry });
+  }
+
+  // ====================== FLOWERS ======================
+  for (var fp = 0; fp < 50; fp++) {
+    var fx = (Math.random() - 0.5) * 320;
+    var fz = (Math.random() - 0.5) * 320;
+    var fy = heightAt(fx, fz);
+    if (fy < -1 || fy > 8) continue;
+    for (var ff = 0; ff < 4; ff++) {
+      var fxx = fx + (Math.random() - 0.5) * 3;
+      var fzz = fz + (Math.random() - 0.5) * 3;
+      var fyy = heightAt(fxx, fzz);
+      var colors = [0xff6b9a, 0xffe066, 0xff9ec0, 0xffffff, 0xff6b6b, 0xb35eff];
+      var fc = colors[Math.floor(Math.random() * colors.length)];
+      // Stem
+      var stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.03, 0.03, 0.3, 4),
+        new THREE.MeshLambertMaterial({ color: 0x4a8e3a })
+      );
+      stem.position.set(fxx, fyy + 0.15, fzz);
+      scene.add(stem);
+      // Flower head
+      var flower = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 8, 8),
+        new THREE.MeshLambertMaterial({ color: fc })
+      );
+      flower.position.set(fxx, fyy + 0.35, fzz);
+      scene.add(flower);
+    }
+  }
+
+  // ====================== CHERRY BLOSSOM PARTICLES ======================
+  var petalGeo = new THREE.BufferGeometry();
+  var PETAL_COUNT = isMobile ? 200 : 400;
+  var petalPos = new Float32Array(PETAL_COUNT * 3);
+  var petalVel = new Float32Array(PETAL_COUNT * 3);
+  for (var pi = 0; pi < PETAL_COUNT; pi++) {
+    petalPos[pi*3] = (Math.random() - 0.5) * 200;
+    petalPos[pi*3+1] = 5 + Math.random() * 25;
+    petalPos[pi*3+2] = (Math.random() - 0.5) * 200;
+    petalVel[pi*3] = (Math.random() - 0.5) * 0.4;
+    petalVel[pi*3+1] = -0.3 - Math.random() * 0.3;
+    petalVel[pi*3+2] = (Math.random() - 0.5) * 0.4;
+  }
+  petalGeo.setAttribute('position', new THREE.BufferAttribute(petalPos, 3));
+  var petalMat = new THREE.PointsMaterial({
+    color: 0xffc4dd, size: 0.4, transparent: true, opacity: 0.8,
+    depthWrite: false
+  });
+  var petals = new THREE.Points(petalGeo, petalMat);
+  scene.add(petals);
+
+  // ====================== STEAM PARTICLES (for SL train) ======================
+  var steamParticles = [];
+  function spawnSteamParticle(x, y, z) {
+    if (steamParticles.length > 30) return;
+    var puff = new THREE.Mesh(
+      new THREE.SphereGeometry(0.4, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 })
+    );
+    puff.position.set(x, y, z);
+    puff.userData = { life: 1.0, vy: 0.5 + Math.random() * 0.5 };
+    scene.add(puff);
+    steamParticles.push(puff);
+  }
+
+  // ====================== LIGHTS ======================
+  var ambient = new THREE.HemisphereLight(0xfff8e8, 0x88aa66, 0.7);
+  scene.add(ambient);
+  var sun = new THREE.DirectionalLight(0xffffff, 1.0);
+  sun.position.set(40, 80, 30);
+  if (!isMobile) {
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 1;
+    sun.shadow.camera.far = 200;
+    sun.shadow.camera.left = -100; sun.shadow.camera.right = 100;
+    sun.shadow.camera.top = 100; sun.shadow.camera.bottom = -100;
+    sun.shadow.bias = -0.0005;
+  }
+  scene.add(sun);
+  scene.add(sun.target);
+
+  // ====================== PLAYER ======================
+  var player = {
+    pos: new THREE.Vector3(0, 0, -25),
+    yaw: 0, vy: 0, onGround: true,
+    starsCollected: 0, friendsMet: 0, trainsFound: 0,
+    stationsVisited: 0,
+    ridingTrain: null,
+    ridingTimer: 0
+  };
+  player.pos.y = heightAt(player.pos.x, player.pos.z);
+
+  // ====================== INPUT ======================
+  var input = { up: false, down: false, left: false, right: false, camL: false, camR: false };
+  var wantInteract = false;
+  var wantJump = false;
+
+  function bindHold(id, key) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var dn = function(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('pressed'); input[key] = true; };
+    var up = function(e) { if (e) { e.preventDefault(); e.stopPropagation(); } el.classList.remove('pressed'); input[key] = false; };
+    el.addEventListener('touchstart', dn, { passive: false });
+    el.addEventListener('touchend', up);
+    el.addEventListener('touchcancel', up);
+    el.addEventListener('mousedown', dn);
+    el.addEventListener('mouseup', up);
+    el.addEventListener('mouseleave', up);
+  }
+  bindHold('btnUp', 'up'); bindHold('btnDown', 'down');
+  bindHold('btnLeft', 'left'); bindHold('btnRight', 'right');
+  bindHold('btnCamL', 'camL'); bindHold('btnCamR', 'camR');
+
+  function bindTap(id, fn) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var handler = function(e) { e.preventDefault(); e.stopPropagation(); el.classList.add('pressed'); fn(); setTimeout(function() { el.classList.remove('pressed'); }, 100); };
+    el.addEventListener('touchstart', handler, { passive: false });
+    el.addEventListener('click', handler);
+  }
+  bindTap('btnTouch', function() { wantInteract = true; ensureAudio(); });
+  bindTap('btnJump', function() { wantJump = true; ensureAudio(); });
+
+  // Keyboard fallback
+  window.addEventListener('keydown', function(e) {
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') input.up = true;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') input.down = true;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = true;
+    if (e.code === 'KeyQ') input.camL = true;
+    if (e.code === 'KeyE') input.camR = true;
+    if (e.code === 'Space') { wantJump = true; ensureAudio(); e.preventDefault(); }
+    if (e.code === 'Enter') { wantInteract = true; ensureAudio(); }
+  });
+  window.addEventListener('keyup', function(e) {
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') input.up = false;
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') input.down = false;
+    if (e.code === 'ArrowLeft' || e.code === 'KeyA') input.left = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyD') input.right = false;
+    if (e.code === 'KeyQ') input.camL = false;
+    if (e.code === 'KeyE') input.camR = false;
+  });
+
+  // ====================== UI HELPERS ======================
+  function notify(text, type) {
+    var stack = document.getElementById('notifStack');
+    var n = document.createElement('div');
+    n.className = 'notif ' + (type || '');
+    var emo = '⭐';
+    if (type === 'heart') emo = '💖';
+    else if (type === 'train') emo = '🚄';
+    else if (type === 'quest') emo = '📜';
+    n.innerHTML = '<span class="emo">' + emo + '</span><span>' + text + '</span>';
+    stack.appendChild(n);
+    setTimeout(function() { if (n.parentNode) n.parentNode.removeChild(n); }, 3700);
+    while (stack.children.length > 3) stack.removeChild(stack.firstChild);
+  }
+
+  function showDialog(speaker, text) {
+    var d = document.getElementById('dialog');
+    document.getElementById('dlgSpeaker').textContent = speaker;
+    document.getElementById('dlgText').textContent = text;
+    d.classList.add('show');
+    clearTimeout(showDialog._t);
+    showDialog._t = setTimeout(function() { d.classList.remove('show'); }, 3500);
+  }
+
+  function showStationPlate(name) {
+    var plate = document.getElementById('stationPlate');
+    document.getElementById('stationName').textContent = name;
+    plate.classList.add('show');
+    clearTimeout(showStationPlate._t);
+    showStationPlate._t = setTimeout(function() { plate.classList.remove('show'); }, 2500);
+  }
+
+  function spawnConfetti(count) {
+    var container = document.getElementById('confetti');
+    var colors = ['#ff9ec0', '#ffe066', '#7ec8f5', '#7ec850', '#ffa94d', '#ff6b9a', '#b35eff'];
+    for (var c = 0; c < count; c++) {
+      var p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.animationDuration = (2 + Math.random() * 2) + 's';
+      p.style.animationDelay = Math.random() * 0.5 + 's';
+      if (Math.random() < 0.5) p.style.borderRadius = '50%';
+      container.appendChild(p);
+      setTimeout((function(el) { return function() { if (el.parentNode) el.parentNode.removeChild(el); }; })(p), 5000);
+    }
+  }
+
+  // ====================== MISSION SYSTEM ======================
+  var missions = [
+    { id: 'm1', desc: 'おほしさまを 3こ あつめよう', check: function() { return player.starsCollected >= 3; }, done: false, reward: 'はじめての おつかい' },
+    { id: 'm2', desc: 'うさぎさんと なかよくなろう', check: function() { return animals[0].userData.met; }, done: false, reward: 'うさぎの ともだち' },
+    { id: 'm3', desc: 'すべての えきを みつけよう', check: function() { return player.stationsVisited >= 6; }, done: false, reward: 'えきマスター' },
+    { id: 'm4', desc: 'ドクターイエローを みつけよう', check: function() { return trains[4].found; }, done: false, reward: 'こううん!' },
+    { id: 'm5', desc: 'でんしゃに のってみよう', check: function() { return player.ridingTrain !== null; }, done: false, reward: 'でんしゃの たびびと' }
+  ];
+  var currentMissionIdx = 0;
+
+  function showMission(idx) {
+    if (idx >= missions.length) {
+      document.getElementById('missionBadge').classList.remove('show');
+      return;
+    }
+    var m = missions[idx];
+    document.getElementById('missionDesc').textContent = m.desc;
+    document.getElementById('missionBadge').classList.add('show');
+  }
+  function checkMissions() {
+    var m = missions[currentMissionIdx];
+    if (!m) return;
+    if (m.check() && !m.done) {
+      m.done = true;
+      notify('クリア! ' + m.reward, 'quest');
+      playChime();
+      currentMissionIdx++;
+      setTimeout(function() { showMission(currentMissionIdx); }, 2000);
+    }
+  }
+
+  // ====================== BOOK ======================
+  var currentTab = 'trains';
+  function renderBook() {
+    var grid = document.getElementById('bookGrid');
+    grid.innerHTML = '';
+    if (currentTab === 'trains') {
+      trainConfigs.forEach(function(cfg, i) {
+        var item = document.createElement('div');
+        item.className = 'book-item' + (trains[i].found ? ' found' : '');
+        item.innerHTML = '<div class="b-icon">🚄</div><div class="b-name">' + (trains[i].found ? cfg.name : '???') + '</div>';
+        grid.appendChild(item);
+      });
+    } else if (currentTab === 'friends') {
+      animalData.forEach(function(d, i) {
+        var item = document.createElement('div');
+        item.className = 'book-item' + (animals[i].userData.met ? ' found' : '');
+        item.innerHTML = '<div class="b-icon">' + d.emoji + '</div><div class="b-name">' + (animals[i].userData.met ? d.name : '???') + '</div>';
+        grid.appendChild(item);
+      });
+    } else if (currentTab === 'stations') {
+      stations.forEach(function(s) {
+        var item = document.createElement('div');
+        item.className = 'book-item' + (s.visited ? ' found' : '');
+        item.innerHTML = '<div class="b-icon">🚉</div><div class="b-name">' + (s.visited ? s.name : '???') + '</div>';
+        grid.appendChild(item);
+      });
+    }
+  }
+  document.querySelectorAll('.book-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.book-tab').forEach(function(t) { t.classList.remove('active'); });
+      this.classList.add('active');
+      currentTab = this.dataset.tab;
+      renderBook();
+    });
+  });
+  document.getElementById('btnBook').addEventListener('click', function() {
+    document.getElementById('bookOverlay').classList.add('show');
+    renderBook();
+    playChime();
+  });
+  document.getElementById('bookClose').addEventListener('click', function() {
+    document.getElementById('bookOverlay').classList.remove('show');
+  });
+
+  // ====================== PHOTO MODE ======================
+  document.getElementById('btnPhoto').addEventListener('click', function() {
+    var flash = document.getElementById('photoFlash');
+    flash.classList.remove('flash');
+    void flash.offsetWidth;
+    flash.classList.add('flash');
+    playPhoto();
+    notify('しゃしんを とったよ!', '');
+  });
+
+  // ====================== INTERACTION ======================
+  var interactTarget = null;
+  var INTERACT_RANGE = 4.5;
+
+  function findInteractTarget() {
+    if (player.ridingTrain) return null;
+    var closest = null;
+    var closestDist = INTERACT_RANGE;
+    // Stars
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      if (st.userData.collected) continue;
+      var d = st.position.distanceTo(player.pos);
+      if (d < closestDist) { closestDist = d; closest = st; }
+    }
+    // Animals
+    for (var i = 0; i < animals.length; i++) {
+      var an = animals[i];
+      var d = an.position.distanceTo(player.pos);
+      if (d < closestDist) { closestDist = d; closest = an; }
+    }
+    // Trains
+    for (var i = 0; i < trains.length; i++) {
+      var tr = trains[i];
+      var d = tr.group.position.distanceTo(player.pos);
+      if (d < 7) {
+        if (d < closestDist + 2) { closestDist = d; closest = tr.group; closest.userData = { type: 'train', train: tr, label: tr.config.name }; }
+      }
+    }
+    // Stations
+    for (var i = 0; i < stations.length; i++) {
+      var stn = stations[i];
+      var d = Math.sqrt((stn.x - player.pos.x) * (stn.x - player.pos.x) + (stn.z - player.pos.z) * (stn.z - player.pos.z));
+      if (d < 5) {
+        if (!stn.visited) {
+          stn.visited = true;
+          player.stationsVisited++;
+          showStationPlate(stn.name);
+          notify(stn.name + 'に きたよ!', 'quest');
+          playChime();
+          checkMissions();
+        }
+      }
+    }
+    return closest;
+  }
+
+  function tryInteract() {
+    if (player.ridingTrain) {
+      // While riding, tap dismounts
+      dismountTrain();
+      return;
+    }
+    if (!interactTarget) return;
+    var ud = interactTarget.userData;
+    if (ud.type === 'star' && !ud.collected) {
+      ud.collected = true;
+      interactTarget.visible = false;
+      player.starsCollected++;
+      document.getElementById('starCount').textContent = player.starsCollected + '/12';
+      notify('おほしさまを ' + player.starsCollected + 'こ あつめたよ!', '');
+      playSparkle();
+      spawnStarBurst(interactTarget.position.x, interactTarget.position.y, interactTarget.position.z);
+      checkMissions();
+      checkWin();
+    } else if (ud.type === 'animal') {
+      if (!ud.met) {
+        ud.met = true;
+        player.friendsMet++;
+        document.getElementById('friendCount').textContent = player.friendsMet + '/8';
+        notify(ud.data.name + 'と ともだち!', 'heart');
+        playHeart();
+        spawnHeartBurst(interactTarget.position.x, interactTarget.position.y + 2, interactTarget.position.z);
+        checkMissions();
+      }
+      showDialog(ud.data.name, ud.data.dialog);
+      checkWin();
+    } else if (ud.type === 'train') {
+      var tr = ud.train;
+      if (!tr.found) {
+        tr.found = true;
+        player.trainsFound++;
+        document.getElementById('dexCount').textContent = player.trainsFound + ' / 9';
+        notify(tr.config.name + 'を みつけたよ!', 'train');
+        playToot();
+        checkMissions();
+        checkWin();
+      }
+      // Mount the train!
+      mountTrain(tr);
+    }
+  }
+
+  function mountTrain(tr) {
+    player.ridingTrain = tr;
+    player.ridingTimer = 0;
+    document.getElementById('rideIndicator').classList.add('show');
+    notify('わーい! ' + tr.config.name + 'に のったよ!', 'train');
+    playToot();
+    checkMissions();
+  }
+  function dismountTrain() {
+    if (!player.ridingTrain) return;
+    var tr = player.ridingTrain;
+    // Drop player off near a station if close, else current train pos
+    var bestStation = null, bestDist = Infinity;
+    for (var i = 0; i < stations.length; i++) {
+      var d = Math.sqrt((stations[i].x - tr.group.position.x) * (stations[i].x - tr.group.position.x) + (stations[i].z - tr.group.position.z) * (stations[i].z - tr.group.position.z));
+      if (d < bestDist) { bestDist = d; bestStation = stations[i]; }
+    }
+    if (bestStation && bestDist < 20) {
+      player.pos.set(bestStation.x, bestStation.y, bestStation.z);
+    } else {
+      // Drop near train but off the tracks
+      player.pos.set(tr.group.position.x + 5, heightAt(tr.group.position.x + 5, tr.group.position.z), tr.group.position.z);
+    }
+    player.ridingTrain = null;
+    document.getElementById('rideIndicator').classList.remove('show');
+    notify('おりたよ!', '');
+  }
+
+  // Particle bursts
+  var bursts = [];
+  function spawnStarBurst(x, y, z) {
+    for (var b = 0; b < 12; b++) {
+      var p = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.15, 0),
+        new THREE.MeshBasicMaterial({ color: 0xffe066 })
+      );
+      p.position.set(x, y, z);
+      var ang = (b / 12) * Math.PI * 2;
+      p.userData = {
+        vx: Math.cos(ang) * 3,
+        vy: 3 + Math.random() * 2,
+        vz: Math.sin(ang) * 3,
+        life: 1.0
+      };
+      scene.add(p);
+      bursts.push(p);
+    }
+  }
+  function spawnHeartBurst(x, y, z) {
+    for (var b = 0; b < 8; b++) {
+      var p = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 6, 6),
+        new THREE.MeshBasicMaterial({ color: 0xff6b9a })
+      );
+      p.position.set(x + (Math.random() - 0.5), y, z + (Math.random() - 0.5));
+      p.userData = {
+        vx: (Math.random() - 0.5) * 1.5,
+        vy: 2 + Math.random() * 2,
+        vz: (Math.random() - 0.5) * 1.5,
+        life: 1.2
+      };
+      scene.add(p);
+      bursts.push(p);
+    }
+  }
+
+  function checkWin() {
+    if (player.starsCollected >= 12 && player.friendsMet >= animalData.length && player.trainsFound >= 9) {
+      setTimeout(function() {
+        document.getElementById('winOverlay').classList.add('show');
+        spawnConfetti(100);
+        playWin();
+        setTimeout(function() { spawnConfetti(80); }, 700);
+        setTimeout(function() { spawnConfetti(80); }, 1400);
+      }, 800);
+    }
+  }
+
+  document.getElementById('winClose').addEventListener('click', function() {
+    location.reload();
+  });
+
+  // ====================== MOVEMENT ======================
+  var MOVE_SPEED = 9;
+  var TURN_SPEED = 2.2;
+  var JUMP_VELOCITY = 8;
+  var GRAVITY = -22;
+
+  function updatePlayer(dt) {
+    // Camera turn
+    if (input.camL) player.yaw += TURN_SPEED * dt;
+    if (input.camR) player.yaw -= TURN_SPEED * dt;
+
+    if (player.ridingTrain) {
+      // Auto-ride
+      player.ridingTimer += dt;
+      // Position player atop the train's middle car
+      var tr = player.ridingTrain;
+      var mid = tr.cars[1];
+      var worldPos = new THREE.Vector3();
+      mid.getWorldPosition(worldPos);
+      player.pos.set(worldPos.x, worldPos.y + 2.2, worldPos.z);
+      // Camera follows from behind/side of train
+      var trainAng = tr.group.rotation.y;
+      var camDist = 8, camHeight = 5;
+      var camX = player.pos.x + Math.sin(trainAng + 0.7) * camDist;
+      var camZ = player.pos.z + Math.cos(trainAng + 0.7) * camDist;
+      var camY = player.pos.y + camHeight;
+      camera.position.set(camX, camY, camZ);
+      camera.lookAt(player.pos.x, player.pos.y, player.pos.z);
+      if (wantJump) { dismountTrain(); wantJump = false; }
+      if (wantInteract) { dismountTrain(); wantInteract = false; }
+      return;
+    }
+
+    // Forward and right vectors based on yaw.
+    // yaw=0 means facing -Z. Increasing yaw rotates around Y.
+    // forward = (-sin(yaw), 0, -cos(yaw))
+    // right = (cos(yaw), 0, -sin(yaw))  <-- CORRECTED
+    var fwdX = -Math.sin(player.yaw);
+    var fwdZ = -Math.cos(player.yaw);
+    var rightX = Math.cos(player.yaw);
+    var rightZ = -Math.sin(player.yaw);
+
+    var mx = 0, mz = 0;
+    if (input.up)    { mx += fwdX; mz += fwdZ; }
+    if (input.down)  { mx -= fwdX; mz -= fwdZ; }
+    if (input.right) { mx += rightX; mz += rightZ; }
+    if (input.left)  { mx -= rightX; mz -= rightZ; }
+
+    var len = Math.sqrt(mx * mx + mz * mz);
+    if (len > 0) { mx /= len; mz /= len; }
+
+    player.pos.x += mx * MOVE_SPEED * dt;
+    player.pos.z += mz * MOVE_SPEED * dt;
+
+    // Jumping
+    if (wantJump && player.onGround) {
+      player.vy = JUMP_VELOCITY;
+      player.onGround = false;
+      playJump();
+    }
+    wantJump = false;
+    player.vy += GRAVITY * dt;
+    player.pos.y += player.vy * dt;
+
+    // World bounds
+    var limit = WORLD_SIZE / 2 - 10;
+    player.pos.x = Math.max(-limit, Math.min(limit, player.pos.x));
+    player.pos.z = Math.max(-limit, Math.min(limit, player.pos.z));
+
+    var groundY = heightAt(player.pos.x, player.pos.z);
+    if (player.pos.y <= groundY) {
+      player.pos.y = groundY;
+      player.vy = 0;
+      player.onGround = true;
+    } else {
+      player.onGround = false;
+    }
+
+    // Third-person camera
+    var camDist = 6;
+    var camHeight = 4;
+    var camX = player.pos.x - fwdX * camDist;
+    var camZ = player.pos.z - fwdZ * camDist;
+    var camY = player.pos.y + camHeight;
+    camera.position.set(camX, camY, camZ);
+    camera.lookAt(player.pos.x, player.pos.y + 1.0, player.pos.z);
+
+    if (len > 0 && player.onGround) {
+      var bobT = performance.now() * 0.009;
+      camera.position.y += Math.sin(bobT * 2) * 0.06;
+    }
+
+    if (wantInteract) {
+      tryInteract();
+      wantInteract = false;
+    }
+  }
+
+  // ====================== PLAYER AVATAR ======================
+  var playerMesh = new THREE.Group();
+  // Body
+  var pBody = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.38, 0.75, 8),
+    new THREE.MeshLambertMaterial({ color: 0x4d8fea })
+  );
+  pBody.position.y = 0.6;
+  if (!isMobile) pBody.castShadow = true;
+  playerMesh.add(pBody);
+  // Belt
+  var pBelt = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.4, 0.1, 8),
+    new THREE.MeshLambertMaterial({ color: 0xffe066 })
+  );
+  pBelt.position.y = 0.45;
+  playerMesh.add(pBelt);
+  // Head
+  var pHead = new THREE.Mesh(
+    new THREE.SphereGeometry(0.32, 14, 14),
+    new THREE.MeshLambertMaterial({ color: 0xffd9b3 })
+  );
+  pHead.position.y = 1.2;
+  if (!isMobile) pHead.castShadow = true;
+  playerMesh.add(pHead);
+  // Cap
+  var pCap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.34, 0.34, 0.2, 12),
+    new THREE.MeshLambertMaterial({ color: 0x2868c9 })
+  );
+  pCap.position.y = 1.48;
+  playerMesh.add(pCap);
+  // Cap brim
+  var pBrim = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.46, 0.46, 0.04, 12),
+    new THREE.MeshLambertMaterial({ color: 0x2868c9 })
+  );
+  pBrim.position.y = 1.37;
+  playerMesh.add(pBrim);
+  // Cap star
+  var pStar = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.06, 0),
+    new THREE.MeshBasicMaterial({ color: 0xffe066 })
+  );
+  pStar.position.set(0, 1.5, 0.32);
+  pStar.rotation.x = Math.PI / 2;
+  playerMesh.add(pStar);
+  // Eyes
+  var pEyeMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+  var pEyeL = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), pEyeMat);
+  pEyeL.position.set(-0.1, 1.22, 0.28);
+  playerMesh.add(pEyeL);
+  var pEyeR = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), pEyeMat);
+  pEyeR.position.set(0.1, 1.22, 0.28);
+  playerMesh.add(pEyeR);
+  // Cheeks
+  var pBlushMat = new THREE.MeshBasicMaterial({ color: 0xff9ec0, transparent: true, opacity: 0.6 });
+  var pBlushL = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), pBlushMat);
+  pBlushL.position.set(-0.22, 1.13, 0.25);
+  playerMesh.add(pBlushL);
+  var pBlushR = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), pBlushMat);
+  pBlushR.position.set(0.22, 1.13, 0.25);
+  playerMesh.add(pBlushR);
+  // Arms (simple cylinders)
+  var pArmL = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 0.5, 6),
+    new THREE.MeshLambertMaterial({ color: 0x4d8fea })
+  );
+  pArmL.position.set(-0.42, 0.7, 0);
+  playerMesh.add(pArmL);
+  playerMesh.userData.armL = pArmL;
+  var pArmR = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.08, 0.08, 0.5, 6),
+    new THREE.MeshLambertMaterial({ color: 0x4d8fea })
+  );
+  pArmR.position.set(0.42, 0.7, 0);
+  playerMesh.add(pArmR);
+  playerMesh.userData.armR = pArmR;
+  scene.add(playerMesh);
+
+  // ====================== TIME OF DAY ======================
+  var timeOfDay = 0.4; // 0=night, 0.25=sunrise, 0.5=noon, 0.75=sunset
+  function updateTimeOfDay(dt) {
+    timeOfDay = (timeOfDay + dt * 0.012) % 1; // ~1.4 minute cycle
+    var sunAngle = timeOfDay * Math.PI * 2 - Math.PI / 2;
+    var sunHeight = Math.sin(sunAngle);
+    var sunX = Math.cos(sunAngle);
+    sun.position.set(sunX * 80, sunHeight * 80 + 5, 30);
+    sun.target.position.set(0, 0, 0);
+    var day = Math.max(0, sunHeight);
+    sun.intensity = 0.4 + day * 1.0;
+    ambient.intensity = 0.3 + day * 0.4;
+
+    var label, icon;
+    if (timeOfDay < 0.22) {
+      // Night
+      scene.background.setRGB(0.15, 0.18, 0.4);
+      scene.fog.color.setRGB(0.2, 0.22, 0.45);
+      sun.color.setRGB(0.7, 0.7, 1.0);
+      label = 'よる'; icon = '🌙';
+    } else if (timeOfDay < 0.32) {
+      // Sunrise
+      var t = (timeOfDay - 0.22) / 0.1;
+      scene.background.setRGB(0.15 + t * 0.55, 0.18 + t * 0.5, 0.4 + t * 0.4);
+      scene.fog.color.setRGB(0.2 + t * 0.45, 0.22 + t * 0.55, 0.45 + t * 0.4);
+      sun.color.setRGB(1.0, 0.7 + t * 0.3, 0.5 + t * 0.5);
+      label = 'あさやけ'; icon = '🌅';
+    } else if (timeOfDay < 0.7) {
+      // Day
+      scene.background.setRGB(0.72, 0.78, 0.96);
+      scene.fog.color.setRGB(0.72, 0.88, 1.0);
+      sun.color.setRGB(1.0, 1.0, 0.95);
+      label = 'ひるま'; icon = '☀️';
+    } else if (timeOfDay < 0.8) {
+      // Sunset
+      var t = (timeOfDay - 0.7) / 0.1;
+      scene.background.setRGB(0.72 + t * 0.18, 0.78 - t * 0.3, 0.96 - t * 0.5);
+      scene.fog.color.setRGB(0.85, 0.5, 0.4);
+      sun.color.setRGB(1.0, 0.65, 0.45);
+      label = 'ゆうやけ'; icon = '🌇';
+    } else {
+      // Dusk to night
+      var t = (timeOfDay - 0.8) / 0.2;
+      scene.background.setRGB(0.9 - t * 0.75, 0.48 - t * 0.3, 0.46 + t * 0);
+      scene.fog.color.setRGB(0.5 - t * 0.3, 0.3, 0.45);
+      sun.color.setRGB(0.8 - t * 0.1, 0.6 - t * 0.1, 0.7);
+      label = 'よる'; icon = '🌙';
+    }
+    document.getElementById('timeLabel').textContent = label;
+    document.getElementById('timeIcon').textContent = icon;
+  }
+
+  // ====================== STATION ANNOUNCEMENTS ======================
+  var lastAnnouncement = '';
+  function checkStationAnnouncements() {
+    for (var i = 0; i < trains.length; i++) {
+      var tr = trains[i];
+      for (var j = 0; j < stations.length; j++) {
+        var stn = stations[j];
+        var d = Math.sqrt((tr.group.position.x - stn.x) * (tr.group.position.x - stn.x) + (tr.group.position.z - stn.z) * (tr.group.position.z - stn.z));
+        if (d < 8 && !tr.atStation) {
+          tr.atStation = true;
+          tr.stopTimer = 2.5;
+          var key = tr.config.name + '_' + stn.name;
+          if (lastAnnouncement !== key) {
+            lastAnnouncement = key;
+            if (player.pos.distanceTo(new THREE.Vector3(stn.x, stn.y, stn.z)) < 25) {
+              showDialog('★ アナウンス ★', 'まもなく ' + tr.config.name + 'が ' + stn.name + 'に とうちゃくします');
+              playChime();
+            }
+          }
+        } else if (d > 12) {
+          tr.atStation = false;
+        }
+      }
+    }
+  }
+
+  // ====================== ANIMATION LOOP ======================
+  var prevTime = performance.now();
+  var lastSteamTime = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    var now = performance.now();
+    var dt = Math.min(0.05, (now - prevTime) / 1000);
+    prevTime = now;
+
+    updatePlayer(dt);
+    updateTimeOfDay(dt);
+
+    // Player mesh
+    if (!player.ridingTrain) {
+      playerMesh.visible = true;
+      playerMesh.position.set(player.pos.x, player.pos.y, player.pos.z);
+      playerMesh.rotation.y = player.yaw + Math.PI;
+      var isMoving = input.up || input.down || input.left || input.right;
+      if (isMoving) {
+        var bobT = now * 0.009;
+        playerMesh.position.y = player.pos.y + Math.abs(Math.sin(bobT * 2)) * 0.12;
+        if (playerMesh.userData.armL) {
+          playerMesh.userData.armL.rotation.x = Math.sin(bobT * 2) * 0.7;
+          playerMesh.userData.armR.rotation.x = -Math.sin(bobT * 2) * 0.7;
+        }
+      } else {
+        if (playerMesh.userData.armL) {
+          playerMesh.userData.armL.rotation.x *= 0.9;
+          playerMesh.userData.armR.rotation.x *= 0.9;
+        }
+      }
+    } else {
+      playerMesh.visible = false;
+    }
+
+    // Stars
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      if (st.userData.collected) continue;
+      st.rotation.y += dt * 2;
+      st.rotation.x += dt * 1.3;
+      st.position.y = st.userData.baseY + Math.sin(now * 0.003 + i) * 0.35;
+    }
+
+    // Trains
+    for (var i = 0; i < trains.length; i++) {
+      var tr = trains[i];
+      // Slow down at stations
+      var nearStation = false;
+      for (var j = 0; j < stations.length; j++) {
+        var stn = stations[j];
+        var dd = Math.sqrt((tr.group.position.x - stn.x) * (tr.group.position.x - stn.x) + (tr.group.position.z - stn.z) * (tr.group.position.z - stn.z));
+        if (dd < 12) { nearStation = true; break; }
+      }
+      var targetSpeed = nearStation ? tr.baseSpeed * 0.25 : tr.baseSpeed;
+      tr.speed += (targetSpeed - tr.speed) * dt * 2;
+      tr.t += tr.speed * dt;
+      if (tr.t > Math.PI * 2) tr.t -= Math.PI * 2;
+      var p1 = trackPoint(tr.t);
+      var p2 = trackPoint(tr.t + 0.02);
+      tr.group.position.set(p1.x, p1.y + 0.6, p1.z);
+      var ang = Math.atan2(p2.x - p1.x, p2.z - p1.z);
+      tr.group.rotation.y = ang;
+
+      // Animate wheels
+      for (var ci = 0; ci < tr.cars.length; ci++) {
+        var car = tr.cars[ci];
+        if (car.userData.wheels) {
+          car.userData.wheels.children.forEach(function(w) {
+            w.rotation.x += tr.speed * 8 * dt;
+          });
+        }
+        // Headlights at night
+        if (car.userData.headlight !== undefined || (car.children && car.children.some(c => c.userData.headlight))) {
+          // Find headlight
+          car.children.forEach(function(child) {
+            if (child.userData && child.userData.headlight) {
+              var isNight = timeOfDay < 0.28 || timeOfDay > 0.78;
+              child.material.color.setRGB(isNight ? 1 : 1, isNight ? 1 : 0.95, isNight ? 0.6 : 0.7);
+              child.scale.setScalar(isNight ? 1.5 : 1);
+            }
+          });
+        }
+      }
+
+      // Steam for SL train
+      if (tr.isSL && now - lastSteamTime > 200) {
+        var leadCar = tr.cars[0];
+        var worldPos = new THREE.Vector3();
+        leadCar.getWorldPosition(worldPos);
+        // Approximate stack position
+        var stackOffset = new THREE.Vector3(0, 2.2, -3);
+        stackOffset.applyEuler(new THREE.Euler(0, tr.group.rotation.y, 0));
+        spawnSteamParticle(worldPos.x + stackOffset.x, worldPos.y + stackOffset.y, worldPos.z + stackOffset.z);
+      }
+    }
+    if (now - lastSteamTime > 200) lastSteamTime = now;
+
+    // Steam particles
+    for (var spi = steamParticles.length - 1; spi >= 0; spi--) {
+      var sp = steamParticles[spi];
+      sp.userData.life -= dt;
+      sp.position.y += sp.userData.vy * dt;
+      sp.scale.setScalar(1 + (1 - sp.userData.life) * 2);
+      sp.material.opacity = sp.userData.life * 0.7;
+      if (sp.userData.life <= 0) {
+        scene.remove(sp);
+        steamParticles.splice(spi, 1);
+      }
+    }
+
+    checkStationAnnouncements();
+
+    // Clouds drift
+    for (var i = 0; i < clouds.length; i++) {
+      var cl = clouds[i];
+      cl.group.position.x += cl.speed * dt;
+      if (cl.group.position.x > 220) cl.group.position.x = -220;
+    }
+
+    // Cherry blossoms
+    var pos_ = petals.geometry.attributes.position;
+    for (var pi = 0; pi < PETAL_COUNT; pi++) {
+      pos_.array[pi*3] += petalVel[pi*3] * dt + Math.sin(now * 0.001 + pi) * 0.05;
+      pos_.array[pi*3+1] += petalVel[pi*3+1] * dt;
+      pos_.array[pi*3+2] += petalVel[pi*3+2] * dt + Math.cos(now * 0.001 + pi) * 0.05;
+      if (pos_.array[pi*3+1] < 0) {
+        pos_.array[pi*3] = (Math.random() - 0.5) * 200;
+        pos_.array[pi*3+1] = 30;
+        pos_.array[pi*3+2] = (Math.random() - 0.5) * 200;
+      }
+    }
+    pos_.needsUpdate = true;
+
+    // Animals
+    for (var i = 0; i < animals.length; i++) {
+      var an = animals[i];
+      var ud = an.userData;
+      var dx = ud.target.x - an.position.x;
+      var dz = ud.target.z - an.position.z;
+      var d = Math.sqrt(dx * dx + dz * dz);
+      if (d < 0.6) {
+        ud.target.x = an.position.x + (Math.random() - 0.5) * 24;
+        ud.target.z = an.position.z + (Math.random() - 0.5) * 24;
+        ud.target.x = Math.max(-130, Math.min(130, ud.target.x));
+        ud.target.z = Math.max(-130, Math.min(130, ud.target.z));
+      } else {
+        an.position.x += (dx / d) * ud.speed * dt;
+        an.position.z += (dz / d) * ud.speed * dt;
+        var bobY = heightAt(an.position.x, an.position.z);
+        if (ud.hop) {
+          bobY += Math.abs(Math.sin(now * 0.006 + ud.bobOffset)) * 0.4;
+        } else {
+          bobY += Math.abs(Math.sin(now * 0.005 + ud.bobOffset)) * 0.1;
+        }
+        an.position.y = bobY;
+        an.rotation.y = Math.atan2(dx, dz);
+      }
+      // Tail wag
+      if (ud.tail) {
+        ud.tail.rotation.z = Math.sin(now * 0.008 + ud.bobOffset) * 0.5;
+      }
+    }
+
+    // Star/heart bursts
+    for (var bi = bursts.length - 1; bi >= 0; bi--) {
+      var bb = bursts[bi];
+      bb.userData.life -= dt;
+      bb.position.x += bb.userData.vx * dt;
+      bb.position.y += bb.userData.vy * dt;
+      bb.position.z += bb.userData.vz * dt;
+      bb.userData.vy -= 9 * dt;
+      bb.rotation.x += dt * 4;
+      bb.rotation.y += dt * 4;
+      bb.scale.setScalar(Math.max(0.1, bb.userData.life));
+      if (bb.userData.life <= 0) {
+        scene.remove(bb);
+        bursts.splice(bi, 1);
+      }
+    }
+
+    // Cherry tree wind
+    trees.forEach(function(t, i) {
+      if (t.isCherry) {
+        t.group.rotation.z = Math.sin(now * 0.001 + i) * 0.02;
+      }
+    });
+
+    // Interact prompt
+    interactTarget = findInteractTarget();
+    var prompt = document.getElementById('interactPrompt');
+    var txt = document.getElementById('interactText');
+    var touchBtn = document.getElementById('btnTouch');
+    if (interactTarget) {
+      var ud = interactTarget.userData;
+      var label = '';
+      if (ud.type === 'star') label = 'おほしさま! タッチしよう!';
+      else if (ud.type === 'animal') label = ud.label + 'が いるよ!';
+      else if (ud.type === 'train') label = ud.label + ' だ! のってみよう!';
+      txt.textContent = label;
+      prompt.classList.add('show');
+      touchBtn.classList.add('glow');
+    } else {
+      prompt.classList.remove('show');
+      touchBtn.classList.remove('glow');
+    }
+
+    renderer.render(scene, camera);
+  }
+
+  // Initial notifications + first mission
+  setTimeout(function() { notify('しんかんせんワールドへ ようこそ!', ''); }, 600);
+  setTimeout(function() { showMission(0); }, 1600);
+  setTimeout(function() { notify('おほしさま 12こ あつめよう!', ''); }, 2800);
+  setTimeout(function() { notify('どうぶつたちに あいさつ!', 'heart'); }, 4000);
+  setTimeout(function() { notify('9つの でんしゃ みつけよう!', 'train'); }, 5200);
+
+  animate();
+};
+</script>
+
+</body>
+</html>
