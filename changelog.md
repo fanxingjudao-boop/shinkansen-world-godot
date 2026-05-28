@@ -2,6 +2,19 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.4.0 — 2026-05-28 — Phase 0-6(Vercel デプロイ + 本番動作確認)
+
+- `.gitignore` 修正 — `export/` → `export/*` + `!export/web/` に変更(Git の仕様でディレクトリ全体を ignore すると配下を `!` で例外指定できないため、`export/*` 表記に切り替え)。`export/web/` 以外の `export/*`(将来の iOS/Android Export 等)は引き続き除外
+- `vercel.json` 修正 — `outputDirectory: "export/web"` を追加(Vercel UI で Output Directory を手動指定する手間を省くため。Project Settings UI を一切触らず Deploy ボタンだけで完結)
+- `export/web/` 配下 12 ファイルを git 管理化(`index.html/js/wasm/pck`、audio worklet 2 種、アイコン 3 種、`.import` メタ 3 種)。`index.wasm` 35.7MB(GitHub 100MB 上限内、LFS 不要)
+- GitHub Public リポジトリ作成: https://github.com/fanxingjudao-boop/shinkansen-world-godot (`gh repo create --public --source=. --remote=origin --push` で一発)
+- 改善さんが Vercel にサインアップ(GitHub 連携、Hobby プラン)→ `shinkansen-world-godot` をインポート → Deploy。初回の Configure Project 画面では `vercel.json` の設定が効いたため Build/Output 設定は触らず
+- Vercel が `https://shinkansen-world-godot.vercel.app/` を払い出し、ステータス Ready(緑)。COEP/COOP/CORP ヘッダーと `Content-Type: application/wasm` も `vercel.json` で適用済み
+- 初回アクセスで改善さんが 404 NOT_FOUND を踏んだが、Claude Code 側から WebFetch で確認したところ Vercel は `index.html` を正常返却 → エッジ伝播遅延 or ブラウザキャッシュと判断 → シークレットウィンドウで再アクセスして動作確認 OK
+- PC ブラウザ(Chrome)での動作確認完了 — ローディング → ゲーム画面、Player 表示、操作可能
+- iPad Safari 実機確認は保留(改善さん判断、Phase 1 と並行でいつでも実施可能。URL は変わらず)
+- 次のステップ: Phase 1(ワールド構築: 地形・線路・空・水・桜)に着手
+
 ## v0.3.0 — 2026-05-28 — Phase 0-5(Web Export ローカル動作確認)
 
 - `web/template.html` を新規作成 — iPad 向け meta タグ、100dvh、パステル色のローディング画面、ひらがな表示

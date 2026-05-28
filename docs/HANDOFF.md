@@ -159,14 +159,31 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## Phase 0 で Claude Code が最初にやること
+## Phase 0 の進捗(2026-05-28 時点)
 
-1. Godot 4 のダウンロード方法・インストールを改善さんに説明
-2. `project.godot` を作成(設定: Compatibility レンダラー、解像度等)
-3. ディレクトリ構造を作成(`scenes/`、`scripts/` 等の空フォルダ)
-4. `.gitignore` を設定(`.godot/`、`*.tmp`、`export/`、`.import/`)
-5. 最小限のシーン作成(キャラが歩く、カメラが追従)
-6. Web Export 初回ビルド
-7. ローカル動作確認(`python3 -m http.server`)
+Phase 0-1 〜 0-6 まで完了。詳細は `changelog.md` 参照。
 
-ここまで動けば、本格開発に進める基盤が整います。
+- リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
+- 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)
+- PC ブラウザでの動作確認 OK / iPad Safari 実機確認は保留(改善さん判断、Phase 1 と並行でいつでも実施可能)
+- Phase 1(ワールド構築)に着手
+
+## 以降の開発フロー(Phase 1〜)
+
+```
+Godot エディタで変更
+  ↓
+Project > Export > Web で export/web/index.html に書き出し
+  ↓ (出力ファイル名は必ず "index" に手動入力する。日本語化されると Vercel 配信不可)
+git add export/web && git commit -m "..." && git push
+  ↓
+Vercel が自動で再デプロイ(1〜2 分)
+  ↓
+PC ブラウザ / iPad Safari で確認
+```
+
+注意: `export_presets.cfg` と `web/template.html` は Phase 0-5 で先行設定済みなので、再 Export のたびに改善さんが手動で:
+1. Project > Export ダイアログでファイル名を `index` に入力
+2. Options > Html > Custom Html Shell に `res://web/template.html` を入力
+
+を確認する必要がある(Godot 4.6 が `export_presets.cfg` の手書き値を初回起動時に正規化して消す問題、詳細は memory: feedback-godot-web-export)。
