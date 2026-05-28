@@ -7,7 +7,18 @@ func _enter_tree() -> void:
 	_register_input_actions()
 
 func _ready() -> void:
-	print("[Main] しんかんせんワールド Phase 0 — シーン準備完了")
+	_settle_player_on_terrain()
+	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
+
+# Player の初期 Y 座標を地形高さに合わせる。
+# .tscn 上の Y は適当(空中)で良く、ここで確実に地形に着地させる。
+func _settle_player_on_terrain() -> void:
+	var player := get_node_or_null("Player") as Node3D
+	if player == null:
+		return
+	var p := player.global_position
+	var ground_y := TerrainHeight.compute_height(p.x, p.z)
+	player.global_position = Vector3(p.x, ground_y + 1.5, p.z)
 
 # InputMap を動的に登録。
 # project.godot に直接書く代わりにスクリプトで登録することで、

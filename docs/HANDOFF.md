@@ -159,14 +159,26 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## Phase 0 の進捗(2026-05-28 時点)
+## 進捗(2026-05-29 時点)
 
-Phase 0-1 〜 0-6 まで完了。詳細は `changelog.md` 参照。
+Phase 0-1 〜 0-6 + Phase 1-1(地形)+ 1-3(線路)まで完了。詳細は `changelog.md` 参照。
 
 - リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
 - 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)
-- PC ブラウザでの動作確認 OK / iPad Safari 実機確認は保留(改善さん判断、Phase 1 と並行でいつでも実施可能)
-- Phase 1(ワールド構築)に着手
+- PC ブラウザでの Phase 0 動作確認 OK / iPad Safari 実機確認は保留(改善さん判断、いつでも実施可能)
+- Phase 1-2(空・昼夜)/ 1-4(雲)/ 1-5(水)/ 1-6(桜)が次の周回
+
+### Claude による自動見た目確認
+
+`scripts/dev/auto_capture.gd` + `scenes/dev/AutoCapture.tscn` を Bash から起動すると、改善さんに F5 を依頼しなくても Claude がスクリーンショットを取れる:
+
+```
+"C:/Users/papa/Desktop/Godot_v4.6.3-stable_win64.exe" \
+  --path "C:/Users/papa/Desktop/shinkansen-world-godot" \
+  "res://scenes/dev/AutoCapture.tscn"
+```
+
+出力先: `user://screenshot.png`(= `C:/Users/papa/AppData/Roaming/Godot/app_userdata/しんかんせんワールド/screenshot.png`)。視点は `auto_capture.gd` の `VIEW` 定数(`PLAYER` / `BIRD` / `SIDE`)で切替。
 
 ## 以降の開発フロー(Phase 1〜)
 

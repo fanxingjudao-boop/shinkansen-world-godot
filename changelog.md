@@ -2,6 +2,30 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.5.0 — 2026-05-29 — Phase 1-1 + 1-3(地形 + 線路)+ 自動スクリーンショット基盤
+
+- `scripts/world/terrain_height.gd` 新規 — `class_name TerrainHeight` 純粋関数群。`compute_height(x, z)`(Three.js heightAt 移植、山 3+湖+二重正弦波+ノイズ)、`compute_vertex_color(h)`(雪山→草原→砂の高さマッピング)
+- `scripts/world/terrain.gd` 新規 — ArrayMesh で 121×121 頂点の地形メッシュを動的生成(28800 三角形)、HeightMapShape3D 201×201 サンプルで衝突(scale で実世界 400×400 に展開)、湖 CylinderMesh 配置
+- `scenes/world/Terrain.tscn` 新規 — StaticBody3D + TerrainMesh + TerrainCollision + LakeMesh の最小構成、生成はスクリプト
+- `scripts/world/railway.gd` 新規 — 楕円(R_X=100, R_Z=78)を 157 点で表現、レール 2 本を 1 つの ArrayMesh に統合(円柱 8 角形断面を Path に押し出し)、枕木 MultiMeshInstance3D(157 個、地形高さに追従)。`static func ellipse_point(t)` / `ellipse_tangent(t)` で Phase 2 の Train から再利用可能に
+- `scenes/world/Railway.tscn` 新規 — Node3D + TrackPath (Path3D) + Rails + Ties
+- `scenes/Main.tscn` 修正 — 既存平面 Ground を削除、Terrain と Railway を追加、Sun の `directional_shadow_max_distance=100` に縮小(iPad パフォーマンス)
+- `scripts/main.gd` 修正 — `_settle_player_on_terrain()` で Player の Y を `TerrainHeight.compute_height(px, pz) + 1.5` に動的補正(地形のくぼみに埋まる/高山スタート事故防止)
+- **自動スクリーンショット基盤**: `scripts/dev/auto_capture.gd` + `scenes/dev/AutoCapture.tscn` 新規 — Godot CLI で起動すると 2 秒待ってスクリーンショットを `user://screenshot.png` に保存して終了。視点モードを PLAYER / BIRD / SIDE で切り替え可能。これにより Claude が改善さんに F5 を依頼しなくても見た目を自動確認できるようになった
+
+### 修正したハマりポイント(failure-log 候補)
+
+- **ArrayMesh の三角形インデックスは反時計回り(CCW)が表面**。最初に時計回り順で `(i0, i2, i1)` と書いて地形の平地が完全に消えていた(山の斜面だけ見えた)。`(i0, i1, i2)` `(i1, i3, i2)` に修正
+- **WorldEnvironment のデフォルト Filmic tonemap + 強いライト + fog 0.004 で頂点カラーが淡くなりすぎる**。`tonemap_mode=0`(Linear)、`ambient_light_energy=0.3`、`fog_density=0.002` に調整して Three.js 版に近い鮮やかさを回復
+
+### Environment 値の変更
+
+- `ambient_light_energy`: 0.5 → 0.3
+- `tonemap_mode`: 2 (Filmic) → 0 (Linear)
+- `fog_density`: 0.004 → 0.002
+
+次のステップ: 改善さんが Web Export(ファイル名 `index` を手動入力、Custom HTML Shell を確認)→ git push で Vercel 自動再デプロイ。PC ブラウザ確認後、Phase 1-2(空・昼夜)/ 1-4(雲)/ 1-5(水)/ 1-6(桜)へ。
+
 ## v0.4.0 — 2026-05-28 — Phase 0-6(Vercel デプロイ + 本番動作確認)
 
 - `.gitignore` 修正 — `export/` → `export/*` + `!export/web/` に変更(Git の仕様でディレクトリ全体を ignore すると配下を `!` で例外指定できないため、`export/*` 表記に切り替え)。`export/web/` 以外の `export/*`(将来の iOS/Android Export 等)は引き続き除外

@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://brailwyworld01"]
+
+[ext_resource type="Script" path="res://scripts/world/railway.gd" id="1_railway"]
+
+[node name="Railway" type="Node3D"]
+script = ExtResource("1_railway")
+
+[node name="TrackPath" type="Path3D" parent="."]
+
+[node name="Rails" type="MeshInstance3D" parent="."]
+
+[node name="Ties" type="MultiMeshInstance3D" parent="."]

@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://bautocapdev0001"]
+
+[ext_resource type="PackedScene" path="res://scenes/Main.tscn" id="1_main"]
+[ext_resource type="Script" path="res://scripts/dev/auto_capture.gd" id="2_capture"]
+
+[node name="AutoCapture" type="Node"]
+
+[node name="Main" parent="." instance=ExtResource("1_main")]
+
+[node name="Capture" type="Node" parent="."]
+script = ExtResource("2_capture")

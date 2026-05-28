@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://bterrnscworld1"]
+
+[ext_resource type="Script" path="res://scripts/world/terrain.gd" id="1_terrain"]
+
+[node name="Terrain" type="StaticBody3D"]
+script = ExtResource("1_terrain")
+
+[node name="TerrainMesh" type="MeshInstance3D" parent="."]
+
+[node name="TerrainCollision" type="CollisionShape3D" parent="."]
+
+[node name="LakeMesh" type="MeshInstance3D" parent="."]
