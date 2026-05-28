@@ -2,6 +2,33 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.7.0 — 2026-05-29 — Phase 1-6(桜の花びら)
+
+- `scenes/fx/CherryPetals.tscn` 新規 — `GPUParticles3D` 単体、スクリプトなし。`ParticleProcessMaterial` + `QuadMesh`(0.4×0.4) + `StandardMaterial3D`(UNSHADED、半透明、BILLBOARD_PARTICLES)を sub_resource として埋め込み
+- `scenes/Main.tscn` 修正 — Player ノードの **子** として CherryPetals をインスタンス化(Player に追従して常に取り囲む)、Player の頭上 10m に配置
+
+### 主要パラメータ
+
+- `amount = 250`、`lifetime = 6.0`、`preprocess = 3.0`(起動時から既に降っている)
+- `emission_shape = BOX`、`emission_box_extents = (15, 0.1, 15)` で Player 中心 30m 四方の薄い天井から発生
+- `direction = (0, -1, 0)`、`gravity = (0, -1.5, 0)`、`initial_velocity 0.3〜0.8`
+- `angular_velocity ±30°/s` で回転しながら舞う
+- `turbulence_enabled = true`、`turbulence_noise_strength = 0.5` で sin/cos の代替(ふわふわ感)
+- `scale 0.4〜1.0` 倍 → 16cm〜40cm の花びら(子供視点で見える + 近距離で巨大化しない)
+- 色 `#ffc4dd` 薄ピンクベージュ、alpha 0.8(Three.js プロトタイプと同じ)
+
+### 試行錯誤メモ
+
+- 初期 `scale 0.05〜0.15` だと小さすぎて画面に映らない → 0.4〜1.0 に調整
+- `scale 0.5〜1.5` だとカメラ至近距離で巨大な花びらが画面いっぱいに → 0.4〜1.0 に縮小
+- Player の頭上 8m だと近すぎ、12m 前方 -3m だと遠すぎ → 真上 10m の中間で落ち着く
+
+### 改善さんのフィードバック対応
+
+「カメラ位置を変えられないので雲は影でしか見えない」→ 桜の花びらは Player を取り囲んで降るのでプレイヤー視点でも直接見える。固定カメラの制約を補う演出
+
+次のステップ: Phase 1-5(湖の water シェーダー)で Phase 1 完了予定
+
 ## v0.6.0 — 2026-05-29 — Phase 1-2(空・昼夜)+ 1-4(雲)+ 星
 
 - `scripts/world/sky_color.gd` 新規 — `class_name SkyColor`(+ preload 両対応)。時刻 t(0.0〜1.0)から `background(t)` / `ambient(t)` / `ambient_energy(t)` / `sun_color(t)` / `sun_energy(t)` / `sun_position(t)` / `fog_color(t)` を返す純粋関数 7 つ。Three.js プロトタイプの updateTimeOfDay を移植

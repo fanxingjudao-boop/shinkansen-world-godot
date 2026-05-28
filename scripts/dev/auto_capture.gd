@@ -14,7 +14,7 @@ enum CaptureMode { SINGLE, FOUR_TIMES }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
-const MODE: CaptureMode = CaptureMode.FOUR_TIMES
+const MODE: CaptureMode = CaptureMode.SINGLE
 const SCREENSHOT_PATH: String = "user://screenshot.png"
 
 
