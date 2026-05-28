@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=10 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -6,22 +6,13 @@
 [ext_resource type="Script" path="res://scripts/world/camera_rig.gd" id="4_camrig"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TouchHUD.tscn" id="5_hud"]
 [ext_resource type="PackedScene" path="res://scenes/world/Railway.tscn" id="6_railway"]
-
-[sub_resource type="ProceduralSkyMaterial" id="Sky_material"]
-sky_top_color = Color(0.494, 0.784, 0.961, 1)
-sky_horizon_color = Color(0.847, 0.937, 1, 1)
-ground_bottom_color = Color(0.494, 0.784, 0.314, 1)
-ground_horizon_color = Color(0.847, 0.937, 1, 1)
-sun_angle_max = 30.0
-sun_curve = 0.15
-
-[sub_resource type="Sky" id="Sky_main"]
-sky_material = SubResource("Sky_material")
+[ext_resource type="Script" path="res://scripts/world/day_night_cycle.gd" id="7_dncyc"]
+[ext_resource type="PackedScene" path="res://scenes/world/Clouds.tscn" id="8_clouds"]
+[ext_resource type="PackedScene" path="res://scenes/world/Stars.tscn" id="9_stars"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
 background_color = Color(0.494, 0.784, 0.961, 1)
-sky = SubResource("Sky_main")
 ambient_light_source = 2
 ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.3
@@ -42,9 +33,20 @@ light_energy = 1.1
 shadow_enabled = true
 directional_shadow_max_distance = 100.0
 
+[node name="DayNightCycle" type="Node" parent="."]
+script = ExtResource("7_dncyc")
+world_env_path = NodePath("../WorldEnvironment")
+sun_path = NodePath("../Sun")
+
 [node name="Terrain" parent="." instance=ExtResource("2_terrain")]
 
 [node name="Railway" parent="." instance=ExtResource("6_railway")]
+terrain_path = NodePath("../Terrain")
+
+[node name="Clouds" parent="." instance=ExtResource("8_clouds")]
+
+[node name="Stars" parent="." instance=ExtResource("9_stars")]
+day_night_path = NodePath("../DayNightCycle")
 terrain_path = NodePath("../Terrain")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]

@@ -161,7 +161,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ## 進捗(2026-05-29 時点)
 
-Phase 0-1 〜 0-6 + Phase 1-1(地形)+ 1-3(線路)まで完了。詳細は `changelog.md` 参照。
+Phase 0-1 〜 0-6 + Phase 1-1(地形)+ 1-3(線路)+ 1-2(空・昼夜)+ 1-4(雲)+ 星 まで完了。詳細は `changelog.md` 参照。
 
 - リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
 - 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)

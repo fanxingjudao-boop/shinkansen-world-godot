@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bs002bnforh65"]
+
+[ext_resource type="Script" path="res://scripts/world/clouds.gd" id="1_clouds"]
+
+[node name="Clouds" type="Node3D"]
+script = ExtResource("1_clouds")

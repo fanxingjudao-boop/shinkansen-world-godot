@@ -2,6 +2,31 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.6.0 — 2026-05-29 — Phase 1-2(空・昼夜)+ 1-4(雲)+ 星
+
+- `scripts/world/sky_color.gd` 新規 — `class_name SkyColor`(+ preload 両対応)。時刻 t(0.0〜1.0)から `background(t)` / `ambient(t)` / `ambient_energy(t)` / `sun_color(t)` / `sun_energy(t)` / `sun_position(t)` / `fog_color(t)` を返す純粋関数 7 つ。Three.js プロトタイプの updateTimeOfDay を移植
+- `scripts/world/day_night_cycle.gd` 新規 — `class_name DayNightCycle`。1 サイクル 84 秒で時刻を進め、毎フレーム WorldEnvironment(背景・環境光・fog 色)と DirectionalLight(位置・色・強度)を更新。`time_of_day` プロパティに setter を入れて外部から代入したら即反映
+- `scripts/world/clouds.gd` + `scenes/world/Clouds.tscn` 新規 — 18 個の雲を seed 7 で固定配置、各雲は 6 個の SphereMesh の集合、UNSHADED マテリアル(時刻に依存しない常に白)。X 方向に水平移動 + 端でワープ
+- `scripts/world/stars.gd` + `scenes/world/Stars.tscn` 新規 — 12 個の星を seed 42 で固定配置(地形高さ + 1.8〜2.3m)。夜のみ visible、ゆっくり自転、emission で発光(黄色 #ffe066)
+- `scenes/Main.tscn` 修正 — `DayNightCycle` / `Clouds` / `Stars` ノード追加、Stars に DayNightCycle / Terrain への NodePath 接続、不要な Sky/Sky_material SubResource を削除
+- `scripts/dev/auto_capture.gd` 拡張 — `MODE = FOUR_TIMES` で 1 回起動から朝(0.25)/昼(0.50)/夕(0.75)/夜(0.95)の 4 枚を順次撮影、`DayNightCycle.paused` を立ててから時刻を直接代入
+
+### 修正したハマりポイント
+
+- **`class_name` は Godot エディタが project をスキャンしないと CLI で認識されない**(SCRIPT ERROR: Identifier "SkyColor" not declared)→ `const SkyColor = preload("res://...")` を併用して両対応
+- **昼の地形が白飛びする** → SUN/AMBIENT energy を下げて Three.js より控えめに(`DAY_SUN_ENERGY 0.9`、`DAY_AMBIENT_ENERGY 0.25`)。Phase 1-1 で経験した「Linear tonemap + 強ライト」と同じ症状の再発
+- **夜の空が水色のまま**(背景は紫青なのに) → Godot の Environment は fog が遠景の空を上書きする。`SkyColor.fog_color(t) = SkyColor.background(t)` で fog 色も時刻同期させて解決
+
+### Environment 設定の追加変更
+
+- `WorldEnvironment.fog_light_color` を毎フレーム DayNightCycle が時刻に応じて上書き(夜=紫青、夕=オレンジ、昼=空色)
+
+### UX メモ
+
+- 改善さんから「カメラの位置を変えられないので雲はわかりませんが影は見えます」のフィードバック。三人称固定カメラ(CameraRig)では上空が視界に入りにくいため、雲の存在は地面に落ちる影で間接的に感じてもらう設計。本格的な「空を見上げる UI」は Phase 6 以降の検討事項
+
+次のステップ: Web Export + push → Vercel デプロイ → Phase 1-5(水)/ 1-6(桜)へ
+
 ## v0.5.0 — 2026-05-29 — Phase 1-1 + 1-3(地形 + 線路)+ 自動スクリーンショット基盤
 
 - `scripts/world/terrain_height.gd` 新規 — `class_name TerrainHeight` 純粋関数群。`compute_height(x, z)`(Three.js heightAt 移植、山 3+湖+二重正弦波+ノイズ)、`compute_vertex_color(h)`(雪山→草原→砂の高さマッピング)
