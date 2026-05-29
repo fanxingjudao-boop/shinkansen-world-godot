@@ -159,9 +159,10 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-05-29 時点)
+## 進捗(2026-05-30 時点)
 
-**Phase 0 + Phase 1 + Phase 2(列車基盤)完了**(2026-05-29)。9 編成の新幹線が線路を走る状態。残るは Phase 2-4(駅停車、Phase 3 駅とセット)/ 2-5(乗車システム、UI 大改修)。次は Phase 3(駅・動物・星・図鑑)に着手予定。詳細は `changelog.md` 参照。
+**Phase 0 + Phase 1 + Phase 2(列車基盤 + 乗車システム)完了**。9 編成の新幹線が線路を走り、走行中の電車に乗って屋根の上から見下ろす視点で旅できる(乗降は「タッチ」/E トグル、線路脇に降りる)。残るは Phase 2-4(駅停車、Phase 3 駅とセット)のみ。次は Phase 3(駅・動物・星・図鑑)に着手予定。詳細は `changelog.md` 参照。
+- 乗車システムは `scripts/world/ride_controller.gd`(Main 直下ノード)が中核。視点は屋根上俯瞰(改善さん選択)。運転席視点・列車運転は将来候補。
 
 - リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
 - 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)

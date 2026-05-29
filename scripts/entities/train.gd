@@ -74,6 +74,31 @@ func _update_progress() -> void:
 		_path_follow.progress_ratio = _t / TAU
 
 
+# === 乗車システム用 public API(RideController から呼ばれる) ===
+
+# 編成中央の現在ワールド位置(乗車判定の距離計算・降車位置の基準に使う)
+func get_ride_anchor_position() -> Vector3:
+	if _path_follow == null:
+		return global_position
+	return _path_follow.global_position
+
+# カメラをぶら下げる先(PathFollow3D 自身)。
+# PathFollow3D は ROTATION_ORIENTED なので、この子に置いたカメラは
+# 進行方向に自動追従し、ローカル固定 transform なら一切揺れない。
+func get_ride_mount() -> Node3D:
+	return _path_follow
+
+# 編成中央の現在の進行方向(ワールド)。-Z が進行方向(先頭)。
+func get_ride_forward() -> Vector3:
+	if _path_follow == null:
+		return -global_transform.basis.z
+	return -_path_follow.global_transform.basis.z
+
+# 表示名(ひらがな)。プロンプト・通知用。
+func get_display_name() -> String:
+	return train_data.display_name if train_data else ""
+
+
 # === メッシュ構築(Godot 操作層) ===
 
 func _build_visual() -> Node3D:

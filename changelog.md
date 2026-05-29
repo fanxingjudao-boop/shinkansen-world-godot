@@ -2,6 +2,45 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.10.0 — 2026-05-30 — Phase 2-5(電車に乗るシステム)
+
+走行中の電車に乗って、屋根の上から見下ろす視点でいっしょに線路を旅できるようになった。
+乗車視点は改善さんの選択(屋根の上から見下ろす)を採用。
+
+- `scripts/world/ride_controller.gd` 新規 — Main 直下のノード(extends Node3D)。乗車状態の中核:
+  - 状態機械 `enum State { WALKING, RIDING }`。`interact`(タッチ / E / Enter)のトグルで乗降
+  - `is_action_just_pressed("interact")` の唯一の消費者(従来 touch_hud が action_press するだけで誰も消費していなかった)
+  - 乗降直後の即トグルを防ぐ `TOGGLE_DEBOUNCE = 0.4s`
+  - `_find_nearest_ridable()`: プレイヤーから `RIDE_RANGE = 14m` 以内で最寄りの編成を選ぶ(編成中央のワールド位置で判定)
+  - 乗車カメラを電車の PathFollow3D(ROTATION_ORIENTED, -Z 進行方向)の子に **ローカル固定 transform** で生成 → 進行方向に追従しつつ一切揺れない。屋根上俯瞰(pos (0,6,6)・pitch -28°・fov 60)、`current=true` で切替、降車で元の CameraRig/Camera3D に戻す
+  - フェード遷移: HUD の全画面 ColorRect を Tween(0→1→中点でカメラ/プレイヤー切替→1→0、片道 0.25s)で噛ませ、カメラ切替の瞬間を隠す(怖くない・酔わない)
+  - 降車は「その場の線路脇に降りる」簡易版(駅未実装のため)。`_compute_landing()` で編成中央から進行方向の直交・楕円外側へ `LANDING_OFFSET = 6m` ずらし、`TerrainHeight.compute_height + 1.5` で地形に着地(電車・レール・枕木に重ならない)
+  - 判定ロジック `_nearest_index` / `_compute_landing` は static 純粋関数(C# 移植配慮)
+  - `signal boarded` / `alighted`(将来の図鑑連携用)
+- `scripts/entities/train.gd` 修正 — public API 追加(既存挙動は不変): `get_ride_anchor_position()`(編成中央の現在ワールド位置)/ `get_ride_mount()`(PathFollow3D, カメラのぶら下げ先)/ `get_ride_forward()`(進行方向)/ `get_display_name()`
+- `scripts/ui/touch_hud.gd` + `scenes/ui/TouchHUD.tscn` 修正 — 乗車 UI:
+  - `Prompt`(Label): 「○○に のる?」を上部中央にパステル枠付きで表示
+  - `Notice`(Label): 「○○に のったよ!」を `ease_out_back` バウンス + フェードで登場、1.6s 後にフェードアウト
+  - `Fade`(全画面 ColorRect, alpha 0): 遷移演出用。`set_fade_alpha(a)` で RideController の Tween から駆動
+  - `set_riding(bool)`: 乗車中はタッチボタンを「タッチ」↔「おりる」に出し分け、D-pad を `disabled` + 薄表示(動かせないことを明示)
+- `scenes/Main.tscn` 修正 — `Main` 直下に `RideController` を追加、player/trains/camera_rig/hud の NodePath を配線
+- `scripts/dev/auto_capture.gd` 修正 — `CaptureMode.AUTO_RIDE` 追加。最寄り電車に強制乗車して屋根上視点を撮影 → 降車後を撮影(`_do_board`/`_do_alight` を直接叩く検証フック、本番コードは汚さない)
+
+### 検証
+
+- AutoCapture(AUTO_RIDE)で乗車・降車を無人撮影。スクリプトエラーなし
+- 乗車スクショ: 屋根の上から進行方向を見下ろす視点、編成と前方の線路が見える。D-pad 薄表示・「おりる」ボタン・「のったよ!」通知を確認
+- 降車スクショ: 線路脇(編成中央から 6m 外側・地形+1.5m)に着地、カメラと UI が歩行状態に復帰。位置ログで player=(101.1, 1.84, 25.3) / anchor=(95.5, 0.75, 23.1)、xz 距離 ~6m・Y は電車と重ならないことを確認
+- 型安全: `train.gd` / `touch_hud.gd` は class_name 非対応(CLI スキャン問題)のため、`ride_controller` 側で `preload` const を型注釈に使い静的解決(train_data.gd と同方針)
+
+### 範囲外(今回は実装せず)
+
+- 運転席視点への切替(将来 ROADMAP 7「車内視点モード」で追加候補)
+- 駅停車(Phase 2-4)/ 駅に降りる演出(Phase 3 駅と同時)
+- 列車運転(加減速操作)
+
+次のステップ: 改善さんに PC ブラウザ / iPad で体験確認 → Phase 3(駅・動物・星・図鑑)へ
+
 ## v0.9.1 — 2026-05-29 — 列車のリアル化(改善さんフィードバック対応)
 
 改善さん「もっとリアルな新幹線にできませんか?」のフィードバック対応。4 つの方向で改修。

@@ -6,11 +6,12 @@ extends Node
 # モード:
 #   SINGLE        : 1 枚だけ撮影
 #   FOUR_TIMES    : DayNightCycle.time_of_day を 0.25/0.50/0.75/0.95 に切替えて 4 枚
+#   AUTO_RIDE     : 最寄り電車に強制乗車して屋根上視点を撮影 → 降車後を撮影(乗車システム検証)
 # 視点モード:
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE }
-enum CaptureMode { SINGLE, FOUR_TIMES }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -30,7 +31,29 @@ func _ready() -> void:
 			await _save_screenshot(SCREENSHOT_PATH)
 		CaptureMode.FOUR_TIMES:
 			await _capture_four_times()
+		CaptureMode.AUTO_RIDE:
+			await _capture_ride()
 	get_tree().quit()
+
+
+# 乗車システムの検証: 本物の RideController._do_board / _do_alight を呼んで
+# 屋根上カメラと降車後プレイヤー位置を無人で撮る(フェードは介さず即時切替)。
+func _capture_ride() -> void:
+	var rc := get_tree().root.find_child("RideController", true, false)
+	var trains := get_tree().root.find_child("Trains", true, false)
+	if rc == null or trains == null or trains.get_child_count() == 0:
+		print("[AutoCapture] RideController/Trains not found, falling back to single")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var train := trains.get_child(0)  # Hayabusa(initial_t=0)
+	rc._do_board(train)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_ride.png")
+	rc._do_alight()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_alight.png")
 
 
 func _capture_four_times() -> void:
