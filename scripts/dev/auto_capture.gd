@@ -9,7 +9,7 @@ extends Node
 # 視点モード:
 #   PLAYER / BIRD / SIDE
 
-enum ViewMode { PLAYER, BIRD, SIDE, LAKE }
+enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE }
 enum CaptureMode { SINGLE, FOUR_TIMES }
 
 const DELAY_SEC: float = 2.0
@@ -86,4 +86,9 @@ func _apply_debug_camera() -> void:
 		cam.global_position = Vector3(-50, 15, 110)
 		cam.look_at(Vector3(-50, -3, 80))
 		cam.fov = 60.0
+	elif VIEW == ViewMode.TRAIN_CLOSE:
+		# Hayabusa の initial_t=0 → 楕円起点(100, 0)、その横から見る
+		cam.global_position = Vector3(108, 4, 18)
+		cam.look_at(Vector3(100, 1, 0))
+		cam.fov = 55.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)

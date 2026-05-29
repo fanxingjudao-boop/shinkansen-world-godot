@@ -2,6 +2,24 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.9.1 — 2026-05-29 — 列車のリアル化(改善さんフィードバック対応)
+
+改善さん「もっとリアルな新幹線にできませんか?」のフィードバック対応。4 つの方向で改修。
+
+- `scripts/entities/train.gd` 大幅改修:
+  - **編成を 3 両 → 5 両**(LEAD + MID×3 + TAIL、総長 ~26m)
+  - **窓を一本の長い帯 → 個別小窓**(先頭/末尾車 4 個、中間車 6 個、両側面)
+  - **ノーズを CylinderMesh(円錐)に**:
+    - sharp: top_radius=0.12、bottom_radius=0.92、長さ 3.2m(はやぶさ風ロングノーズ)
+    - rounded: top_radius=0.55、bottom_radius=0.95、長さ 2.2m + 先端 SphereMesh(N700 風カモノハシ)
+    - steam: 横向き CylinderMesh(ボイラー)+ 縦の煙突(SL 風)
+  - **台車を追加**: 各車両 2 台(前後)、台車枠 BoxMesh + 車輪 4 個ずつ
+  - **連結部を追加**: 車両と車両の間に小さな BoxMesh(暗灰)、ジャバラ感
+  - **パンタグラフを「く」の字 + 集電板に改良**(従来の単一バーから 2 本アーム + 上の横長 BoxMesh へ)
+- `scripts/dev/auto_capture.gd`: `TRAIN_CLOSE` ビューモード追加(Hayabusa initial_t=0 の楕円起点 (100, 0) を間近で撮影)
+
+スクリーンショットで Hayabusa の側面・小窓・台車・連結部・5 両編成が確認できた。子供向けの「ふにふに感」とのバランスは保持(プリミティブの組み合わせのまま、Blender モデリングは導入せず)。
+
 ## v0.9.0 — 2026-05-29 — Phase 2-1 + 2-2 + 2-3(9 編成の新幹線が線路を走る)
 
 - `scripts/entities/train_data.gd` 新規 — `class_name TrainData` extends Resource。9 項目(display_name / slug / body_color / accent_color / speed / nose_type / has_pantograph / has_steam / initial_t)を `@export`
