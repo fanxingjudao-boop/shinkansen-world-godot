@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StationData" load_steps=2 format=3 uid="uid://bstdata000003"]
+
+[ext_resource type="Script" path="res://scripts/world/station_data.gd" id="1_sd"]
+
+[resource]
+script = ExtResource("1_sd")
+display_name = "みずうみ"
+sub_text = "みずうみの えき"
+slug = "mizuumi"
+main_color = Color(0.45, 0.78, 0.95, 1)
+accent_color = Color(0.95, 0.99, 1.0, 1)
+decor_type = "lake"
+track_t = 2.0944

@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=29 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -21,6 +21,13 @@
 [ext_resource type="Resource" path="res://resources/train_data/sl_hitoyoshi.tres" id="19_sl"]
 [ext_resource type="Resource" path="res://resources/train_data/e235_yamanote.tres" id="20_e235"]
 [ext_resource type="Script" path="res://scripts/world/ride_controller.gd" id="21_ridectl"]
+[ext_resource type="PackedScene" path="res://scenes/world/Station.tscn" id="22_station"]
+[ext_resource type="Resource" path="res://resources/station_data/midori.tres" id="23_midori"]
+[ext_resource type="Resource" path="res://resources/station_data/hana.tres" id="24_hana"]
+[ext_resource type="Resource" path="res://resources/station_data/mizuumi.tres" id="25_mizuumi"]
+[ext_resource type="Resource" path="res://resources/station_data/yama.tres" id="26_yama"]
+[ext_resource type="Resource" path="res://resources/station_data/okashi.tres" id="27_okashi"]
+[ext_resource type="Resource" path="res://resources/station_data/niji.tres" id="28_niji"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -92,6 +99,26 @@ railway_path = NodePath("../../Railway/TrackPath")
 [node name="E235Yamanote" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("20_e235")
 railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="Stations" type="Node3D" parent="."]
+
+[node name="Midori" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("23_midori")
+
+[node name="Hana" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("24_hana")
+
+[node name="Mizuumi" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("25_mizuumi")
+
+[node name="Yama" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("26_yama")
+
+[node name="Okashi" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("27_okashi")
+
+[node name="Niji" parent="Stations" instance=ExtResource("22_station")]
+station_data = ExtResource("28_niji")
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 

@@ -161,8 +161,9 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ## 進捗(2026-05-30 時点)
 
-**Phase 0 + Phase 1 + Phase 2(列車基盤 + 乗車システム)完了**。9 編成の新幹線が線路を走り、走行中の電車に乗って屋根の上から見下ろす視点で旅できる(乗降は「タッチ」/E トグル、線路脇に降りる)。残るは Phase 2-4(駅停車、Phase 3 駅とセット)のみ。次は Phase 3(駅・動物・星・図鑑)に着手予定。詳細は `changelog.md` 参照。
+**Phase 0 + Phase 1 + Phase 2 + Phase 3-1(駅)完了**。9 編成の新幹線が線路を走り、乗って屋根の上視点で旅でき、線路沿いに 6 駅(みどり・はな・みずうみ・やま・おかし・にじ)が立っている。次は Phase 2-4(駅停車)/ Phase 3-2(動物)/ 3-3(星獲得)/ 3-5(図鑑)あたり。詳細は `changelog.md` 参照。
 - 乗車システムは `scripts/world/ride_controller.gd`(Main 直下ノード)が中核。視点は屋根上俯瞰(改善さん選択)。運転席視点・列車運転は将来候補。
+- 駅は `scripts/world/station.gd` + `station_data.gd` + `resources/station_data/*.tres` 6 個(データ駆動)。看板は Label3D の Y ビルボード(空中表示)。立て看板化は改善さんの判断待ち。駅停車・降車を最寄り駅に寄せる連携は未実装。
 
 - リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
 - 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)

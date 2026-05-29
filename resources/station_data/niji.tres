@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StationData" load_steps=2 format=3 uid="uid://bstdata000006"]
+
+[ext_resource type="Script" path="res://scripts/world/station_data.gd" id="1_sd"]
+
+[resource]
+script = ExtResource("1_sd")
+display_name = "にじ"
+sub_text = "にじの えき"
+slug = "niji"
+main_color = Color(0.72, 0.6, 1.0, 1)
+accent_color = Color(0.98, 0.96, 1.0, 1)
+decor_type = "rainbow"
+track_t = 5.236

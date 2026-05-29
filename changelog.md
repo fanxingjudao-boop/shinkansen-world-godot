@@ -2,6 +2,33 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.11.0 — 2026-05-30 — Phase 3-1(駅をつくる)
+
+線路沿いに 6 つの駅が立ち、世界に「目的地」ができた。データ駆動(TrainData と同方針)。
+
+- `scripts/world/station_data.gd` 新規 — `class_name StationData` extends Resource。`display_name` / `sub_text`(看板の大小)/ `slug` / `main_color` / `accent_color` / `decor_type` / `track_t`(楕円上の配置)を `@export`
+- `scripts/world/station.gd` 新規 — extends Node3D。`_ready` で `Railway.ellipse_point(track_t)` から線路脇の位置を求め、`rotation.y` を線路接線に合わせて配置。プラットフォーム(色違い床+アクセント縁)+ 屋根(柱4本+屋根板)+ 看板(Label3D ×2、常に読める `BILLBOARD_FIXED_Y`+太アウトライン)+ 固有装飾を全部スクリプト生成
+  - 湖の上の区間(`track_t` が湖の半径内)では線路と同様に `compute_water_y()` 以上へ持ち上げ、駅が沈まないようにした
+  - 装飾 `decor_type`: tree(木)/ flower(花壇)/ mountain(雪山)/ lake(池)/ sweets(三色だんご)/ rainbow(3本アーチの虹)を `match` で組み立て
+- `scenes/world/Station.tscn` 新規 — Node3D + station.gd だけ(中身は全部スクリプト生成、StationData で色・装飾が変わるので静的化しない)
+- `resources/station_data/*.tres` 新規 6 個 — みどり(tree, t=0)/ はな(flower, t=1.05)/ みずうみ(lake, t=2.09 ・湖のほとり)/ やま(mountain, t=3.14)/ おかし(sweets, t=4.19)/ にじ(rainbow, t=5.24)。楕円を 6 等分しつつ、湖にかかる t≈2.09 を「みずうみ駅」に割り当て
+- `scenes/Main.tscn` 修正 — `Stations`(Node3D)を追加、配下に 6 駅インスタンス(各 station_data を override)
+- `scripts/dev/auto_capture.gd` 修正 — `ViewMode.STATION`(みどり駅を間近で撮影)を追加
+
+### 検証
+
+- AutoCapture(STATION ビュー)で みどり駅を確認: 緑屋根+白柱のプラットフォーム、「みどり」「もりの えき」の看板が読める、木の装飾、はやぶさが駅前走行。スクリプトエラーなし
+- BIRD ビューで 6 駅が楕円線路沿いに分散配置、みずうみ駅が湖際に沈まず立っていることを確認
+- 子供向け配慮: ひらがなのみ、明るいパステル、怖い要素なし、看板は常に正面を向き読める
+
+### 範囲外(今回は実装せず)
+
+- 駅停車(Phase 2-4): 駅近くで電車が減速 → 次の周回で追加候補
+- 駅に降りる演出(乗車システムの降車を最寄り駅に寄せる)
+- 駅の図鑑タブ(Phase 3-5)
+
+次のステップ: 改善さんに見た目確認(看板を空中ビルボードのままにするか、立て看板にするか等)→ 駅停車 or Phase 3-2(動物)へ
+
 ## v0.10.0 — 2026-05-30 — Phase 2-5(電車に乗るシステム)
 
 走行中の電車に乗って、屋根の上から見下ろす視点でいっしょに線路を旅できるようになった。

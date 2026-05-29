@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StationData" load_steps=2 format=3 uid="uid://bstdata000005"]
+
+[ext_resource type="Script" path="res://scripts/world/station_data.gd" id="1_sd"]
+
+[resource]
+script = ExtResource("1_sd")
+display_name = "おかし"
+sub_text = "おかしの えき"
+slug = "okashi"
+main_color = Color(1.0, 0.66, 0.35, 1)
+accent_color = Color(1.0, 0.95, 0.8, 1)
+decor_type = "sweets"
+track_t = 4.1888

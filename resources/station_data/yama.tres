@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StationData" load_steps=2 format=3 uid="uid://bstdata000004"]
+
+[ext_resource type="Script" path="res://scripts/world/station_data.gd" id="1_sd"]
+
+[resource]
+script = ExtResource("1_sd")
+display_name = "やま"
+sub_text = "おやまの えき"
+slug = "yama"
+main_color = Color(0.55, 0.65, 0.78, 1)
+accent_color = Color(0.96, 0.98, 1.0, 1)
+decor_type = "mountain"
+track_t = 3.1416

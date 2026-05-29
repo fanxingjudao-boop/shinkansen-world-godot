@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="StationData" load_steps=2 format=3 uid="uid://bstdata000001"]
+
+[ext_resource type="Script" path="res://scripts/world/station_data.gd" id="1_sd"]
+
+[resource]
+script = ExtResource("1_sd")
+display_name = "みどり"
+sub_text = "もりの えき"
+slug = "midori"
+main_color = Color(0.3, 0.7, 0.4, 1)
+accent_color = Color(0.95, 0.97, 0.92, 1)
+decor_type = "tree"
+track_t = 0.0

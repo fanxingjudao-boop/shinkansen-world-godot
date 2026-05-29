@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bstation00001"]
+
+[ext_resource type="Script" path="res://scripts/world/station.gd" id="1_station"]
+
+[node name="Station" type="Node3D"]
+script = ExtResource("1_station")
