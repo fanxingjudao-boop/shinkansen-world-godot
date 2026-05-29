@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00005"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "どくたーいえろー"
+slug = "doctor_yellow"
+body_color = Color(1.0, 0.878, 0.4, 1)
+accent_color = Color(0.0, 0.4, 0.8, 1)
+speed = 0.09
+nose_type = "rounded"
+has_pantograph = true
+has_steam = false
+initial_t = 3.6

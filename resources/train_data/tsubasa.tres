@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00006"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "つばさ"
+slug = "tsubasa"
+body_color = Color(0.71, 0.643, 1.0, 1)
+accent_color = Color(1.0, 0.843, 0.0, 1)
+speed = 0.10
+nose_type = "sharp"
+has_pantograph = true
+has_steam = false
+initial_t = 4.5

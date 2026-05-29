@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00001"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "はやぶさ"
+slug = "hayabusa"
+body_color = Color(0.0, 0.6, 0.267, 1)
+accent_color = Color(1.0, 0.42, 0.604, 1)
+speed = 0.13
+nose_type = "sharp"
+has_pantograph = true
+has_steam = false
+initial_t = 0.0

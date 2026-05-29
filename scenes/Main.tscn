@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=21 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -10,6 +10,16 @@
 [ext_resource type="PackedScene" path="res://scenes/world/Clouds.tscn" id="8_clouds"]
 [ext_resource type="PackedScene" path="res://scenes/world/Stars.tscn" id="9_stars"]
 [ext_resource type="PackedScene" path="res://scenes/fx/CherryPetals.tscn" id="10_petals"]
+[ext_resource type="PackedScene" path="res://scenes/entities/Train.tscn" id="11_train"]
+[ext_resource type="Resource" path="res://resources/train_data/hayabusa.tres" id="12_hayabusa"]
+[ext_resource type="Resource" path="res://resources/train_data/komachi.tres" id="13_komachi"]
+[ext_resource type="Resource" path="res://resources/train_data/kagayaki.tres" id="14_kagayaki"]
+[ext_resource type="Resource" path="res://resources/train_data/n700.tres" id="15_n700"]
+[ext_resource type="Resource" path="res://resources/train_data/doctor_yellow.tres" id="16_drycr"]
+[ext_resource type="Resource" path="res://resources/train_data/tsubasa.tres" id="17_tsbsa"]
+[ext_resource type="Resource" path="res://resources/train_data/tsubame.tres" id="18_tsbme"]
+[ext_resource type="Resource" path="res://resources/train_data/sl_hitoyoshi.tres" id="19_sl"]
+[ext_resource type="Resource" path="res://resources/train_data/e235_yamanote.tres" id="20_e235"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -43,6 +53,44 @@ sun_path = NodePath("../Sun")
 
 [node name="Railway" parent="." instance=ExtResource("6_railway")]
 terrain_path = NodePath("../Terrain")
+
+[node name="Trains" type="Node3D" parent="."]
+
+[node name="Hayabusa" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("12_hayabusa")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="Komachi" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("13_komachi")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="Kagayaki" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("14_kagayaki")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="N700" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("15_n700")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="DoctorYellow" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("16_drycr")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="Tsubasa" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("17_tsbsa")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="Tsubame" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("18_tsbme")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="SLHitoyoshi" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("19_sl")
+railway_path = NodePath("../../Railway/TrackPath")
+
+[node name="E235Yamanote" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("20_e235")
+railway_path = NodePath("../../Railway/TrackPath")
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 

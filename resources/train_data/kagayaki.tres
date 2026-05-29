@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00003"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "かがやき"
+slug = "kagayaki"
+body_color = Color(0.98, 0.98, 0.98, 1)
+accent_color = Color(0.788, 0.643, 0.302, 1)
+speed = 0.14
+nose_type = "sharp"
+has_pantograph = true
+has_steam = false
+initial_t = 1.8

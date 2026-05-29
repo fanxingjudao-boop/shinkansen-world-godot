@@ -2,6 +2,45 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.9.0 — 2026-05-29 — Phase 2-1 + 2-2 + 2-3(9 編成の新幹線が線路を走る)
+
+- `scripts/entities/train_data.gd` 新規 — `class_name TrainData` extends Resource。9 項目(display_name / slug / body_color / accent_color / speed / nose_type / has_pantograph / has_steam / initial_t)を `@export`
+- `scripts/entities/train.gd` 新規 — `_ready` で Railway の Path3D を取得し、PathFollow3D を動的 `add_child`。`_process` で t を進めて `progress_ratio = t / TAU` を更新。`_build_visual()` で 3 両編成(LeadCar + MidCar + TailCar)+ 各車両のパーツ(本体 / アクセント帯 / 窓帯 unshaded / 車輪 4 個 / ノーズ / ヘッドライト / パンタグラフ)を全部スクリプト生成
+- `scenes/entities/Train.tscn` 新規 — Node3D + train.gd だけ(中身は全部スクリプト生成、TrainData で色や形が変わるので静的シーン化不可)
+- `resources/train_data/*.tres` 新規 9 個 — はやぶさ / こまち / かがやき / N700 / ドクターイエロー / つばさ / つばめ / SL人吉 / E235やまのて(Three.js プロトタイプの色・速度・配置をそのまま移植)
+- `scenes/Main.tscn` 修正 — `Trains (Node3D)` 追加、配下に 9 編成インスタンス。各 train_data + railway_path を override で指定
+- `scripts/world/railway.gd` 修正 — `func get_track_path() -> Path3D` を公開 API として追加(Train から呼ばれる、ただし現状は NodePath で直接アクセスで動作)
+
+### Three.js から移植した 9 編成
+
+| 名前 | body | accent | nose | speed | initial_t |
+|------|------|--------|------|-------|-----------|
+| はやぶさ | 緑 #009944 | ピンク #ff6b9a | sharp | 0.13 | 0.0 |
+| こまち | 赤 #ff5577 | 白 | sharp | 0.11 | 0.9 |
+| かがやき | 白 #fafafa | 金 #c9a44d | sharp | 0.14 | 1.8 |
+| N700 | 白 | 青 #0066cc | rounded | 0.12 | 2.7 |
+| ドクターイエロー | 黄 #ffe066 | 青 | rounded | 0.09 | 3.6 |
+| つばさ | 紫 #b6a4ff | 金 #ffd700 | sharp | 0.10 | 4.5 |
+| つばめ | 紺 #222244 | 金 | sharp | 0.13 | 1.4 |
+| SL人吉 | 黒 #1a1a1a | 赤 #c0392b | steam | 0.07 | 5.0 |
+| E235やまのて | 黄緑 #b5e853 | 白 | rounded | 0.15 | 3.0 |
+
+### 重要な設計判断
+
+- **データ駆動**: 新編成追加は .tres を 1 つ作るだけ、コード変更不要
+- **PathFollow3D を動的 add_child**: Train.gd の _ready で Railway.Path3D の子に PathFollow3D を作って自身の visual を add_child。9 編成全部が同じ Railway.Path3D を共有
+- **メッシュは個別 MeshInstance3D**(9 編成 × 3 両 × ~10 パーツ = 約 270 個、Compatibility で問題ない数)
+- **窓は UNSHADED**(夜でも水色に光る感)、本体・アクセントは shaded
+- **衝突なし**: 列車同士はすり抜け(子供向けに「ぶつかった!」の悲しみを回避)
+
+### 範囲外(今回は実装せず)
+
+- Phase 2-4 駅停車(Phase 3 駅と同時)
+- Phase 2-5 乗車システム(UI 大改修)
+- SL の蒸気エフェクト / ヘッドライトの夜間光 / 車輪回転 / パンタグラフ上下動 → Phase 4 演出
+
+次のステップ: Phase 3(駅・動物・星・図鑑)に着手
+
 ## v0.8.0 — 2026-05-29 — Phase 1-5(湖の water シェーダー)→ **Phase 1 完了**
 
 - `assets/shaders/water.gdshader` 新規 — Godot Shading Language(GLSL ベース)。`shader_type spatial`、`render_mode cull_back, diffuse_lambert, specular_schlick_ggx`。頂点シェーダーで sin/cos 波(`wave_strength 0.08`、`wave_frequency 1.5`、`wave_speed 0.8`)、フラグメントで水色 albedo + 高スペキュラ(0.85)

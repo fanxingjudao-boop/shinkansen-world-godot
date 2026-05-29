@@ -41,6 +41,11 @@ func _ready() -> void:
 	_build_ties()
 
 
+# 公開 API: 楕円トラックの Path3D ノードを返す(Train が PathFollow3D を add_child するため)
+func get_track_path() -> Path3D:
+	return _track_path
+
+
 # === ロジック層(static、純粋関数) ===
 
 # 楕円トラック上、パラメータ t (0..TAU) の点の (x, z)

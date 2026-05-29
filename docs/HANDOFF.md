@@ -161,7 +161,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ## 進捗(2026-05-29 時点)
 
-**Phase 0 + Phase 1 完了**(2026-05-29)。Phase 0-1 〜 0-6 + Phase 1-1 〜 1-6 + 星 まで完了。次は Phase 2(列車システム、9 編成の新幹線)に着手予定。詳細は `changelog.md` 参照。
+**Phase 0 + Phase 1 + Phase 2(列車基盤)完了**(2026-05-29)。9 編成の新幹線が線路を走る状態。残るは Phase 2-4(駅停車、Phase 3 駅とセット)/ 2-5(乗車システム、UI 大改修)。次は Phase 3(駅・動物・星・図鑑)に着手予定。詳細は `changelog.md` 参照。
 
 - リポジトリ: https://github.com/fanxingjudao-boop/shinkansen-world-godot (Public)
 - 本番 URL: https://shinkansen-world-godot.vercel.app/ (Vercel Hobby + GitHub 連携で自動再デプロイ)

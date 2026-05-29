@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00004"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "エヌななひゃく"
+slug = "n700"
+body_color = Color(1, 1, 1, 1)
+accent_color = Color(0.0, 0.4, 0.8, 1)
+speed = 0.12
+nose_type = "rounded"
+has_pantograph = true
+has_steam = false
+initial_t = 2.7
