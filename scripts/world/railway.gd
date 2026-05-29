@@ -1,8 +1,13 @@
 extends Node3D
 
+# class_name TerrainHeight は Godot エディタが project をスキャンするまで CLI で
+# 認識されないため、preload で同名参照を作って両対応にする
+const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+
 # 線路シーン。楕円形 Path3D を地形高さに追従させて配置し、
 # レール 2 本(ArrayMesh 1 つに統合)と枕木(MultiMeshInstance3D)を構築する。
 # 楕円の数値計算ロジックは static func で分離(Phase 2 の Train で再利用)。
+# 湖の上では水面より上に線路を浮かせる(_ground_or_water_y)。
 
 const TRACK_R_X: float = 100.0   # 楕円の X 半径
 const TRACK_R_Z: float = 78.0    # 楕円の Z 半径(Three.js 版 100*0.78)
@@ -50,12 +55,21 @@ static func ellipse_tangent(t: float) -> Vector2:
 
 # === Godot 操作層 ===
 
+# 線路の Y を取得。湖の上では水面以上に上げて「橋」のように渡す。
+func _ground_or_water_y(x: float, z: float) -> float:
+	var ground_y: float = _terrain.height_at(x, z)
+	var lake_dist: float = Vector2(x - TerrainHeight.LAKE_POS.x, z - TerrainHeight.LAKE_POS.y).length()
+	if lake_dist < TerrainHeight.LAKE_RADIUS:
+		return max(ground_y, TerrainHeight.compute_water_y())
+	return ground_y
+
+
 func _build_track_path() -> void:
 	var curve := Curve3D.new()
 	for ip in range(TRACK_SEGMENTS + 1):
 		var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
 		var p: Vector2 = ellipse_point(t)
-		var y: float = _terrain.height_at(p.x, p.y) + RAIL_HEIGHT_OFFSET
+		var y: float = _ground_or_water_y(p.x, p.y) + RAIL_HEIGHT_OFFSET
 		curve.add_point(Vector3(p.x, y, p.y))
 	_track_path.curve = curve
 
@@ -74,8 +88,7 @@ func _build_rails() -> void:
 			var center: Vector2 = ellipse_point(t)
 			var tangent2: Vector2 = ellipse_tangent(t)
 
-			var ground_y: float = _terrain.height_at(center.x, center.y)
-			var rail_y: float = ground_y + RAIL_HEIGHT_OFFSET
+			var rail_y: float = _ground_or_water_y(center.x, center.y) + RAIL_HEIGHT_OFFSET
 
 			# tangent に直交する水平方向(レールの左右ずれ)
 			var perp: Vector2 = Vector2(-tangent2.y, tangent2.x)
@@ -141,11 +154,13 @@ func _build_ties() -> void:
 		var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
 		var center: Vector2 = ellipse_point(t)
 		var tangent2: Vector2 = ellipse_tangent(t)
-		var ground_y: float = _terrain.height_at(center.x, center.y)
-		var tie_y: float = ground_y + TIE_HEIGHT_OFFSET
+		var tie_y: float = _ground_or_water_y(center.x, center.y) + TIE_HEIGHT_OFFSET
 
-		# 枕木の長辺(X 方向)を線路の接線に直交させる
-		var yaw: float = atan2(tangent2.x, tangent2.y) + PI * 0.5
+		# 枕木の長辺(BoxMesh の X 軸 = 2.5m)を線路の接線に直交させる。
+		# atan2(tangent.x, tangent.z) で接線方向の yaw が取れて、それで Basis を作ると
+		# ローカル X が接線と直交する向きになる(過去に + PI*0.5 を入れていたが
+		# それだと枕木がレールと平行=縦になってしまっていた)
+		var yaw: float = atan2(tangent2.x, tangent2.y)
 		var basis := Basis(Vector3.UP, yaw)
 		var origin := Vector3(center.x, tie_y, center.y)
 		mm.set_instance_transform(ip, Transform3D(basis, origin))

@@ -20,6 +20,7 @@ const MOUNTAIN_C_HEIGHT: float = 14.0
 const MOUNTAIN_C_RADIUS: float = 20.0
 const LAKE_POS: Vector2 = Vector2(-50.0, 80.0)
 const LAKE_RADIUS: float = 22.0
+const LAKE_WATER_Y_OFFSET: float = 4.5  # 湖底からの水面の高さ(線路と整合)
 
 # 高さに応じた色(草原・砂・雪山遷移)
 const COLOR_GRASS: Color = Color(0.5, 0.78, 0.35)
@@ -38,6 +39,11 @@ static func compute_height(x: float, z: float) -> float:
 	var m3: float = _gaussian_mountain(x, z, MOUNTAIN_C_POS, MOUNTAIN_C_HEIGHT, MOUNTAIN_C_RADIUS)
 	var lake_depth: float = _lake_depression(x, z)
 	return h1 + h2 + m1 + m2 + m3 + lake_depth + _micro_noise(x, z)
+
+
+# 湖の水面の世界 Y 座標(全コンポーネントで共有)
+static func compute_water_y() -> float:
+	return compute_height(LAKE_POS.x, LAKE_POS.y) + LAKE_WATER_Y_OFFSET
 
 
 # 高さに応じた頂点カラー。

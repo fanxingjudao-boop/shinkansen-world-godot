@@ -45,8 +45,9 @@ func _generate_terrain() -> void:
 
 func _generate_lake() -> void:
 	var lake_pos: Vector2 = TerrainHeight.LAKE_POS
-	# 湖の谷は中心が約 -3.5m、縁が約 +1.7m。水面を縁から少し下に置いて湖らしく
-	var lake_y: float = TerrainHeight.compute_height(lake_pos.x, lake_pos.y) + 4.5
+	# 湖の谷は中心が約 -3.5m、縁が約 +1.7m。
+	# 水面を縁から少し下に置いて湖らしく(railway.gd と共有の compute_water_y)
+	var lake_y: float = TerrainHeight.compute_water_y()
 	_lake_mesh.transform.origin = Vector3(lake_pos.x, lake_y, lake_pos.y)
 
 	# PlaneMesh + subdivide で水面メッシュを作る(自作 ArrayMesh より確実)
