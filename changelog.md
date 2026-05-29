@@ -2,6 +2,29 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.8.0 — 2026-05-29 — Phase 1-5(湖の water シェーダー)→ **Phase 1 完了**
+
+- `assets/shaders/water.gdshader` 新規 — Godot Shading Language(GLSL ベース)。`shader_type spatial`、`render_mode cull_back, diffuse_lambert, specular_schlick_ggx`。頂点シェーダーで sin/cos 波(`wave_strength 0.08`、`wave_frequency 1.5`、`wave_speed 0.8`)、フラグメントで水色 albedo + 高スペキュラ(0.85)
+- `scripts/world/terrain.gd` 修正 — `_generate_lake` 書き直し: `CylinderMesh` → `PlaneMesh + subdivide 32×32`(波計算用に細分化)、`StandardMaterial3D` → `ShaderMaterial(water.gdshader)`。湖サイズは `LAKE_RADIUS * 2 + 4`(山の壁で余分は隠れる)。水面 Y を `compute_height(中心) + 4.5` に上げて湖の谷の縁近くに配置(深い谷の底だと水面がほぼ地形に隠れる)
+
+### 試行錯誤メモ
+
+- **半透明 + フレネル**(初期案)→ 上から見ると透けすぎて地形が見えるだけで湖が認識できない → 不透明に妥協
+- **円形 ArrayMesh**(自作)→ triangle fan は CCW で動くが ring 間の三角形がどの順序でも背面カリングされて描画されない → デバッグに時間使うより `PlaneMesh` で確実に動かす方を選択
+- **水面 Y = 湖底 + 0.3**(初期)→ 湖の谷が深さ ~5m に対し水面 30cm 上だと、ほぼ全面が地形に隠れる → +4.5m に上げて湖らしい広さの水面に
+
+### Phase 1 全体の総括
+
+- ✅ 1-1 地形(400×400、山 3 + 湖、頂点カラー、HeightMapShape3D 衝突)
+- ✅ 1-2 空と昼夜サイクル(84 秒、SkyColor 関数、太陽の動き)
+- ✅ 1-3 線路(楕円 Path3D、レール 2 本統合 ArrayMesh、枕木 MultiMesh 157 本)
+- ✅ 1-4 雲(18 個、6 球の集合、水平流れ)
+- ✅ 1-5 湖(PlaneMesh + water.gdshader、波 + スペキュラ)
+- ✅ 1-6 桜の花びら(GPUParticles3D、Player 追従)
+- ✅ 派生: 星 12 個(夜のみ visible)、自動スクリーンショット基盤
+
+子供にとって「歩ける + 線路がある + 空が動く + 雲が流れる + 桜が舞う + 湖がある + 夜に星が出る」世界が立ち上がった。次は Phase 2(列車システム、9 編成の新幹線)。
+
 ## v0.7.0 — 2026-05-29 — Phase 1-6(桜の花びら)
 
 - `scenes/fx/CherryPetals.tscn` 新規 — `GPUParticles3D` 単体、スクリプトなし。`ParticleProcessMaterial` + `QuadMesh`(0.4×0.4) + `StandardMaterial3D`(UNSHADED、半透明、BILLBOARD_PARTICLES)を sub_resource として埋め込み

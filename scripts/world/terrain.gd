@@ -5,8 +5,6 @@ extends StaticBody3D
 
 const COLLISION_SAMPLE_STEP: float = 2.0  # コリジョンの格子間隔(視覚 120 分割とは独立)
 
-const LAKE_COLOR: Color = Color(0.42, 0.71, 0.94)  # #6bb5f0(Phase 1 は不透明、Phase 1-5 で water シェーダーに差し替え)
-
 @onready var _terrain_mesh: MeshInstance3D = $TerrainMesh
 @onready var _terrain_collision: CollisionShape3D = $TerrainCollision
 @onready var _lake_mesh: MeshInstance3D = $LakeMesh
@@ -47,20 +45,18 @@ func _generate_terrain() -> void:
 
 func _generate_lake() -> void:
 	var lake_pos: Vector2 = TerrainHeight.LAKE_POS
-	var lake_y: float = TerrainHeight.compute_height(lake_pos.x, lake_pos.y) + 0.3
+	# 湖の谷は中心が約 -3.5m、縁が約 +1.7m。水面を縁から少し下に置いて湖らしく
+	var lake_y: float = TerrainHeight.compute_height(lake_pos.x, lake_pos.y) + 4.5
 	_lake_mesh.transform.origin = Vector3(lake_pos.x, lake_y, lake_pos.y)
 
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = TerrainHeight.LAKE_RADIUS
-	cyl.bottom_radius = TerrainHeight.LAKE_RADIUS
-	cyl.height = 0.1
-	_lake_mesh.mesh = cyl
-
-	var lake_mat := StandardMaterial3D.new()
-	lake_mat.albedo_color = LAKE_COLOR
-	lake_mat.metallic = 0.2
-	lake_mat.roughness = 0.3
-	_lake_mesh.material_override = lake_mat
+	# PlaneMesh + subdivide で水面メッシュを作る(自作 ArrayMesh より確実)
+	# 湖周囲の山が壁になって余分な部分は隠れるので、少し大きめの正方形で OK
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(TerrainHeight.LAKE_RADIUS * 2 + 4, TerrainHeight.LAKE_RADIUS * 2 + 4)
+	plane.subdivide_width = 32
+	plane.subdivide_depth = 32
+	_lake_mesh.mesh = plane
+	_lake_mesh.material_override = _load_water_material()
 
 
 # === メッシュ構築(頂点・色・法線・インデックスを直接組み立て) ===
@@ -126,6 +122,13 @@ func _build_height_shape() -> HeightMapShape3D:
 	shape.map_depth = sample_count
 	shape.map_data = data
 	return shape
+
+
+# 湖の water シェーダーマテリアル(波 + スペキュラ反射)を生成
+static func _load_water_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://assets/shaders/water.gdshader")
+	return mat
 
 
 # 中心差分で法線を求める(地形の勾配ベース、ライティングが滑らかになる)

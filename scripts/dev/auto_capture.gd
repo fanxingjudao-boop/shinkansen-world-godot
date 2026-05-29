@@ -9,7 +9,7 @@ extends Node
 # 視点モード:
 #   PLAYER / BIRD / SIDE
 
-enum ViewMode { PLAYER, BIRD, SIDE }
+enum ViewMode { PLAYER, BIRD, SIDE, LAKE }
 enum CaptureMode { SINGLE, FOUR_TIMES }
 
 const DELAY_SEC: float = 2.0
@@ -24,6 +24,9 @@ func _ready() -> void:
 
 	match MODE:
 		CaptureMode.SINGLE:
+			# debug カメラ変更を 1 フレーム描画させてから撮影
+			await get_tree().process_frame
+			await get_tree().process_frame
 			await _save_screenshot(SCREENSHOT_PATH)
 		CaptureMode.FOUR_TIMES:
 			await _capture_four_times()
@@ -77,5 +80,10 @@ func _apply_debug_camera() -> void:
 	elif VIEW == ViewMode.SIDE:
 		cam.global_position = Vector3(150, 30, 150)
 		cam.look_at(Vector3.ZERO)
+		cam.fov = 60.0
+	elif VIEW == ViewMode.LAKE:
+		# 湖(-50, ?, 80)の上を斜め見下ろし
+		cam.global_position = Vector3(-50, 15, 110)
+		cam.look_at(Vector3(-50, -3, 80))
 		cam.fov = 60.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)
