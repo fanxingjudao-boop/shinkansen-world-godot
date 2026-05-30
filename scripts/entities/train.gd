@@ -44,7 +44,8 @@ const STATION_TS: Array = [0.0, 1.0472, 2.0944, 3.1416, 4.1888, 5.236]
 const STATION_SLOW_RANGE: float = 0.22   # 駅前後この角度幅で減速
 const STATION_MIN_FACTOR: float = 0.25   # 駅中心での速度係数(25%)
 
-var _path_follow: PathFollow3D
+var _path_follow: PathFollow3D     # 編成中央(乗車カメラ/アンカー用。見た目は持たない)
+var _parts: Array = []             # 各車両・連結部 {follow: PathFollow3D, offset: float(弧長)}
 var _progress: float = 0.0          # 線路上の現在位置(弧長, メートル)
 var _length: float = 0.0            # 線路一周の弧長
 var _linear_speed: float = 0.0      # 実速度(m/s)。旧角速度から周回時間を保つよう換算
@@ -63,12 +64,6 @@ func _ready() -> void:
 	if path_node == null:
 		push_warning("[Train] railway_path の参照先が Path3D でない")
 		return
-	_path_follow = PathFollow3D.new()
-	_path_follow.loop = true
-	_path_follow.rotation_mode = PathFollow3D.ROTATION_ORIENTED
-	var visual := _build_visual()
-	_path_follow.add_child(visual)
-	path_node.add_child(_path_follow)
 
 	# 弧長ベースの移動を準備
 	var curve := path_node.curve
@@ -84,7 +79,12 @@ func _ready() -> void:
 		var sp: Vector2 = Railway.ellipse_point(st)
 		_station_offsets.append(curve.get_closest_offset(Vector3(sp.x, 0.0, sp.y)))
 
-	_path_follow.progress = _progress
+	# 中央 PathFollow(乗車カメラ/アンカー)+ 各車両・連結部を個別の PathFollow に載せる。
+	# 編成を弧長方向にずらして配置することで、坂やカーブで各車両が自分の位置の
+	# 線路に沿って屈折し、先頭車が宙に浮かない(剛体1点追従だと浮いていた)。
+	_path_follow = _make_follow(path_node)
+	_build_cars(path_node)
+	_apply_progress()
 
 
 func _process(delta: float) -> void:
@@ -92,7 +92,23 @@ func _process(delta: float) -> void:
 		return
 	var factor: float = _slow_factor_at(_progress)
 	_progress = fposmod(_progress + _linear_speed * factor * delta, _length)
+	_apply_progress()
+
+
+# 中央 + 各パートの PathFollow を現在の弧長位置に反映
+func _apply_progress() -> void:
 	_path_follow.progress = _progress
+	for p in _parts:
+		(p["follow"] as PathFollow3D).progress = fposmod(_progress + p["offset"], _length)
+
+
+# 線路に沿う PathFollow3D を 1 つ生成して path_node に追加
+func _make_follow(path_node: Path3D) -> PathFollow3D:
+	var f := PathFollow3D.new()
+	f.loop = true
+	f.rotation_mode = PathFollow3D.ROTATION_ORIENTED
+	path_node.add_child(f)
+	return f
 
 
 # === ロジック層 ===
@@ -147,42 +163,42 @@ func get_slug() -> String:
 
 # === メッシュ構築(Godot 操作層) ===
 
-func _build_visual() -> Node3D:
-	var root := Node3D.new()
-
-	# 各車両の長さリスト(LEAD + MID×3 + TAIL)
+# 各車両・連結部をそれぞれ独立した PathFollow3D に載せ、編成中心からの
+# 弧長オフセットを記録する。offset は「中心より進行方向側(先頭)なら正」。
+# PathFollow ローカル -Z が進行方向 = progress 増加方向なので、ローカル Z=cz の
+# パートのオフセットは -cz(先頭 cz<0 → offset>0 → 中心より前 = progress 大)。
+func _build_cars(path_node: Path3D) -> void:
 	var lengths: Array = [LEAD_LENGTH, MID_LENGTH, MID_LENGTH, MID_LENGTH, LEAD_LENGTH]
 	var roles: Array = ["lead", "mid", "mid", "mid", "tail"]
 
-	# 編成全体の中心が PathFollow3D の原点に来るように Z オフセットを計算
-	# PathFollow3D ローカル: -Z が進行方向(先頭)
 	var total_length: float = 0.0
 	for l in lengths:
 		total_length += l
 	total_length += COUPLER_LENGTH * (CAR_COUNT - 1)
 
-	# 先頭から末尾へ累積 Z 配置(進行方向は -Z なので、先頭の中心は -front_z)
 	var cursor_z: float = -total_length * 0.5  # 一番手前(進行方向側)から開始
 	for i in range(CAR_COUNT):
 		var car_len: float = lengths[i]
 		var role: String = roles[i]
-		# 車両中心の Z 位置
 		var car_center_z: float = cursor_z + car_len * 0.5
 		var car := _build_car(car_len, role)
-		car.position = Vector3(0, CAR_BASE_Y, car_center_z)
+		car.position = Vector3(0, CAR_BASE_Y, 0)  # 沿線方向は PathFollow が担当
 		if role == "tail":
-			car.rotate_y(PI)  # 末尾車は逆向き
-		root.add_child(car)
+			car.rotate_y(PI)  # 末尾車は逆向き(後部運転台)
+		var f := _make_follow(path_node)
+		f.add_child(car)
+		_parts.append({ "follow": f, "offset": -car_center_z })
 		cursor_z += car_len
 
-		# 次の車両の前に連結部を配置
+		# 次の車両との間に連結部
 		if i < CAR_COUNT - 1:
+			var coupler_center_z: float = cursor_z + COUPLER_LENGTH * 0.5
 			var coupler := _build_coupler()
-			coupler.position = Vector3(0, CAR_BASE_Y - 0.15, cursor_z + COUPLER_LENGTH * 0.5)
-			root.add_child(coupler)
+			coupler.position = Vector3(0, CAR_BASE_Y - 0.15, 0)
+			var cf := _make_follow(path_node)
+			cf.add_child(coupler)
+			_parts.append({ "follow": cf, "offset": -coupler_center_z })
 			cursor_z += COUPLER_LENGTH
-
-	return root
 
 
 func _build_car(car_len: float, role: String) -> Node3D:
