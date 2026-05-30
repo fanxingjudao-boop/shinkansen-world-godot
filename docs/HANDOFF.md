@@ -175,7 +175,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 - 建物・小物が増えたので負荷は実機要確認(重ければ town/landmark の数・窓を減らす)。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
-- 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。
+- 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._slow_factor_at`(弧長判定)、駅発見=`station_manager.gd`。列車は弧長 `progress` で等速移動(v0.22.0、坂での速度サージを解消)。線路は Catmull-Rom で滑らかな閉曲線。
 - interact(タッチ)は乗車専用。なかよし・星・駅発見はすべて近接自動で競合回避。
 - `auto_capture.gd` の検証フック: AUTO_RIDE(乗車)/ AUTO_BEFRIEND(なかよし)/ AUTO_BOOK(図鑑)、ViewMode に STATION / ANIMAL。
 - 乗車システムは `scripts/world/ride_controller.gd`(Main 直下ノード)が中核。視点は屋根上俯瞰(改善さん選択)。運転席視点・列車運転は将来候補。

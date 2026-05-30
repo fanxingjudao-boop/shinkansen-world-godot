@@ -3,10 +3,14 @@ extends Node3D
 # class_name は Godot エディタが project をスキャンするまで CLI で
 # 認識されないため preload 両対応
 const TrainData = preload("res://scripts/entities/train_data.gd")
+const Railway = preload("res://scripts/world/railway.gd")
 
 # 列車本体スクリプト。
 # - _ready で railway の Path3D を取得し、PathFollow3D を動的に add_child
-# - _process で楕円パラメータ t を進めて PathFollow3D の progress_ratio を更新
+# - _process で「弧長(実距離)」progress を等速で進める。
+#   ※ 旧実装は progress_ratio = 角度t/TAU だったが、楕円+高低差で
+#     「角度あたりの実距離」が変動するため坂で急加速/急減速していた。
+#     弧長ベースにして線路上を常に一定速度で走るようにした(滑らか)。
 # - 見た目は train_data に応じてスクリプトで全部組み立て(5 両編成、個別窓、台車、連結部)
 
 @export var train_data: TrainData
@@ -41,7 +45,11 @@ const STATION_SLOW_RANGE: float = 0.22   # 駅前後この角度幅で減速
 const STATION_MIN_FACTOR: float = 0.25   # 駅中心での速度係数(25%)
 
 var _path_follow: PathFollow3D
-var _t: float = 0.0
+var _progress: float = 0.0          # 線路上の現在位置(弧長, メートル)
+var _length: float = 0.0            # 線路一周の弧長
+var _linear_speed: float = 0.0      # 実速度(m/s)。旧角速度から周回時間を保つよう換算
+var _station_offsets: PackedFloat32Array = PackedFloat32Array()  # 各駅の弧長オフセット
+var _station_range_m: float = 0.0   # 駅減速の範囲(メートル)
 
 
 func _ready() -> void:
@@ -55,40 +63,57 @@ func _ready() -> void:
 	if path_node == null:
 		push_warning("[Train] railway_path の参照先が Path3D でない")
 		return
-	_t = train_data.initial_t
 	_path_follow = PathFollow3D.new()
 	_path_follow.loop = true
 	_path_follow.rotation_mode = PathFollow3D.ROTATION_ORIENTED
 	var visual := _build_visual()
 	_path_follow.add_child(visual)
 	path_node.add_child(_path_follow)
-	_update_progress()
+
+	# 弧長ベースの移動を準備
+	var curve := path_node.curve
+	_length = curve.get_baked_length()
+	# 旧: 一周 = TAU/speed 秒。新: 一周 = _length/_linear_speed 秒。周回時間を一致させる。
+	_linear_speed = train_data.speed * _length / TAU
+	_station_range_m = _length * STATION_SLOW_RANGE / TAU
+	# 初期位置(角度)を弧長オフセットへ変換
+	var ip: Vector2 = Railway.ellipse_point(train_data.initial_t)
+	_progress = curve.get_closest_offset(Vector3(ip.x, 0.0, ip.y))
+	# 各駅の弧長オフセットを事前計算(減速判定に使う)
+	for st in STATION_TS:
+		var sp: Vector2 = Railway.ellipse_point(st)
+		_station_offsets.append(curve.get_closest_offset(Vector3(sp.x, 0.0, sp.y)))
+
+	_path_follow.progress = _progress
 
 
 func _process(delta: float) -> void:
-	if _path_follow == null or train_data == null:
+	if _path_follow == null or train_data == null or _length <= 0.0:
 		return
-	var factor: float = _station_slow_factor(_t)
-	_t = fmod(_t + train_data.speed * factor * delta, TAU)
-	_update_progress()
+	var factor: float = _slow_factor_at(_progress)
+	_progress = fposmod(_progress + _linear_speed * factor * delta, _length)
+	_path_follow.progress = _progress
 
 
 # === ロジック層 ===
 
-func _update_progress() -> void:
-	if _path_follow:
-		_path_follow.progress_ratio = _t / TAU
-
-
-# 駅の track_t に近いほど速度係数を STATION_MIN_FACTOR まで落とす(駅でゆっくり通過)。
-# 複数駅が近い場合は最も遅い係数を採用。
-static func _station_slow_factor(t: float) -> float:
+# 現在の弧長位置が駅に近いほど速度係数を STATION_MIN_FACTOR まで落とす(駅でゆっくり通過)。
+# 複数駅が近い場合は最も遅い係数を採用。距離は周回のラップを考慮。
+func _slow_factor_at(progress: float) -> float:
 	var factor: float = 1.0
-	for st in STATION_TS:
-		var d: float = abs(wrapf(t - st, -PI, PI))
-		if d < STATION_SLOW_RANGE:
-			factor = min(factor, lerpf(STATION_MIN_FACTOR, 1.0, d / STATION_SLOW_RANGE))
+	for off in _station_offsets:
+		var d: float = absf(_wrap_dist(progress, off))
+		if d < _station_range_m:
+			factor = minf(factor, lerpf(STATION_MIN_FACTOR, 1.0, d / _station_range_m))
 	return factor
+
+
+# 閉路上の符号付き最短距離(メートル)
+func _wrap_dist(a: float, b: float) -> float:
+	var d: float = fposmod(a - b, _length)
+	if d > _length * 0.5:
+		d -= _length
+	return d
 
 
 # === 乗車システム用 public API(RideController から呼ばれる) ===

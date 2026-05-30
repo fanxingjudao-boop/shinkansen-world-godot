@@ -70,12 +70,24 @@ func _ground_or_water_y(x: float, z: float) -> float:
 
 
 func _build_track_path() -> void:
-	var curve := Curve3D.new()
+	# まず全頂点を集める(末尾は先頭と同じ=閉路)
+	var pts: Array = []
 	for ip in range(TRACK_SEGMENTS + 1):
 		var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
 		var p: Vector2 = ellipse_point(t)
 		var y: float = _ground_or_water_y(p.x, p.y) + RAIL_HEIGHT_OFFSET
-		curve.add_point(Vector3(p.x, y, p.y))
+		pts.append(Vector3(p.x, y, p.y))
+
+	# Catmull-Rom 風に各点へ接線(handle)を付け、折れ線ではなく滑らかな閉曲線にする。
+	# これで PathFollow3D(ROTATION_ORIENTED)の向きが頂点ごとにカクッと切り替わらず、
+	# カーブも高低差も連続的に追従する。handle 長は (前点→次点)/6 ≒ 区間の 1/3。
+	var curve := Curve3D.new()
+	var seg: int = TRACK_SEGMENTS
+	for ip in range(seg + 1):
+		var prev_i: int = ((ip - 1) % seg + seg) % seg
+		var next_i: int = (ip + 1) % seg
+		var tangent: Vector3 = (pts[next_i] - pts[prev_i]) * (1.0 / 6.0)
+		curve.add_point(pts[ip], -tangent, tangent)
 	_track_path.curve = curve
 
 

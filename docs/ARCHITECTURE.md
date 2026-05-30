@@ -250,14 +250,15 @@ Path3D は線路に沿った曲線で、PathFollow3D で電車を動かします
 extends Node3D
 
 # === ロジック層(言語非依存・テスト可能) ===
-func _calculate_train_position(t: float, speed: float, delta: float) -> float:
-    return fmod(t + speed * delta, TAU)
+# 列車は「弧長(実距離)」で等速に進める。角度 t / TAU を progress_ratio に
+# 入れると、楕円+高低差で「角度あたりの実距離」が変動し坂で急加減速するため不可(v0.22.0 で修正)。
+func _advance(progress: float, linear_speed: float, delta: float, length: float) -> float:
+    return fposmod(progress + linear_speed * delta, length)
 
 # === Godot 操作層 ===
 func _process(delta):
-    var new_t = _calculate_train_position(current_t, speed, delta)
-    path_follow.progress_ratio = new_t / TAU
-    current_t = new_t
+    current_progress = _advance(current_progress, linear_speed, delta, track_length)
+    path_follow.progress = current_progress  # メートル単位(弧長)
 ```
 
 この設計だと、ロジック層は C# でも書きやすく、Godot 操作層だけが言語固有になります。
