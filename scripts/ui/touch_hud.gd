@@ -17,8 +17,16 @@ extends Control
 @onready var prompt: Label = $Prompt
 @onready var notice: Label = $Notice
 @onready var fade: ColorRect = $Fade
+@onready var star_count_label: Label = $TopBar/StarCount
+@onready var friend_count_label: Label = $TopBar/FriendCount
+@onready var btn_book: BaseButton = $TopBar/BookButton
+
+@export var game_state_path: NodePath
+@export var book_path: NodePath
 
 var _notice_tween: Tween
+var _game_state: Node
+var _book: Node
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -28,6 +36,14 @@ func _ready() -> void:
 	_bind(btn_right, "move_right")
 	_bind(btn_jump, "jump")
 	_bind(btn_touch, "interact")
+
+	_game_state = get_node_or_null(game_state_path)
+	if _game_state and _game_state.has_signal("changed"):
+		_game_state.changed.connect(_on_state_changed)
+		_on_state_changed()
+	_book = get_node_or_null(book_path)
+	if btn_book:
+		btn_book.pressed.connect(_on_book_pressed)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
 	if btn == null:
@@ -85,3 +101,18 @@ func show_notice(text: String) -> void:
 func set_fade_alpha(a: float) -> void:
 	if fade:
 		fade.color.a = clampf(a, 0.0, 1.0)
+
+
+# === カウンター / 図鑑(GameState 連携) ===
+
+func _on_state_changed() -> void:
+	if _game_state == null:
+		return
+	if star_count_label:
+		star_count_label.text = "ほし %d" % _game_state.star_count
+	if friend_count_label:
+		friend_count_label.text = "なかよし %d" % _game_state.befriended_animals.size()
+
+func _on_book_pressed() -> void:
+	if _book and _book.has_method("open"):
+		_book.open()

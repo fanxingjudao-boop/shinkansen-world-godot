@@ -1,69 +1,80 @@
 extends Node3D
 
-# class_name DayNightCycle / TerrainHeight を CLI 起動でも参照できるよう preload
-const DayNightCycle = preload("res://scripts/world/day_night_cycle.gd")
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+const TouchHud = preload("res://scripts/ui/touch_hud.gd")
 
-# 夜空に光る星 12 個。
+# 集める星 12 個。
 # 地形上のランダム位置に固定配置(seed で毎回同じ → 子供が「あの星」と認識できる)。
-# 昼は visible=false で隠れ、夜だけ表示される。
+# 常時きらきら光って浮遊・回転し、プレイヤーが近づくと獲得(タッチ不要=動物のなかよしと同じやさしい方式)。
+# 獲得で GameState.add_star + HUD 通知 + ぴょこっと消える演出。
 
 const STAR_COUNT: int = 12
 const STAR_SIZE: float = 0.55
 const STAR_COLOR: Color = Color(1.0, 0.88, 0.4)
-const STAR_PLACE_RADIUS: float = 150.0
-const STAR_HEIGHT_MIN: float = 1.8
-const STAR_HEIGHT_MAX: float = 2.3
-const STAR_NIGHT_LO: float = 0.22   # この時刻より前 = 夜
-const STAR_NIGHT_HI: float = 0.80   # この時刻より後 = 夜へ
-const STAR_SPIN_SPEED: float = 0.5  # rad/s、ゆっくり回転して光る感じに
-
+const PLACE_RADIUS: float = 75.0
+const HEIGHT_OFFSET: float = 1.6
+const SPIN_SPEED: float = 1.2
+const FLOAT_AMP: float = 0.3
+const FLOAT_FREQ: float = 1.5
+const GET_RANGE: float = 2.6
 const STAR_SEED: int = 42
 
-@export var day_night_path: NodePath
-@export var terrain_path: NodePath
+@export var player_path: NodePath
+@export var game_state_path: NodePath
+@export var hud_path: NodePath
 
-var _stars: Array[MeshInstance3D] = []
-var _day_night: Node
-var _terrain: Node
+var _player: Node3D
+var _game_state: Node
+var _hud: TouchHud
+var _stars: Array = []  # 各要素: {node, base_y, phase, taken}
 
 
 func _ready() -> void:
-	if not day_night_path.is_empty():
-		_day_night = get_node_or_null(day_night_path)
-	if not terrain_path.is_empty():
-		_terrain = get_node_or_null(terrain_path)
+	_player = get_node_or_null(player_path) as Node3D
+	_game_state = get_node_or_null(game_state_path)
+	_hud = get_node_or_null(hud_path) as TouchHud
 
 	seed(STAR_SEED)
 	var mat: StandardMaterial3D = _make_star_material()
 	for i in range(STAR_COUNT):
-		var star := _make_star(mat)
-		var x: float = randf_range(-STAR_PLACE_RADIUS, STAR_PLACE_RADIUS)
-		var z: float = randf_range(-STAR_PLACE_RADIUS, STAR_PLACE_RADIUS)
-		var ground_y: float = 0.0
-		if _terrain and _terrain.has_method("height_at"):
-			ground_y = _terrain.height_at(x, z)
-		var y: float = ground_y + randf_range(STAR_HEIGHT_MIN, STAR_HEIGHT_MAX)
-		star.position = Vector3(x, y, z)
-		add_child(star)
-		_stars.append(star)
+		var node := _make_star(mat)
+		var x: float = randf_range(-PLACE_RADIUS, PLACE_RADIUS)
+		var z: float = randf_range(-PLACE_RADIUS, PLACE_RADIUS)
+		var gy: float = TerrainHeight.compute_height(x, z) + HEIGHT_OFFSET
+		node.position = Vector3(x, gy, z)
+		add_child(node)
+		_stars.append({"node": node, "base_y": gy, "phase": randf_range(0.0, TAU), "taken": false})
 
 
 func _process(delta: float) -> void:
-	var night_visible: bool = _is_night_now()
-	for star in _stars:
-		star.visible = night_visible
-		if night_visible:
-			star.rotate_y(STAR_SPIN_SPEED * delta)
+	var pp: Vector3 = _player.global_position if _player else Vector3.ZERO
+	for st in _stars:
+		if st.taken:
+			continue
+		var node: Node3D = st.node
+		node.rotate_y(SPIN_SPEED * delta)
+		st.phase += delta * FLOAT_FREQ
+		node.position.y = st.base_y + sin(st.phase) * FLOAT_AMP
+		if _player and node.global_position.distance_to(pp) < GET_RANGE:
+			_collect(st)
 
 
-# === ロジック ===
+# === 獲得 ===
 
-func _is_night_now() -> bool:
-	if _day_night == null:
-		return true
-	var t: float = _day_night.time_of_day
-	return t < STAR_NIGHT_LO or t > STAR_NIGHT_HI
+func _collect(st: Dictionary) -> void:
+	st.taken = true
+	var node: Node3D = st.node
+	if _game_state:
+		_game_state.add_star()
+	if _hud:
+		_hud.show_notice("ほしを ゲット!")
+	# ぴょこっと拡大 → 上に飛んで縮んで消える
+	var tw := create_tween()
+	tw.tween_property(node, "scale", Vector3.ONE * 1.8, 0.15) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(node, "scale", Vector3.ZERO, 0.3)
+	tw.parallel().tween_property(node, "position:y", st.base_y + 2.5, 0.3)
+	tw.tween_callback(node.queue_free)
 
 
 # === メッシュ構築 ===

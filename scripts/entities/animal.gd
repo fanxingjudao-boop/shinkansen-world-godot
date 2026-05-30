@@ -80,6 +80,9 @@ func is_befriended() -> bool:
 func get_display_name() -> String:
 	return animal_data.display_name if animal_data else ""
 
+func get_slug() -> String:
+	return animal_data.slug if animal_data else ""
+
 # なかよし成立: 立ち止まってぴょんと喜ぶ
 func befriend() -> void:
 	if _befriended:

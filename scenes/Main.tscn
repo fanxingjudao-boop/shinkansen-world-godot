@@ -1,4 +1,4 @@
-[gd_scene load_steps=39 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=42 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -38,6 +38,9 @@
 [ext_resource type="Resource" path="res://resources/animal_data/inu.tres" id="35_inu"]
 [ext_resource type="Resource" path="res://resources/animal_data/penguin.tres" id="36_penguin"]
 [ext_resource type="Resource" path="res://resources/animal_data/buta.tres" id="37_buta"]
+[ext_resource type="Script" path="res://scripts/world/game_state.gd" id="40_gamestate"]
+[ext_resource type="Script" path="res://scripts/world/station_manager.gd" id="41_statmgr"]
+[ext_resource type="PackedScene" path="res://scenes/ui/BookOverlay.tscn" id="42_book"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -52,6 +55,9 @@ fog_density = 0.002
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
+
+[node name="GameState" type="Node" parent="."]
+script = ExtResource("40_gamestate")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
@@ -111,6 +117,10 @@ train_data = ExtResource("20_e235")
 railway_path = NodePath("../../Railway/TrackPath")
 
 [node name="Stations" type="Node3D" parent="."]
+script = ExtResource("41_statmgr")
+player_path = NodePath("../Player")
+hud_path = NodePath("../UI/TouchHUD")
+game_state_path = NodePath("../GameState")
 
 [node name="Midori" parent="Stations" instance=ExtResource("22_station")]
 station_data = ExtResource("23_midori")
@@ -134,6 +144,7 @@ station_data = ExtResource("28_niji")
 script = ExtResource("29b_animgr")
 player_path = NodePath("../Player")
 hud_path = NodePath("../UI/TouchHUD")
+game_state_path = NodePath("../GameState")
 
 [node name="Usagi" parent="Animals" instance=ExtResource("29_animal")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 5, 12)
@@ -170,8 +181,9 @@ animal_data = ExtResource("37_buta")
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 
 [node name="Stars" parent="." instance=ExtResource("9_stars")]
-day_night_path = NodePath("../DayNightCycle")
-terrain_path = NodePath("../Terrain")
+player_path = NodePath("../Player")
+game_state_path = NodePath("../GameState")
+hud_path = NodePath("../UI/TouchHUD")
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
@@ -196,7 +208,13 @@ player_path = NodePath("../Player")
 trains_path = NodePath("../Trains")
 camera_rig_path = NodePath("../CameraRig")
 hud_path = NodePath("../UI/TouchHUD")
+game_state_path = NodePath("../GameState")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="TouchHUD" parent="UI" instance=ExtResource("5_hud")]
+game_state_path = NodePath("../../GameState")
+book_path = NodePath("../../BookOverlay")
+
+[node name="BookOverlay" parent="." instance=ExtResource("42_book")]
+game_state_path = NodePath("../GameState")

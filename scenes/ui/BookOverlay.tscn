@@ -1,0 +1,142 @@
+[gd_scene load_steps=5 format=3 uid="uid://bbookov00001"]
+
+[ext_resource type="Script" path="res://scripts/ui/book.gd" id="1_book"]
+
+[sub_resource type="StyleBoxFlat" id="Style_panel"]
+bg_color = Color(0.98, 0.99, 1, 1)
+corner_radius_top_left = 28
+corner_radius_top_right = 28
+corner_radius_bottom_right = 28
+corner_radius_bottom_left = 28
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.49, 0.78, 0.96, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_tab_normal"]
+bg_color = Color(0.49, 0.78, 0.96, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[sub_resource type="StyleBoxFlat" id="Style_tab_pressed"]
+bg_color = Color(0.157, 0.408, 0.788, 1)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 16
+
+[node name="BookOverlay" type="CanvasLayer"]
+layer = 2
+process_mode = 3
+script = ExtResource("1_book")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.4, 0.5, 0.6, 0.5)
+
+[node name="Panel" type="Panel" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -440.0
+offset_top = -310.0
+offset_right = 440.0
+offset_bottom = 310.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("Style_panel")
+
+[node name="VBox" type="VBoxContainer" parent="Root/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 32.0
+offset_top = 28.0
+offset_right = -32.0
+offset_bottom = -28.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 18
+
+[node name="Title" type="Label" parent="Root/Panel/VBox"]
+layout_mode = 2
+text = "ずかん"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.157, 0.408, 0.788, 1)
+theme_override_font_sizes/font_size = 44
+
+[node name="Tabs" type="HBoxContainer" parent="Root/Panel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="TabTrain" type="Button" parent="Root/Panel/VBox/Tabs"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+text = "でんしゃ"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_tab_normal")
+theme_override_styles/hover = SubResource("Style_tab_normal")
+theme_override_styles/pressed = SubResource("Style_tab_pressed")
+theme_override_styles/focus = SubResource("Style_tab_normal")
+
+[node name="TabAnimal" type="Button" parent="Root/Panel/VBox/Tabs"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+text = "どうぶつ"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_tab_normal")
+theme_override_styles/hover = SubResource("Style_tab_normal")
+theme_override_styles/pressed = SubResource("Style_tab_pressed")
+theme_override_styles/focus = SubResource("Style_tab_normal")
+
+[node name="TabStation" type="Button" parent="Root/Panel/VBox/Tabs"]
+custom_minimum_size = Vector2(200, 64)
+layout_mode = 2
+text = "えき"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_tab_normal")
+theme_override_styles/hover = SubResource("Style_tab_normal")
+theme_override_styles/pressed = SubResource("Style_tab_pressed")
+theme_override_styles/focus = SubResource("Style_tab_normal")
+
+[node name="Grid" type="GridContainer" parent="Root/Panel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/h_separation = 16
+theme_override_constants/v_separation = 16
+columns = 4
+
+[node name="Close" type="Button" parent="Root/Panel/VBox"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+text = "とじる"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_tab_normal")
+theme_override_styles/hover = SubResource("Style_tab_normal")
+theme_override_styles/pressed = SubResource("Style_tab_pressed")
+theme_override_styles/focus = SubResource("Style_tab_normal")

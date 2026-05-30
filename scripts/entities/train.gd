@@ -35,6 +35,11 @@ const BOGIE_COLOR: Color = Color(0.25, 0.25, 0.28)     # 台車の濃灰
 const COUPLER_COLOR: Color = Color(0.18, 0.18, 0.20)   # 連結部の暗灰
 const HEADLIGHT_COLOR: Color = Color(1.0, 1.0, 0.8)
 
+# 駅停車: 駅の track_t 近くで減速(resources/station_data/*.tres の track_t と一致させること)
+const STATION_TS: Array = [0.0, 1.0472, 2.0944, 3.1416, 4.1888, 5.236]
+const STATION_SLOW_RANGE: float = 0.22   # 駅前後この角度幅で減速
+const STATION_MIN_FACTOR: float = 0.25   # 駅中心での速度係数(25%)
+
 var _path_follow: PathFollow3D
 var _t: float = 0.0
 
@@ -63,7 +68,8 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _path_follow == null or train_data == null:
 		return
-	_t = fmod(_t + train_data.speed * delta, TAU)
+	var factor: float = _station_slow_factor(_t)
+	_t = fmod(_t + train_data.speed * factor * delta, TAU)
 	_update_progress()
 
 
@@ -72,6 +78,17 @@ func _process(delta: float) -> void:
 func _update_progress() -> void:
 	if _path_follow:
 		_path_follow.progress_ratio = _t / TAU
+
+
+# 駅の track_t に近いほど速度係数を STATION_MIN_FACTOR まで落とす(駅でゆっくり通過)。
+# 複数駅が近い場合は最も遅い係数を採用。
+static func _station_slow_factor(t: float) -> float:
+	var factor: float = 1.0
+	for st in STATION_TS:
+		var d: float = abs(wrapf(t - st, -PI, PI))
+		if d < STATION_SLOW_RANGE:
+			factor = min(factor, lerpf(STATION_MIN_FACTOR, 1.0, d / STATION_SLOW_RANGE))
+	return factor
 
 
 # === 乗車システム用 public API(RideController から呼ばれる) ===
@@ -97,6 +114,10 @@ func get_ride_forward() -> Vector3:
 # 表示名(ひらがな)。プロンプト・通知用。
 func get_display_name() -> String:
 	return train_data.display_name if train_data else ""
+
+# 内部識別子(図鑑の発見記録用)
+func get_slug() -> String:
+	return train_data.slug if train_data else ""
 
 
 # === メッシュ構築(Godot 操作層) ===

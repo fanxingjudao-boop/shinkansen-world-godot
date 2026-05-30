@@ -13,17 +13,20 @@ const BEFRIEND_RANGE: float = 3.0
 
 @export var player_path: NodePath
 @export var hud_path: NodePath
+@export var game_state_path: NodePath
 
 signal befriended(display_name: String, total: int)
 
 var _player: Node3D
 var _hud: TouchHud
+var _game_state: Node
 var _count: int = 0
 
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
 	_hud = get_node_or_null(hud_path) as TouchHud
+	_game_state = get_node_or_null(game_state_path)
 	if _player == null:
 		push_warning("[AnimalManager] player_path が未解決")
 
@@ -41,4 +44,6 @@ func _process(_delta: float) -> void:
 			_count += 1
 			if _hud:
 				_hud.show_notice("%sと なかよし!" % a.get_display_name())
+			if _game_state:
+				_game_state.add_befriended(a.get_slug())
 			befriended.emit(a.get_display_name(), _count)

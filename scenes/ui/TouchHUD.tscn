@@ -233,6 +233,58 @@ theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
 theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 44
 
+[node name="TopBar" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 16.0
+offset_bottom = 80.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="StarCount" type="Label" parent="TopBar"]
+layout_mode = 0
+offset_left = 20.0
+offset_right = 180.0
+offset_bottom = 56.0
+mouse_filter = 2
+text = "ほし 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.85, 0.6, 0.1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_prompt_bg")
+
+[node name="FriendCount" type="Label" parent="TopBar"]
+layout_mode = 0
+offset_left = 196.0
+offset_right = 420.0
+offset_bottom = 56.0
+mouse_filter = 2
+text = "なかよし 0"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.93, 0.38, 0.54, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/normal = SubResource("Style_prompt_bg")
+
+[node name="BookButton" type="Button" parent="TopBar"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -160.0
+offset_right = -20.0
+offset_bottom = 64.0
+grow_horizontal = 0
+text = "ずかん"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15

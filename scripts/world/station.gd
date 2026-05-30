@@ -49,6 +49,15 @@ func _build() -> void:
 	_build_decor()
 
 
+# === 公開 API(駅発見・図鑑用) ===
+
+func get_slug() -> String:
+	return station_data.slug if station_data else ""
+
+func get_display_name() -> String:
+	return station_data.display_name if station_data else ""
+
+
 # === パーツ構築(Godot 操作層) ===
 
 func _build_platform() -> void:

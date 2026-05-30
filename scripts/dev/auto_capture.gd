@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -35,7 +35,35 @@ func _ready() -> void:
 			await _capture_ride()
 		CaptureMode.AUTO_BEFRIEND:
 			await _capture_befriend()
+		CaptureMode.AUTO_BOOK:
+			await _capture_book()
 	get_tree().quit()
+
+
+# 図鑑検証: GameState に発見をいくつか入れ、図鑑を開いて でんしゃ/どうぶつ タブを撮る。
+func _capture_book() -> void:
+	var gs := get_tree().root.find_child("GameState", true, false)
+	if gs:
+		gs.call("add_star")
+		gs.call("add_star")
+		gs.call("add_star")
+		gs.call("add_befriended", "usagi")
+		gs.call("add_befriended", "neko")
+		gs.call("add_boarded", "hayabusa")
+		gs.call("add_station", "midori")
+	var book := get_tree().root.find_child("BookOverlay", true, false)
+	if book == null:
+		print("[AutoCapture] BookOverlay not found")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	book.call("open")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_book_train.png")
+	book.call("_show_tab", "animal")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_book_animal.png")
 
 
 # なかよし検証: プレイヤーをうさぎの隣にテレポートし、AnimalManager の

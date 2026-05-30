@@ -161,9 +161,11 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ## 進捗(2026-05-30 時点)
 
-**Phase 0 + Phase 1 + Phase 2 + Phase 3-1(駅)+ Phase 3-2(動物 + なかよし)完了**。9 編成の新幹線が線路を走り、乗って屋根の上視点で旅でき、6 駅が立ち、8 種の動物が草原をふらふら歩き、近づくと「なかよし」になる(近接自動方式=改善さん選択)。次は Phase 2-4(駅停車)/ 3-3(星獲得)/ 3-4(HUD カウンター: 星・なかよし数)/ 3-5(図鑑)。詳細は `changelog.md` 参照。
-- 動物は `scripts/entities/animal.gd` + `animal_data.gd` + `resources/animal_data/*.tres` 8 個。なかよしは `scripts/world/animal_manager.gd`(Animals ノード)が近接検知し HUD 通知。`signal befriended` は HUD カウンター/図鑑の布石。
-- interact(タッチ)は乗車(ride_controller)専用。なかよしは近接自動で競合回避。
+**Phase 0〜2 + Phase 3-1〜3-5 + 2-4 完了**。新幹線に乗れ、6 駅が立ち、8 種の動物がなかよしになり、星を集め、駅で電車が減速し、図鑑で発見状況を見られる。主要ループ「集める・出会う・乗る・探す」が一通り動く。次は Phase 3-6(ミッション)/ Phase 4(演出)/ 自由アイデア。詳細は `changelog.md` 参照。
+- 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
+- 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。
+- interact(タッチ)は乗車専用。なかよし・星・駅発見はすべて近接自動で競合回避。
+- `auto_capture.gd` の検証フック: AUTO_RIDE(乗車)/ AUTO_BEFRIEND(なかよし)/ AUTO_BOOK(図鑑)、ViewMode に STATION / ANIMAL。
 - 乗車システムは `scripts/world/ride_controller.gd`(Main 直下ノード)が中核。視点は屋根上俯瞰(改善さん選択)。運転席視点・列車運転は将来候補。
 - 駅は `scripts/world/station.gd` + `station_data.gd` + `resources/station_data/*.tres` 6 個(データ駆動)。看板は Label3D の Y ビルボード(空中表示)。立て看板化は改善さんの判断待ち。駅停車・降車を最寄り駅に寄せる連携は未実装。
 

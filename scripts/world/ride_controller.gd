@@ -35,6 +35,7 @@ const RIDE_CAM_FOV: float = 60.0
 @export var trains_path: NodePath
 @export var camera_rig_path: NodePath
 @export var hud_path: NodePath
+@export var game_state_path: NodePath
 
 signal boarded(train_display_name: String)
 signal alighted()
@@ -48,6 +49,7 @@ var _player: CharacterBody3D
 var _trains: Node3D
 var _camera_rig: Node3D
 var _hud: TouchHud
+var _game_state: Node
 
 
 func _ready() -> void:
@@ -55,6 +57,7 @@ func _ready() -> void:
 	_trains = get_node_or_null(trains_path) as Node3D
 	_camera_rig = get_node_or_null(camera_rig_path) as Node3D
 	_hud = get_node_or_null(hud_path) as TouchHud
+	_game_state = get_node_or_null(game_state_path)
 	if _player == null:
 		push_warning("[RideController] player_path が未解決")
 	if _trains == null:
@@ -129,6 +132,9 @@ func _do_board(train: Train) -> void:
 		_hud.hide_board_prompt()
 		_hud.set_riding(true)
 		_hud.show_notice("%sに のったよ!" % train.get_display_name())
+
+	if _game_state:
+		_game_state.add_boarded(train.get_slug())
 
 	boarded.emit(train.get_display_name())
 

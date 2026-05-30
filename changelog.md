@@ -2,6 +2,33 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.13.0 — 2026-05-30 — Phase 3-3/3-4/3-5 + 2-4(星あつめ・HUD カウンター・駅停車・図鑑)
+
+「集める・出会う・乗る・探す」の主要ループが一通り動くようになった。進捗を一元管理する GameState を土台に、星あつめ・カウンター・図鑑・駅停車をまとめて実装。
+
+- `scripts/world/game_state.gd` 新規 — Main 直下の進捗集約ノード(Autoload 不使用方針)。`boarded_trains` / `befriended_animals` / `visited_stations` / `star_count` と `signal changed`、`add_*` / `has_*`。セッション内メモリ保持(永続セーブは Phase 5)
+- **星あつめ(3-3)**: `scripts/world/stars.gd` を全面改修 — 夜のみ表示 → 常時きらきら浮遊・回転。プレイヤーが `GET_RANGE=2.6m` 内に近づくと獲得(動物なかよしと同じ近接自動方式)。獲得で `GameState.add_star` + HUD 通知「ほしを ゲット!」+ ぴょこっと拡大して飛んで消える Tween 演出
+- **HUD カウンター + ずかんボタン(3-4)**: `scenes/ui/TouchHUD.tscn` + `scripts/ui/touch_hud.gd` に「ほし N」「なかよし N」カウンター(上部左)と「ずかん」ボタン(上部右)を追加。`GameState.changed` で更新、ボタンで図鑑を開く
+- **図鑑(3-5)**: `scenes/ui/BookOverlay.tscn` + `scripts/ui/book.gd` 新規 — でんしゃ/どうぶつ/えき の 3 タブ。`resources/*_data/` の .tres を `DirAccess` で走査してマスター化し、`GameState` の発見状態と照合。発見済み=色見本+名前、未発見=「?」。開いている間は `get_tree().paused`(本 CanvasLayer は `process_mode=Always` で操作可)
+- **駅停車(2-4)**: `scripts/entities/train.gd` に `_station_slow_factor()` 追加 — 駅の `track_t` 近傍(±0.22rad)で速度係数を 25% まで落として通過、離れると 100% に戻る(static 純粋関数、複数駅は最小係数)
+- **駅発見**: `scripts/world/station_manager.gd` 新規(Stations ノード)— プレイヤー近接(9m)で駅を発見 → `GameState.add_station` + 通知「○○ えき はっけん!」
+- 連携追加: `ride_controller`(乗車で `add_boarded`)/ `animal_manager`(なかよしで `add_befriended`)が GameState に記録。`train` / `animal` / `station` に `get_slug()` 追加
+- `scenes/Main.tscn` — `GameState` ノード、`BookOverlay` を追加、各システムに `game_state_path` 等を配線。`Stations` に station_manager を付与、`Stars` の export を player/game_state/hud に差し替え
+- `scripts/dev/auto_capture.gd` — `CaptureMode.AUTO_BOOK`(GameState に発見を入れて図鑑を開き でんしゃ/どうぶつ タブを撮る検証フック)を追加
+
+### 検証
+
+- 通常起動(PLAYER)で全スクリプト パースエラーなし。HUD に「ほし 0 / なかよし 0」カウンターと「ずかん」ボタン、世界に集める星(黄色く浮遊)を確認
+- AUTO_BOOK で図鑑を確認: でんしゃタブ「はやぶさ」発見(緑見本+名前)・他「?」、どうぶつタブ「ねこ」「うさぎ」発見・他「?」、カウンターが「ほし 3 / なかよし 2」に更新
+- 星獲得・なかよし・駅発見は同一の `GameState.add_*` 経路。近接獲得ロジックは AUTO_BEFRIEND(なかよし通知)で実証済み
+
+### 範囲外 / 今後
+
+- 駅停車の実挙動・星獲得演出の体感は実機確認向き(スクリプトのみでは静止画にならない)
+- 図鑑の詳細画面(説明文・最高速度)、ミッション(3-6)、進捗の永続セーブ(Phase 5)
+
+次のステップ: 改善さんに体験確認 → Phase 3-6(ミッション)/ Phase 4(演出の作り込み)/ 季節などの自由アイデア
+
 ## v0.12.0 — 2026-05-30 — Phase 3-2(動物がふらふら歩く + なかよし)
 
 世界に 8 種の動物が現れ、草原をぴょこぴょこ歩き回り、近づくと「なかよし」になるようになった。データ駆動。
