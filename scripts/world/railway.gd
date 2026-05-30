@@ -9,15 +9,17 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 # 楕円の数値計算ロジックは static func で分離(Phase 2 の Train で再利用)。
 # 湖の上では水面より上に線路を浮かせる(_ground_or_water_y)。
 
-const TRACK_R_X: float = 135.0   # 楕円の X 半径(オープンワールド化で拡大)
+const TRACK_R_X: float = 135.0   # 楕円の X 半径(旧単一線路。Phase 2 で wp 化して再現)
 const TRACK_R_Z: float = 105.0   # 楕円の Z 半径
-const TRACK_SEGMENTS: int = 200  # 分割数(拡大に合わせ枕木間隔を維持)
+const ELLIPSE_WP_COUNT: int = 64 # 楕円を再現する際のウェイポイント数(Catmull-Rom で滑らか)
 const RAIL_OFFSET: float = 0.75  # 中心線からのレール ±ずれ
 const RAIL_RADIUS: float = 0.14
 const RAIL_CROSS_SEGMENTS: int = 8
 const RAIL_HEIGHT_OFFSET: float = 0.3
+const RAIL_SEG_SPACING: float = 3.8  # レール断面リングの弧長間隔(m)
 const TIE_SIZE: Vector3 = Vector3(2.5, 0.18, 0.5)
 const TIE_HEIGHT_OFFSET: float = 0.18
+const TIE_SPACING: float = 3.8       # 枕木の弧長間隔(m)
 
 const RAIL_COLOR: Color = Color(0.6, 0.6, 0.6)    # #999999 メタリック灰
 const TIE_COLOR: Color = Color(0.42, 0.27, 0.14)  # #6b4423 茶
@@ -36,9 +38,12 @@ func _ready() -> void:
 	if _terrain == null or not _terrain.has_method("height_at"):
 		push_warning("[Railway] terrain_path が未設定または height_at() を持たない")
 		return
-	_build_track_path()
-	_build_rails()
-	_build_ties()
+	# Phase 2: 旧単一楕円を「ウェイポイント → Curve3D → レール/枕木」の一般経路で再現。
+	# Phase 3 で複数ルート(RouteData)に拡張する土台。
+	var curve := _build_curve_from_waypoints(_ellipse_waypoints(), [], true)
+	_track_path.curve = curve
+	_build_rails_for(curve, _rails_mesh, true)
+	_build_ties_for(curve, _ties_multi, true)
 
 
 # 公開 API: 楕円トラックの Path3D ノードを返す(Train が PathFollow3D を add_child するため)
@@ -69,29 +74,71 @@ func _ground_or_water_y(x: float, z: float) -> float:
 	return ground_y
 
 
-func _build_track_path() -> void:
-	# まず全頂点を集める(末尾は先頭と同じ=閉路)
+# 楕円(旧単一線路)を再現するウェイポイント列(XZ, 重複なし)
+func _ellipse_waypoints() -> Array:
+	var wps: Array = []
+	for i in range(ELLIPSE_WP_COUNT):
+		var t: float = float(i) / float(ELLIPSE_WP_COUNT) * TAU
+		wps.append(ellipse_point(t))
+	return wps
+
+
+# === 一般化: 任意のウェイポイント列 → Curve3D / レール / 枕木 ===
+
+# XZ ウェイポイント列から滑らかな Curve3D を作る。
+# Y は地形/水面に追従(_ground_or_water_y)+ RAIL_HEIGHT_OFFSET + elevations[i](立体交差用)。
+# Catmull-Rom 風の接線(前点→次点 /6)で折れ線にせず連続曲線にする。loop=true で閉路。
+func _build_curve_from_waypoints(wps: Array, elevations: Array, loop: bool) -> Curve3D:
 	var pts: Array = []
-	for ip in range(TRACK_SEGMENTS + 1):
-		var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
-		var p: Vector2 = ellipse_point(t)
-		var y: float = _ground_or_water_y(p.x, p.y) + RAIL_HEIGHT_OFFSET
-		pts.append(Vector3(p.x, y, p.y))
+	for i in range(wps.size()):
+		var wp: Vector2 = wps[i]
+		var e: float = elevations[i] if i < elevations.size() else 0.0
+		var y: float = _ground_or_water_y(wp.x, wp.y) + RAIL_HEIGHT_OFFSET + e
+		pts.append(Vector3(wp.x, y, wp.y))
 
-	# Catmull-Rom 風に各点へ接線(handle)を付け、折れ線ではなく滑らかな閉曲線にする。
-	# これで PathFollow3D(ROTATION_ORIENTED)の向きが頂点ごとにカクッと切り替わらず、
-	# カーブも高低差も連続的に追従する。handle 長は (前点→次点)/6 ≒ 区間の 1/3。
 	var curve := Curve3D.new()
-	var seg: int = TRACK_SEGMENTS
-	for ip in range(seg + 1):
-		var prev_i: int = ((ip - 1) % seg + seg) % seg
-		var next_i: int = (ip + 1) % seg
+	var n: int = pts.size()
+	if n < 2:
+		return curve
+	var count: int = n + 1 if loop else n
+	for i in range(count):
+		var idx: int = i % n
+		var prev_i: int
+		var next_i: int
+		if loop:
+			prev_i = (i - 1 + n) % n
+			next_i = (i + 1) % n
+		else:
+			prev_i = max(i - 1, 0)
+			next_i = min(i + 1, n - 1)
 		var tangent: Vector3 = (pts[next_i] - pts[prev_i]) * (1.0 / 6.0)
-		curve.add_point(pts[ip], -tangent, tangent)
-	_track_path.curve = curve
+		curve.add_point(pts[idx], -tangent, tangent)
+	return curve
 
 
-func _build_rails() -> void:
+# 弧長 off における水平接線(レール左右ずれ・枕木向きの基準)
+func _curve_tangent(curve: Curve3D, off: float, length: float, loop: bool) -> Vector3:
+	var eps: float = 0.5
+	var a: float = off + eps
+	var b: float = off - eps
+	if loop:
+		a = fposmod(a, length)
+		b = fposmod(b, length)
+	else:
+		a = clampf(a, 0.0, length)
+		b = clampf(b, 0.0, length)
+	var t: Vector3 = curve.sample_baked(a, true) - curve.sample_baked(b, true)
+	t.y = 0.0
+	return t.normalized() if t.length() > 0.0001 else Vector3(0, 0, 1)
+
+
+# 指定 Curve3D に沿ってレール 2 本(8 角形チューブ)を ArrayMesh で生成し mesh_inst に設定。
+func _build_rails_for(curve: Curve3D, mesh_inst: MeshInstance3D, loop: bool) -> void:
+	var length: float = curve.get_baked_length()
+	if length <= 0.0:
+		return
+	var segs: int = max(int(length / RAIL_SEG_SPACING), 12)
+
 	var vertices := PackedVector3Array()
 	var normals := PackedVector3Array()
 	var indices := PackedInt32Array()
@@ -100,33 +147,22 @@ func _build_rails() -> void:
 		var offset_sign: float = 1.0 if rail_idx == 0 else -1.0
 		var base_idx: int = vertices.size()
 
-		for ip in range(TRACK_SEGMENTS + 1):
-			var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
-			var center: Vector2 = ellipse_point(t)
-			var tangent2: Vector2 = ellipse_tangent(t)
+		for ip in range(segs + 1):
+			var off: float = length * float(ip) / float(segs)
+			var center: Vector3 = curve.sample_baked(min(off, length), true)
+			var tan3: Vector3 = _curve_tangent(curve, off, length, loop)
+			var perp: Vector3 = Vector3(-tan3.z, 0.0, tan3.x)
+			var rail_center: Vector3 = center + perp * (RAIL_OFFSET * offset_sign)
 
-			var rail_y: float = _ground_or_water_y(center.x, center.y) + RAIL_HEIGHT_OFFSET
-
-			# tangent に直交する水平方向(レールの左右ずれ)
-			var perp: Vector2 = Vector2(-tangent2.y, tangent2.x)
-			var rail_center := Vector3(
-				center.x + perp.x * RAIL_OFFSET * offset_sign,
-				rail_y,
-				center.y + perp.y * RAIL_OFFSET * offset_sign
-			)
-
-			# 断面 8 角形の各頂点(tangent に垂直な平面上)
-			var tangent3 := Vector3(tangent2.x, 0.0, tangent2.y)
-			var right3: Vector3 = tangent3.cross(Vector3.UP).normalized()
+			var right3: Vector3 = tan3.cross(Vector3.UP).normalized()
 			var up3: Vector3 = Vector3.UP
 			for ic in range(RAIL_CROSS_SEGMENTS):
 				var angle: float = float(ic) / float(RAIL_CROSS_SEGMENTS) * TAU
-				var off: Vector3 = (up3 * sin(angle) + right3 * cos(angle)) * RAIL_RADIUS
-				vertices.append(rail_center + off)
-				normals.append(off.normalized())
+				var o: Vector3 = (up3 * sin(angle) + right3 * cos(angle)) * RAIL_RADIUS
+				vertices.append(rail_center + o)
+				normals.append(o.normalized())
 
-		# インデックス(円柱の側面を三角形分割)
-		for ip in range(TRACK_SEGMENTS):
+		for ip in range(segs):
 			for ic in range(RAIL_CROSS_SEGMENTS):
 				var ic_next: int = (ic + 1) % RAIL_CROSS_SEGMENTS
 				var i00: int = base_idx + ip * RAIL_CROSS_SEGMENTS + ic
@@ -144,19 +180,24 @@ func _build_rails() -> void:
 
 	var mesh := ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-	_rails_mesh.mesh = mesh
+	mesh_inst.mesh = mesh
 
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = RAIL_COLOR
 	mat.metallic = 0.6
 	mat.roughness = 0.4
-	_rails_mesh.material_override = mat
+	mesh_inst.material_override = mat
 
 
-func _build_ties() -> void:
+# 指定 Curve3D に沿って枕木を MultiMesh で生成し mm_inst に設定。
+func _build_ties_for(curve: Curve3D, mm_inst: MultiMeshInstance3D, loop: bool) -> void:
+	var length: float = curve.get_baked_length()
+	if length <= 0.0:
+		return
+	var count: int = max(int(length / TIE_SPACING), 1)
+
 	var box := BoxMesh.new()
 	box.size = TIE_SIZE
-
 	var tie_mat := StandardMaterial3D.new()
 	tie_mat.albedo_color = TIE_COLOR
 	tie_mat.roughness = 0.85
@@ -165,21 +206,17 @@ func _build_ties() -> void:
 	var mm := MultiMesh.new()
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.mesh = box
-	mm.instance_count = TRACK_SEGMENTS
+	mm.instance_count = count
 
-	for ip in range(TRACK_SEGMENTS):
-		var t: float = float(ip) / float(TRACK_SEGMENTS) * TAU
-		var center: Vector2 = ellipse_point(t)
-		var tangent2: Vector2 = ellipse_tangent(t)
-		var tie_y: float = _ground_or_water_y(center.x, center.y) + TIE_HEIGHT_OFFSET
+	# 枕木は線路面(curve Y)より少し下に(RAIL と TIE の高さオフセット差ぶん)
+	var y_drop: float = RAIL_HEIGHT_OFFSET - TIE_HEIGHT_OFFSET
+	for ip in range(count):
+		var off: float = length * float(ip) / float(count)
+		var center: Vector3 = curve.sample_baked(min(off, length), true)
+		var tan3: Vector3 = _curve_tangent(curve, off, length, loop)
+		# 枕木の長辺(BoxMesh の X 軸)を接線に直交させる
+		var yaw: float = atan2(tan3.x, tan3.z)
+		var origin := Vector3(center.x, center.y - y_drop, center.z)
+		mm.set_instance_transform(ip, Transform3D(Basis(Vector3.UP, yaw), origin))
 
-		# 枕木の長辺(BoxMesh の X 軸 = 2.5m)を線路の接線に直交させる。
-		# atan2(tangent.x, tangent.z) で接線方向の yaw が取れて、それで Basis を作ると
-		# ローカル X が接線と直交する向きになる(過去に + PI*0.5 を入れていたが
-		# それだと枕木がレールと平行=縦になってしまっていた)
-		var yaw: float = atan2(tangent2.x, tangent2.y)
-		var basis := Basis(Vector3.UP, yaw)
-		var origin := Vector3(center.x, tie_y, center.y)
-		mm.set_instance_transform(ip, Transform3D(basis, origin))
-
-	_ties_multi.multimesh = mm
+	mm_inst.multimesh = mm

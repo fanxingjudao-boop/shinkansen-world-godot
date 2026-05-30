@@ -159,10 +159,10 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(-50, -3, 80))
 		cam.fov = 60.0
 	elif VIEW == ViewMode.TRAIN_CLOSE:
-		# Hayabusa の initial_t=0 → 楕円起点(100, 0)、その横から見る
-		cam.global_position = Vector3(108, 4, 18)
-		cam.look_at(Vector3(100, 1, 0))
-		cam.fov = 55.0
+		# 楕円 t=0 → (135, 0) 付近のレール・枕木・列車を斜め上から
+		cam.global_position = Vector3(160, 9, 28)
+		cam.look_at(Vector3(132, 1.5, 0))
+		cam.fov = 52.0
 	elif VIEW == ViewMode.STATION:
 		# みどり駅(track_t=0)→ プラットフォームは外側 (104.4, 0)
 		cam.global_position = Vector3(116, 8, 15)
