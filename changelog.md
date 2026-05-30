@@ -2,6 +2,31 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.17.0 — 2026-05-30 — Phase 5(BGM・進捗保存・PWA)
+
+「親モード以外ぜんぶ」の依頼で、BGM・セーブ・PWA をまとめて実装。
+
+- **BGM(4-4)**: `scripts/world/bgm.gd` 新規(Main 直下)— ペンタトニックのゆったり旋律をスクリプト生成(`AudioStreamWAV`、`LOOP_FORWARD` でループ)。基音+1オクターブを混ぜたやさしい音色、低音量(-16dB)。タイトルの「はじめる」後に鳴り始める
+- **進捗保存(5-6)**: `scripts/world/save_system.gd` 新規(Main 直下、GameState の直後に配置)— GameState を `user://save.json` に JSON 保存/読込(Web は IndexedDB に永続)。`changed` で保存、起動時に読込。読込は emit せず値だけセットし、各 listener が `_ready` で現在値を反映 → 起動時の効果音誤発火を防止。star/boarded/befriended/stations を復元
+- **PWA化(5-1/5-5)**: `export/web/manifest.json` 新規(name/short_name/fullscreen/landscape/色/apple-touch アイコン)。`web/template.html` に `<link rel="manifest">` / `apple-touch-icon` / `icon` を追加。既存の apple-mobile-web-app-capable と合わせ、iPad で「ホーム画面に追加」→ フルスクリーン起動できる
+- `scenes/Main.tscn` — SaveSystem(GameState 直後)/ Bgm を配置
+- `scripts/world/mission_manager.gd` 修正 — HUD は後から `_ready` するため、ミッション表示を `call_deferred` で遅延反映(ロード後の現在ミッションが正しく出る)
+- `scripts/world/sound_fx.gd` 修正 — `_ready` で prev カウントを現在値に初期化(ロード後の誤発火防止)
+
+### 検証
+
+- パースエラーなし(BGM の WAV 生成、SaveSystem、PWA は CLI 無関係)
+- 1 回目(AUTO_BOOK)で進捗を保存 → 2 回目(SINGLE)起動で「ほし 3 / なかよし 2」とミッション「ほしを 6こ あつめよう」(4 つ達成済みをスキップ)が復元されることを確認
+- 修正: ミッション表示が空 → MissionManager が TouchHUD より先に `_ready` し HUD ラベルが未初期化だった。`call_deferred` で解決
+
+### メモ(実機確認)
+
+- BGM / 効果音は Web では「はじめる」(最初の操作)後に鳴る
+- 完全オフライン化(Service Worker キャッシュ)は Godot の Web Export ダイアログで PWA を ON にするか、今後 SW を追加。現状でも manifest + apple-touch で iPad のホーム追加・フルスクリーンは可能
+- 進捗リセットは将来の親モードで(今は save.json 削除で初期化)
+
+次のステップ: 改善さんに実機確認(はじめる→音/BGM、ホーム追加、進捗が次回続くか)→ 親モード / さらなる季節 / 自由アイデア
+
 ## v0.16.0 — 2026-05-30 — スタート画面(Phase 5 入口・音の起こし)
 
 - `scenes/ui/TitleScreen.tscn` + `scripts/ui/title.gd` 新規 — 「しんかんせんワールド」タイトル+「でんしゃで あそぼう!」+ 黄色い「はじめる」ボタン。背景に world が薄く透ける(空色ベール 0.82)。CanvasLayer layer=3 で最前面

@@ -165,7 +165,9 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 - 演出(Phase 4): Glow=Main の Environment、星きらきら/バースト=`stars.gd`、なかよしハート=`animal.gd._pop_heart`、SL蒸気=`train.gd._attach_steam`、UIバウンス=`touch_hud.gd._add_press_bounce`、リムライト=`assets/shaders/rim.gdshader`(animal/player)、ホタル=`fireflies.gd`(夜・Player子)、虹=`rainbow.gd`、ミッション=`mission_manager.gd`、効果音=`sound_fx.gd`(プロシージャル WAV)。Glow/リムライト/音の Web での挙動は要実機確認。
 - 列車の車輪回転は負荷(約360個)で見送り中。
 - スタート画面 `scenes/ui/TitleScreen.tscn`(title.gd)実装済み。「はじめる」押下で AudioContext 起動+フェードアウト。これで Web でも効果音が鳴る想定(実機要確認)。
-- Phase 5 残り: BGM、進捗の LocalStorage 保存、manifest/Service Worker の PWA 化、親モード。
+- Phase 5 実装済み: BGM=`bgm.gd`(プロシージャル・ループ)、進捗保存=`save_system.gd`(user://save.json、GameState 直後に配置)、PWA=`export/web/manifest.json`+`web/template.html`(apple-touch・manifest link)。
+- Phase 5 残り: 完全オフライン化(Service Worker キャッシュ。Export ダイアログで PWA ON or SW 追加)、親モード(音量・データリセット・PIN)。
+- 順序の注意: GameState→SaveSystem を最前に。HUD に書く処理(ミッション)は call_deferred で HUD の _ready を待つ。効果音は _ready で prev を現在値に初期化して起動時の誤発火を防ぐ。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
 - 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。

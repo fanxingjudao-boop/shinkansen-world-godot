@@ -1,0 +1,18 @@
+{
+  "name": "しんかんせんワールド",
+  "short_name": "しんかんせん",
+  "lang": "ja",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#7ec8f5",
+  "theme_color": "#7ec8f5",
+  "icons": [
+    {
+      "src": "index.apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

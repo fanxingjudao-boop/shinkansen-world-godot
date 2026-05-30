@@ -26,9 +26,13 @@ func _ready() -> void:
 		{"text": "えきを みつけよう", "done": func() -> bool: return _gs.visited_stations.size() >= 1},
 		{"text": "ほしを 6こ あつめよう", "done": func() -> bool: return _gs.star_count >= 6},
 	]
+	# ロード済みで達成済みのミッションは通知なしでスキップ
 	if _gs:
+		while _idx < _missions.size() and _missions[_idx]["done"].call():
+			_idx += 1
 		_gs.changed.connect(_on_changed)
-	_update_hud()
+	# HUD(TouchHUD)は後から _ready するので、表示は遅延して反映する
+	call_deferred("_update_hud")
 
 
 func _on_changed() -> void:

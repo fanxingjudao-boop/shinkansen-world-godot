@@ -39,6 +39,11 @@ func _ready() -> void:
 	_tone_board = _make_tone(523.0, 784.0, 0.20)
 	_tone_station = _make_tone(784.0, 1047.0, 0.20)
 	if _gs:
+		# 起動時(ロード済み)の値で初期化 → 起動直後に音が誤発火しない
+		_prev_star = _gs.star_count
+		_prev_friend = _gs.befriended_animals.size()
+		_prev_board = _gs.boarded_trains.size()
+		_prev_station = _gs.visited_stations.size()
 		_gs.changed.connect(_on_changed)
 
 

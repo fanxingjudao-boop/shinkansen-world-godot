@@ -1,4 +1,4 @@
-[gd_scene load_steps=47 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=49 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -46,6 +46,8 @@
 [ext_resource type="Script" path="res://scripts/world/mission_manager.gd" id="45_mission"]
 [ext_resource type="Script" path="res://scripts/world/sound_fx.gd" id="46_sound"]
 [ext_resource type="PackedScene" path="res://scenes/ui/TitleScreen.tscn" id="47_title"]
+[ext_resource type="Script" path="res://scripts/world/save_system.gd" id="48_save"]
+[ext_resource type="Script" path="res://scripts/world/bgm.gd" id="49_bgm"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -69,6 +71,13 @@ script = ExtResource("1_main")
 
 [node name="GameState" type="Node" parent="."]
 script = ExtResource("40_gamestate")
+
+[node name="SaveSystem" type="Node" parent="."]
+script = ExtResource("48_save")
+game_state_path = NodePath("../GameState")
+
+[node name="Bgm" type="Node" parent="."]
+script = ExtResource("49_bgm")
 
 [node name="MissionManager" type="Node" parent="."]
 script = ExtResource("45_mission")
