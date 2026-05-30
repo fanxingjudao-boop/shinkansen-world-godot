@@ -25,17 +25,12 @@ func _settle_player_on_terrain() -> void:
 # 改善さんが Godot エディタを触らずにキーバインドを変更できる。
 func _register_input_actions() -> void:
 	var actions: Dictionary = {
-		"move_forward": [KEY_W],
-		"move_back":    [KEY_S],
-		"move_left":    [KEY_A],
-		"move_right":   [KEY_D],
+		"move_forward": [KEY_W, KEY_UP],
+		"move_back":    [KEY_S, KEY_DOWN],
+		"move_left":    [KEY_A, KEY_LEFT],
+		"move_right":   [KEY_D, KEY_RIGHT],
 		"jump":         [KEY_SPACE],
 		"interact":     [KEY_E, KEY_ENTER],
-		# カメラ回転(矢印キー)。タッチでは空き領域のドラッグで回す
-		"cam_left":     [KEY_LEFT],
-		"cam_right":    [KEY_RIGHT],
-		"cam_up":       [KEY_UP],
-		"cam_down":     [KEY_DOWN],
 	}
 	for action_name in actions.keys():
 		if not InputMap.has_action(action_name):

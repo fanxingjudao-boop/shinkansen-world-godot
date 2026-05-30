@@ -168,7 +168,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 - Phase 5 実装済み: BGM=`bgm.gd`(プロシージャル・ループ)、進捗保存=`save_system.gd`(user://save.json、GameState 直後に配置)、PWA=`export/web/manifest.json`+`web/template.html`(apple-touch・manifest link)。
 - Phase 5 残り: 完全オフライン化(Service Worker キャッシュ。Export ダイアログで PWA ON or SW 追加)、親モード(音量・データリセット・PIN)。
 - 順序の注意: GameState→SaveSystem を最前に。HUD に書く処理(ミッション)は call_deferred で HUD の _ready を待つ。効果音は _ready で prev を現在値に初期化して起動時の誤発火を防ぐ。
-- 操作/見た目: 移動=D-pad・WASD、カメラ=空き領域ドラッグ・矢印キーの orbit(`camera_rig.gd`、yaw/pitch)。プレイヤーは 3 頭身の運転士キャラ(`player.gd` でスクリプト生成、帽子・大きい目・ほっぺ・歩行アニメ)。Player.tscn は当たり判定のみ。
+- 操作/見た目: 移動=D-pad・WASD/矢印。カメラは**固定追従**(`camera_rig.gd`、yaw0/pitch0.5。orbit は画面酔いするとのことで撤去)。プレイヤーは 3 頭身の運転士キャラ(`player.gd` でスクリプト生成、帽子・大きいうるうる目+キラキラ・ほっぺ・歩行アニメ)。Player.tscn は当たり判定のみ。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
 - 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。

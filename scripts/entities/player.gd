@@ -172,21 +172,30 @@ func _build_head() -> void:
 	hair.height = 0.8
 	_add_part(hair, Vector3(0, 0.06, 0.14), HAIR, head).scale = Vector3(1.02, 0.9, 0.85)
 
-	# 目(白目+黒目+ハイライト)。-Z が顔の正面
+	# 目(白目+大きいうるうる黒目+キラキラ2つ)。-Z が顔の正面
 	for sx in [-1.0, 1.0]:
+		# 白目(下地・たてに大きめ)
 		var w := SphereMesh.new()
-		w.radius = 0.11
-		w.height = 0.22
-		var wmi := _add_unshaded(w, Vector3(sx * 0.16, 0.05, -0.36), EYE_W, head)
-		wmi.scale = Vector3(0.8, 1.1, 0.6)
+		w.radius = 0.14
+		w.height = 0.28
+		var wmi := _add_unshaded(w, Vector3(sx * 0.17, 0.04, -0.34), EYE_W, head)
+		wmi.scale = Vector3(0.85, 1.2, 0.6)
+		# 黒目(大きい瞳=うるうる)
 		var b := SphereMesh.new()
-		b.radius = 0.065
-		b.height = 0.13
-		_add_unshaded(b, Vector3(sx * 0.16, 0.04, -0.44), EYE_B, head)
-		var hi := SphereMesh.new()
-		hi.radius = 0.025
-		hi.height = 0.05
-		_add_unshaded(hi, Vector3(sx * 0.18, 0.09, -0.48), EYE_W, head)
+		b.radius = 0.105
+		b.height = 0.21
+		var bmi := _add_unshaded(b, Vector3(sx * 0.17, 0.03, -0.42), EYE_B, head)
+		bmi.scale = Vector3(0.92, 1.05, 0.6)
+		# キラキラ(大・上)
+		var hi1 := SphereMesh.new()
+		hi1.radius = 0.045
+		hi1.height = 0.09
+		_add_unshaded(hi1, Vector3(sx * 0.21, 0.09, -0.47), EYE_W, head)
+		# キラキラ(小・下)
+		var hi2 := SphereMesh.new()
+		hi2.radius = 0.022
+		hi2.height = 0.044
+		_add_unshaded(hi2, Vector3(sx * 0.13, -0.03, -0.47), EYE_W, head)
 
 	# ほっぺ(ピンク)
 	for sx in [-1.0, 1.0]:
