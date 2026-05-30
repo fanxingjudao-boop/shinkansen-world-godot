@@ -231,8 +231,7 @@ day_night_path = NodePath("../../DayNightCycle")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 8)
 script = ExtResource("4_camrig")
 target_path = NodePath("../Player")
-offset = Vector3(0, 5, 8)
-smoothness = 5.0
+smoothness = 8.0
 look_offset = Vector3(0, 1.0, 0)
 
 [node name="Camera3D" type="Camera3D" parent="CameraRig"]
