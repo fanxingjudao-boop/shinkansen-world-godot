@@ -35,15 +35,16 @@ func _ready() -> void:
 	_hud = get_node_or_null(hud_path) as TouchHud
 
 	seed(STAR_SEED)
-	var mat: StandardMaterial3D = _make_star_material()
+	var base_mat: StandardMaterial3D = _make_star_material()
 	for i in range(STAR_COUNT):
+		var mat: StandardMaterial3D = base_mat.duplicate()  # 星ごとに脈動させるため複製
 		var node := _make_star(mat)
 		var x: float = randf_range(-PLACE_RADIUS, PLACE_RADIUS)
 		var z: float = randf_range(-PLACE_RADIUS, PLACE_RADIUS)
 		var gy: float = TerrainHeight.compute_height(x, z) + HEIGHT_OFFSET
 		node.position = Vector3(x, gy, z)
 		add_child(node)
-		_stars.append({"node": node, "base_y": gy, "phase": randf_range(0.0, TAU), "taken": false})
+		_stars.append({"node": node, "base_y": gy, "phase": randf_range(0.0, TAU), "taken": false, "mat": mat})
 
 
 func _process(delta: float) -> void:
@@ -55,6 +56,7 @@ func _process(delta: float) -> void:
 		node.rotate_y(SPIN_SPEED * delta)
 		st.phase += delta * FLOAT_FREQ
 		node.position.y = st.base_y + sin(st.phase) * FLOAT_AMP
+		st.mat.emission_energy_multiplier = 2.2 + sin(st.phase * 2.5) * 1.3  # きらきら脈動
 		if _player and node.global_position.distance_to(pp) < GET_RANGE:
 			_collect(st)
 
@@ -64,6 +66,7 @@ func _process(delta: float) -> void:
 func _collect(st: Dictionary) -> void:
 	st.taken = true
 	var node: Node3D = st.node
+	_spawn_burst(node.global_position)
 	if _game_state:
 		_game_state.add_star()
 	if _hud:
@@ -75,6 +78,40 @@ func _collect(st: Dictionary) -> void:
 	tw.tween_property(node, "scale", Vector3.ZERO, 0.3)
 	tw.parallel().tween_property(node, "position:y", st.base_y + 2.5, 0.3)
 	tw.tween_callback(node.queue_free)
+
+
+# 獲得時にキラキラを一発はじけさせる(GPUParticles3D one-shot、寿命後 自動削除)
+func _spawn_burst(pos: Vector3) -> void:
+	var p := GPUParticles3D.new()
+	p.amount = 18
+	p.lifetime = 0.7
+	p.one_shot = true
+	p.explosiveness = 1.0
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 180.0
+	pm.initial_velocity_min = 2.0
+	pm.initial_velocity_max = 4.5
+	pm.gravity = Vector3(0, -4.0, 0)
+	pm.scale_min = 0.15
+	pm.scale_max = 0.4
+	p.process_material = pm
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.35, 0.35)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = STAR_COLOR
+	mat.emission_enabled = true
+	mat.emission = STAR_COLOR
+	mat.emission_energy_multiplier = 3.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	qm.material = mat
+	p.draw_pass_1 = qm
+	add_child(p)
+	p.global_position = pos
+	p.emitting = true
+	p.finished.connect(p.queue_free)
 
 
 # === メッシュ構築 ===

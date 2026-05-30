@@ -90,12 +90,32 @@ func befriend() -> void:
 	_befriended = true
 	_state = St.IDLE
 	_celebrating = true
+	_pop_heart()
 	var tw := create_tween()
 	tw.tween_property(_visual, "position:y", _base_visual_y + 0.7, 0.22) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_visual, "position:y", _base_visual_y, 0.32) \
 		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	tw.tween_callback(func() -> void: _celebrating = false)
+
+
+# 頭上にハートをふわっと出して上昇フェード
+func _pop_heart() -> void:
+	var heart := Label3D.new()
+	heart.text = "♥"
+	heart.font_size = 96
+	heart.pixel_size = 0.01
+	heart.modulate = Color(1.0, 0.42, 0.6)
+	heart.outline_size = 12
+	heart.outline_modulate = Color(1, 1, 1, 1)
+	heart.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	heart.position = Vector3(0, 1.6, 0)
+	add_child(heart)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(heart, "position:y", 2.8, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(heart, "modulate:a", 0.0, 0.9)
+	tw.chain().tween_callback(heart.queue_free)
 
 
 # === AI(ロジック層に近い簡易ステートマシン) ===

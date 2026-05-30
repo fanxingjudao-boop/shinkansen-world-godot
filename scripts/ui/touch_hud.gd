@@ -45,6 +45,9 @@ func _ready() -> void:
 	if btn_book:
 		btn_book.pressed.connect(_on_book_pressed)
 
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book]:
+		_add_press_bounce(b)
+
 func _bind(btn: BaseButton, action: StringName) -> void:
 	if btn == null:
 		return
@@ -116,3 +119,18 @@ func _on_state_changed() -> void:
 func _on_book_pressed() -> void:
 	if _book and _book.has_method("open"):
 		_book.open()
+
+
+# === ボタン押下でぷにっと縮む(ease_out_back) ===
+
+func _add_press_bounce(btn: BaseButton) -> void:
+	if btn == null:
+		return
+	btn.button_down.connect(func() -> void: _bounce(btn, 0.88))
+	btn.button_up.connect(func() -> void: _bounce(btn, 1.0))
+
+func _bounce(btn: BaseButton, target: float) -> void:
+	btn.pivot_offset = btn.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(btn, "scale", Vector2.ONE * target, 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

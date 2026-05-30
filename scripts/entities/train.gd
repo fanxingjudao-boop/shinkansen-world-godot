@@ -348,7 +348,44 @@ func _build_nose(nose_type: String, base_z: float) -> Node3D:
 		stack_mi.material_override = _make_material(train_data.body_color, 0.75)
 		stack_mi.position = Vector3(0, 0.7, base_z - 0.4)
 		nose.add_child(stack_mi)
+		# 煙突から もくもく蒸気
+		if train_data.has_steam:
+			_attach_steam(nose, Vector3(0, 1.2, base_z - 0.4))
 	return nose
+
+
+# SL の煙突から立ちのぼる蒸気(白いふわふわ、上昇しながら拡大フェード)
+func _attach_steam(parent: Node3D, pos: Vector3) -> void:
+	var steam := GPUParticles3D.new()
+	steam.amount = 14
+	steam.lifetime = 2.2
+	steam.preprocess = 1.0
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 12.0
+	pm.initial_velocity_min = 1.2
+	pm.initial_velocity_max = 2.0
+	pm.gravity = Vector3(0, 0.6, 0)
+	pm.scale_min = 0.6
+	pm.scale_max = 1.1
+	var curve := Curve.new()
+	curve.add_point(Vector2(0.0, 0.4))
+	curve.add_point(Vector2(1.0, 1.6))
+	var ct := CurveTexture.new()
+	ct.curve = curve
+	pm.scale_curve = ct
+	steam.process_material = pm
+	var qm := QuadMesh.new()
+	qm.size = Vector2(1.0, 1.0)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1, 1, 1, 0.5)
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	qm.material = mat
+	steam.draw_pass_1 = qm
+	steam.position = pos
+	parent.add_child(steam)
 
 
 func _attach_pantograph(car: Node3D) -> void:

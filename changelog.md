@@ -2,6 +2,30 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.14.0 — 2026-05-30 — Phase 4 演出の作り込み(光・キラキラ・動き)
+
+「光って、はじけて、ふわふわする」表現を追加して世界をリッチに。Compatibility レンダラーで効く範囲に絞った。
+
+- **Glow(4-6)**: `scenes/Main.tscn` の Environment に glow を追加(intensity 1.0 / strength 1.1 / bloom 0.15 / threshold 0.9)。星・窓・ヘッドライト・蒸気が柔らかく光る。DayNightCycle の毎フレーム上書きとは干渉しない
+- **星のきらきら + 獲得バースト(4-2)**: `scripts/world/stars.gd` — 星ごとに material を複製して emission を `sin` で脈動。獲得時に `_spawn_burst()` で GPUParticles3D の星屑を一発はじけさせ、寿命後に自動削除(`finished` → `queue_free`)
+- **なかよしハート(4-3/4-5)**: `scripts/entities/animal.gd` の `befriend()` で `_pop_heart()` を呼び、頭上に「♥」(Label3D, Y ビルボード, 白アウトライン)をふわっと出して上昇フェード
+- **SL の蒸気(4-2)**: `scripts/entities/train.gd` — `has_steam` の編成(SL人吉)の煙突に `_attach_steam()` で GPUParticles3D の蒸気。`scale_curve`(CurveTexture)で上昇しながら拡大、白い半透明ふわふわ
+- **UI ボタンのぷにっと(4-5)**: `scripts/ui/touch_hud.gd` — D-pad / ジャンプ / タッチ / ずかん ボタンに押下バウンス(button_down で 0.88 倍、button_up で 1.0 倍、`ease_out_back`)
+- `scripts/dev/auto_capture.gd` — `ViewMode.STEAM`(SL の蒸気を撮る)を追加
+
+### 検証
+
+- 通常起動でパースエラーなし。星が Glow で淡く光ることを確認
+- AUTO_BEFRIEND で頭上にピンクの「♥」+「うさぎと なかよし!」+ カウンター更新を確認
+- STEAM ビューで SL人吉の煙突から白い蒸気がもくもく、窓・蒸気が Glow で光るのを確認(奥に にじ駅)
+
+### メモ
+
+- Glow は Compatibility/CLI では効いた。Web Export(WebGL2)での効き具合は実機確認が望ましい。効きすぎ/効かない場合は intensity / threshold を調整
+- 未実装(今後): トゥーン/リムライトシェーダー、草の揺れ、列車の車輪回転・パンタ上下、音(BGM・効果音)、季節パーティクル(紅葉・雪・ホタル)
+
+次のステップ: 改善さんに体験確認(特に Glow の効き)→ 音 or さらなるシェーダー or 季節 へ
+
 ## v0.13.0 — 2026-05-30 — Phase 3-3/3-4/3-5 + 2-4(星あつめ・HUD カウンター・駅停車・図鑑)
 
 「集める・出会う・乗る・探す」の主要ループが一通り動くようになった。進捗を一元管理する GameState を土台に、星あつめ・カウンター・図鑑・駅停車をまとめて実装。

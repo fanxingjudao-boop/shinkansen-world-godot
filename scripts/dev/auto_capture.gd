@@ -10,7 +10,7 @@ extends Node
 # 視点モード:
 #   PLAYER / BIRD / SIDE
 
-enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL }
+enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM }
 enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK }
 
 const DELAY_SEC: float = 2.0
@@ -169,4 +169,9 @@ func _apply_debug_camera() -> void:
 		cam.global_position = Vector3(12, 3.5, 3)
 		cam.look_at(Vector3(7, 1.2, 13))
 		cam.fov = 50.0
+	elif VIEW == ViewMode.STEAM:
+		# SL人吉(initial_t=5.0 → 楕円 (28,-75) 付近)の蒸気を撮る
+		cam.global_position = Vector3(58, 9, -52)
+		cam.look_at(Vector3(36, 4, -72))
+		cam.fov = 52.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)
