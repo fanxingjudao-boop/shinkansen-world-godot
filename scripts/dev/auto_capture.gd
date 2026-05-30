@@ -10,8 +10,8 @@ extends Node
 # 視点モード:
 #   PLAYER / BIRD / SIDE
 
-enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE }
+enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -33,7 +33,24 @@ func _ready() -> void:
 			await _capture_four_times()
 		CaptureMode.AUTO_RIDE:
 			await _capture_ride()
+		CaptureMode.AUTO_BEFRIEND:
+			await _capture_befriend()
 	get_tree().quit()
+
+
+# なかよし検証: プレイヤーをうさぎの隣にテレポートし、AnimalManager の
+# 近接検知 → なかよし成立 → HUD 通知 を撮る。
+func _capture_befriend() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as Node3D
+	var usagi := get_tree().root.find_child("Usagi", true, false) as Node3D
+	if player == null or usagi == null:
+		print("[AutoCapture] Player/Usagi not found, falling back to single")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	player.global_position = usagi.global_position + Vector3(2.0, 0.0, 0.0)
+	await get_tree().process_frame  # AnimalManager が近接検知して befriend
+	await get_tree().create_timer(0.4).timeout  # 通知のフェードイン + 喜びジャンプ
+	await _save_screenshot("user://screenshot_befriend.png")
 
 
 # 乗車システムの検証: 本物の RideController._do_board / _do_alight を呼んで
@@ -119,4 +136,9 @@ func _apply_debug_camera() -> void:
 		cam.global_position = Vector3(116, 8, 15)
 		cam.look_at(Vector3(104, 3, 2))
 		cam.fov = 58.0
+	elif VIEW == ViewMode.ANIMAL:
+		# うさぎ(home 8,12 付近)に寄って造形を確認
+		cam.global_position = Vector3(12, 3.5, 3)
+		cam.look_at(Vector3(7, 1.2, 13))
+		cam.fov = 50.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)

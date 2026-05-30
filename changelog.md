@@ -2,6 +2,36 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.12.0 — 2026-05-30 — Phase 3-2(動物がふらふら歩く + なかよし)
+
+世界に 8 種の動物が現れ、草原をぴょこぴょこ歩き回り、近づくと「なかよし」になるようになった。データ駆動。
+なかよしは改善さんの選択で「近づくと自動」方式(タッチ不要=3歳児にやさしい、乗車の interact と競合しない)。
+
+- `scripts/entities/animal_data.gd` 新規 — `class_name AnimalData` extends Resource。`display_name` / `slug` / `species` / `body_color` / `accent_color` / `belly_color` / `scale_factor` を `@export`
+- `scripts/entities/animal.gd` 新規 — extends Node3D。
+  - 見た目を species ごとにスクリプト生成(体+おなか+頭+目、+ 耳/鼻/くちばし/しっぽ)。丸っこいデフォルメ
+  - 簡易ステートマシン(IDLE ⇄ WALK)で `_home`(初期位置)半径 8m 内をふらふら。`randf_range` で状態時間と向きをランダム化
+  - 歩行中は進行方向へ滑らかに向き(`lerp_angle`)、`sin` で上下バウンス(ぴょこぴょこ)。地形高さに追従(衝突なし=子供向けにすり抜けOK)
+- `scenes/entities/Animal.tscn` 新規 — Node3D + animal.gd だけ(見た目は全部スクリプト生成、AnimalData で変わるので静的化しない)
+- `resources/animal_data/*.tres` 新規 8 個 — うさぎ(rabbit)/ くま(bear)/ きつね(fox)/ ねこ(cat)/ ぱんだ(panda)/ いぬ(dog)/ ぺんぎん(penguin)/ ぶた(pig)
+- `scripts/world/animal_manager.gd` 新規 — `Animals` ノードに付与。プレイヤーが `BEFRIEND_RANGE = 3m` 内に近づいた未なかよしの動物を `befriend()` させ、HUD に「○○と なかよし!」通知。`signal befriended(display_name, total)`(将来の HUD カウンター / 図鑑用)。interact を使わないので乗車と競合しない
+- `scripts/entities/animal.gd` 追記 — `befriend()`(立ち止まって `ease_out_back` → `bounce` でぴょんと喜ぶ)/ `is_befriended()` / `get_display_name()`。喜びジャンプ中(`_celebrating`)は移動・バウンスを止める
+- `scenes/Main.tscn` 修正 — `Animals`(Node3D + animal_manager)を追加(player_path / hud_path 配線)、配下に 8 体を線路内側の草原に配置
+- `scripts/dev/auto_capture.gd` 修正 — `ViewMode.ANIMAL`(造形確認)+ `CaptureMode.AUTO_BEFRIEND`(プレイヤーをうさぎ隣にテレポートして なかよし通知を撮る検証フック)を追加
+
+### 検証
+
+- AutoCapture(ANIMAL ビュー)で うさぎ を確認: 白い丸い体・ピンクの長い耳・丸尾のかわいいデフォルメ。奥に他の動物・電車。スクリプトエラーなし
+- AutoCapture(AUTO_BEFRIEND)で「うさぎと なかよし!」通知が出ることを確認(プレイヤー近接 → 自動成立)
+- 修正したハマり: `_home` は Vector2 なので `.z` 不可 → `.y`(z 座標相当)に修正(Parse Error: Cannot find member "z" in base "Vector2")
+
+### 範囲外(今回は実装せず)
+
+- なかよし数の HUD カウンター表示(Phase 3-4 HUD で。`signal befriended` は布石済み)
+- 動物との会話・固有モーションの作り込み(Phase 4 演出)
+
+次のステップ: 改善さんに体験確認 → Phase 2-4(駅停車)/ 3-3(星獲得)/ 3-4(HUD カウンター)/ 3-5(図鑑)へ
+
 ## v0.11.0 — 2026-05-30 — Phase 3-1(駅をつくる)
 
 線路沿いに 6 つの駅が立ち、世界に「目的地」ができた。データ駆動(TrainData と同方針)。

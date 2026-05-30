@@ -1,4 +1,4 @@
-[gd_scene load_steps=29 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=39 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -28,6 +28,16 @@
 [ext_resource type="Resource" path="res://resources/station_data/yama.tres" id="26_yama"]
 [ext_resource type="Resource" path="res://resources/station_data/okashi.tres" id="27_okashi"]
 [ext_resource type="Resource" path="res://resources/station_data/niji.tres" id="28_niji"]
+[ext_resource type="PackedScene" path="res://scenes/entities/Animal.tscn" id="29_animal"]
+[ext_resource type="Script" path="res://scripts/world/animal_manager.gd" id="29b_animgr"]
+[ext_resource type="Resource" path="res://resources/animal_data/usagi.tres" id="30_usagi"]
+[ext_resource type="Resource" path="res://resources/animal_data/kuma.tres" id="31_kuma"]
+[ext_resource type="Resource" path="res://resources/animal_data/kitsune.tres" id="32_kitsune"]
+[ext_resource type="Resource" path="res://resources/animal_data/neko.tres" id="33_neko"]
+[ext_resource type="Resource" path="res://resources/animal_data/panda.tres" id="34_panda"]
+[ext_resource type="Resource" path="res://resources/animal_data/inu.tres" id="35_inu"]
+[ext_resource type="Resource" path="res://resources/animal_data/penguin.tres" id="36_penguin"]
+[ext_resource type="Resource" path="res://resources/animal_data/buta.tres" id="37_buta"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -119,6 +129,43 @@ station_data = ExtResource("27_okashi")
 
 [node name="Niji" parent="Stations" instance=ExtResource("22_station")]
 station_data = ExtResource("28_niji")
+
+[node name="Animals" type="Node3D" parent="."]
+script = ExtResource("29b_animgr")
+player_path = NodePath("../Player")
+hud_path = NodePath("../UI/TouchHUD")
+
+[node name="Usagi" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 5, 12)
+animal_data = ExtResource("30_usagi")
+
+[node name="Kuma" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 5, -10)
+animal_data = ExtResource("31_kuma")
+
+[node name="Kitsune" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 5, -16)
+animal_data = ExtResource("32_kitsune")
+
+[node name="Neko" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 5, 8)
+animal_data = ExtResource("33_neko")
+
+[node name="Panda" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24, 5, 22)
+animal_data = ExtResource("34_panda")
+
+[node name="Inu" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 5, -6)
+animal_data = ExtResource("35_inu")
+
+[node name="Penguin" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 5, 32)
+animal_data = ExtResource("36_penguin")
+
+[node name="Buta" parent="Animals" instance=ExtResource("29_animal")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 5, 18)
+animal_data = ExtResource("37_buta")
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 
