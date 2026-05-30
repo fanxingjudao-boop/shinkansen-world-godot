@@ -1,4 +1,4 @@
-[gd_scene load_steps=49 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=50 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -48,6 +48,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/TitleScreen.tscn" id="47_title"]
 [ext_resource type="Script" path="res://scripts/world/save_system.gd" id="48_save"]
 [ext_resource type="Script" path="res://scripts/world/bgm.gd" id="49_bgm"]
+[ext_resource type="PackedScene" path="res://scenes/world/Town.tscn" id="50_town"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -206,6 +207,8 @@ animal_data = ExtResource("36_penguin")
 [node name="Buta" parent="Animals" instance=ExtResource("29_animal")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 28, 5, 18)
 animal_data = ExtResource("37_buta")
+
+[node name="Town" parent="." instance=ExtResource("50_town")]
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 

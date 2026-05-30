@@ -9,9 +9,9 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 # 楕円の数値計算ロジックは static func で分離(Phase 2 の Train で再利用)。
 # 湖の上では水面より上に線路を浮かせる(_ground_or_water_y)。
 
-const TRACK_R_X: float = 100.0   # 楕円の X 半径
-const TRACK_R_Z: float = 78.0    # 楕円の Z 半径(Three.js 版 100*0.78)
-const TRACK_SEGMENTS: int = 157  # 2π / 0.04 の分割数
+const TRACK_R_X: float = 135.0   # 楕円の X 半径(オープンワールド化で拡大)
+const TRACK_R_Z: float = 105.0   # 楕円の Z 半径
+const TRACK_SEGMENTS: int = 200  # 分割数(拡大に合わせ枕木間隔を維持)
 const RAIL_OFFSET: float = 0.75  # 中心線からのレール ±ずれ
 const RAIL_RADIUS: float = 0.14
 const RAIL_CROSS_SEGMENTS: int = 8

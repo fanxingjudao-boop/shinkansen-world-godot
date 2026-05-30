@@ -169,6 +169,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 - Phase 5 残り: 完全オフライン化(Service Worker キャッシュ。Export ダイアログで PWA ON or SW 追加)、親モード(音量・データリセット・PIN)。
 - 順序の注意: GameState→SaveSystem を最前に。HUD に書く処理(ミッション)は call_deferred で HUD の _ready を待つ。効果音は _ready で prev を現在値に初期化して起動時の誤発火を防ぐ。
 - 操作/見た目: 移動=D-pad・WASD/矢印。カメラは**固定追従**(`camera_rig.gd`、yaw0/pitch0.5。orbit は画面酔いするとのことで撤去)。プレイヤーは 3 頭身の運転士キャラ(`player.gd` でスクリプト生成、帽子・大きいうるうる目+キラキラ・ほっぺ・歩行アニメ)。Player.tscn は当たり判定のみ。
+- オープンワールド: 線路は楕円を拡大(`railway.gd` TRACK_R_X 135 / R_Z 105、駅・電車・虹・星は ellipse_point 連動)。街は `town.gd`+`Town.tscn`(線路内側 ORIGIN 18,-48 ~ に家/店/ビル/木をグリッド配置、窓が夜光る)。線路は Path3D 1 本前提なので分岐は未対応。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
 - 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。
