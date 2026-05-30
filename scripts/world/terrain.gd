@@ -3,7 +3,7 @@ extends StaticBody3D
 # 地形シーン。ArrayMesh で起伏ある地形を動的生成、HeightMapShape3D で衝突を提供。
 # 高さ・色のロジックは TerrainHeight(scripts/world/terrain_height.gd)に分離。
 
-const COLLISION_SAMPLE_STEP: float = 2.0  # コリジョンの格子間隔(視覚 120 分割とは独立)
+const COLLISION_SAMPLE_STEP: float = 3.0  # コリジョンの格子間隔(WORLD_SIZE=700 で ~234²≈54756 サンプル)
 
 @onready var _terrain_mesh: MeshInstance3D = $TerrainMesh
 @onready var _terrain_collision: CollisionShape3D = $TerrainCollision

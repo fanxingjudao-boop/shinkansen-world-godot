@@ -5,21 +5,22 @@ extends RefCounted
 # 設計方針: 言語非依存・テスト可能(docs/ARCHITECTURE.md)。
 # Three.js プロトタイプの heightAt(x, z) を Godot に移植したもの。
 
-const WORLD_SIZE: float = 400.0
-const MESH_SUBDIV: int = 120  # 視覚メッシュの分割数。三角形 28800、Compatibility で軽量
+const WORLD_SIZE: float = 700.0  # オープンワールド化で拡大(±350)
+const MESH_SUBDIV: int = 180  # 視覚メッシュの分割数。頂点 181²≈32761、step≈3.9m を維持
 
-# 山と湖のパラメータ(Three.js 版より移植)
-const MOUNTAIN_A_POS: Vector2 = Vector2(90.0, -100.0)
+# 山と湖のパラメータ(広域マップ化で外周へ再配置。位置を約 1.75 倍・半径を約 1.5 倍に。
+# 半径を広げると勾配が緩くなり、列車の坂登りも滑らかになる)
+const MOUNTAIN_A_POS: Vector2 = Vector2(158.0, -175.0)
 const MOUNTAIN_A_HEIGHT: float = 18.0
-const MOUNTAIN_A_RADIUS: float = 25.0
-const MOUNTAIN_B_POS: Vector2 = Vector2(-110.0, -70.0)
+const MOUNTAIN_A_RADIUS: float = 38.0
+const MOUNTAIN_B_POS: Vector2 = Vector2(-192.0, -122.0)
 const MOUNTAIN_B_HEIGHT: float = 22.0
-const MOUNTAIN_B_RADIUS: float = 28.0
-const MOUNTAIN_C_POS: Vector2 = Vector2(30.0, 130.0)
+const MOUNTAIN_B_RADIUS: float = 42.0
+const MOUNTAIN_C_POS: Vector2 = Vector2(52.0, 228.0)
 const MOUNTAIN_C_HEIGHT: float = 14.0
-const MOUNTAIN_C_RADIUS: float = 20.0
-const LAKE_POS: Vector2 = Vector2(-50.0, 80.0)
-const LAKE_RADIUS: float = 22.0
+const MOUNTAIN_C_RADIUS: float = 30.0
+const LAKE_POS: Vector2 = Vector2(-88.0, 140.0)
+const LAKE_RADIUS: float = 34.0
 const LAKE_WATER_Y_OFFSET: float = 4.5  # 湖底からの水面の高さ(線路と整合)
 
 # 高さに応じた色(草原・砂・雪山遷移)

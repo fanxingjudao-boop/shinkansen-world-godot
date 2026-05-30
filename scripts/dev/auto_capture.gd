@@ -146,13 +146,13 @@ func _apply_debug_camera() -> void:
 	if parent and parent.get_script() != null:
 		parent.set_process(false)
 	if VIEW == ViewMode.BIRD:
-		cam.global_position = Vector3(0, 180, 180)
-		cam.look_at(Vector3.ZERO)
-		cam.fov = 55.0
-	elif VIEW == ViewMode.SIDE:
-		cam.global_position = Vector3(150, 30, 150)
+		cam.global_position = Vector3(0, 430, 430)
 		cam.look_at(Vector3.ZERO)
 		cam.fov = 60.0
+	elif VIEW == ViewMode.SIDE:
+		cam.global_position = Vector3(300, 70, 300)
+		cam.look_at(Vector3(0, 8, 0))
+		cam.fov = 62.0
 	elif VIEW == ViewMode.LAKE:
 		# 湖(-50, ?, 80)の上を斜め見下ろし
 		cam.global_position = Vector3(-50, 15, 110)

@@ -66,7 +66,7 @@ glow_blend_mode = 1
 glow_hdr_threshold = 0.9
 fog_enabled = true
 fog_light_color = Color(0.847, 0.937, 1, 1)
-fog_density = 0.002
+fog_density = 0.0009
 
 [node name="Main" type="Node3D"]
 script = ExtResource("1_main")
