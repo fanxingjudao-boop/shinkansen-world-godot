@@ -20,6 +20,10 @@ const SCREENSHOT_PATH: String = "user://screenshot.png"
 
 
 func _ready() -> void:
+	# 検証スクショではタイトル画面を隠す
+	var title := get_tree().root.find_child("TitleScreen", true, false)
+	if title:
+		title.visible = false
 	await get_tree().create_timer(DELAY_SEC).timeout
 	_apply_debug_camera()
 

@@ -2,6 +2,28 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.16.0 — 2026-05-30 — スタート画面(Phase 5 入口・音の起こし)
+
+- `scenes/ui/TitleScreen.tscn` + `scripts/ui/title.gd` 新規 — 「しんかんせんワールド」タイトル+「でんしゃで あそぼう!」+ 黄色い「はじめる」ボタン。背景に world が薄く透ける(空色ベール 0.82)。CanvasLayer layer=3 で最前面
+  - 「はじめる」押下が **最初のユーザー操作**になり、ブラウザの AudioContext が有効化される(効果音が鳴るようになる)。押下で Root を alpha フェードアウト → visible=false でプレイ開始
+- `scenes/Main.tscn` — TitleScreen を最前面に配置
+- `scripts/dev/auto_capture.gd` — 検証スクショではタイトルを隠す処理を `_ready` 冒頭に追加
+
+### 修正したハマり
+
+- TitleScreen.tscn の Root ノードに `parent="."` を書き忘れ → 「Invalid scene: node Root does not specify its parent node」でシーン全体がロード失敗(GL/RID リーク多発)。最初のノード以外は parent 指定が必須。修正後はエラーなし
+
+### 検証
+
+- タイトル画面の表示(タイトル・サブ・はじめるボタン・背景の world 透け)を確認。スクリプトエラーなし
+- 「はじめる」のフェードアウトはロジック単純(Tween)。音が鳴るかは Web 実機で要確認
+
+### 今後(Phase 5 残り)
+
+- BGM(穏やかな曲)、進捗の LocalStorage 保存、manifest.json / Service Worker の PWA 化、親モード
+
+次のステップ: 改善さんに実機で「はじめる→音が鳴るか」を確認 → BGM / 保存 / PWA へ
+
 ## v0.15.0 — 2026-05-30 — Phase 4 続き(リムライト・季節・ミッション・音)
 
 「ぜんぶ続けて」の依頼で、残りの作り込みをまとめて実装。

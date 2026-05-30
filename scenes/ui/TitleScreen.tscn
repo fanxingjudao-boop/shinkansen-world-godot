@@ -1,0 +1,86 @@
+[gd_scene load_steps=4 format=3 uid="uid://btitle000001"]
+
+[ext_resource type="Script" path="res://scripts/ui/title.gd" id="1_title"]
+
+[sub_resource type="StyleBoxFlat" id="Style_start_normal"]
+bg_color = Color(1, 0.878, 0.4, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+border_width_left = 5
+border_width_top = 5
+border_width_right = 5
+border_width_bottom = 5
+border_color = Color(0.929, 0.659, 0.302, 1)
+
+[sub_resource type="StyleBoxFlat" id="Style_start_pressed"]
+bg_color = Color(0.929, 0.659, 0.302, 1)
+corner_radius_top_left = 40
+corner_radius_top_right = 40
+corner_radius_bottom_right = 40
+corner_radius_bottom_left = 40
+
+[node name="TitleScreen" type="CanvasLayer"]
+layer = 3
+script = ExtResource("1_title")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BG" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.494, 0.784, 0.961, 0.82)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Root/Center"]
+layout_mode = 2
+theme_override_constants/separation = 28
+alignment = 1
+
+[node name="Title" type="Label" parent="Root/Center/VBox"]
+layout_mode = 2
+text = "しんかんせんワールド"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.157, 0.408, 0.788, 1)
+theme_override_constants/outline_size = 18
+theme_override_font_sizes/font_size = 72
+
+[node name="Sub" type="Label" parent="Root/Center/VBox"]
+layout_mode = 2
+text = "でんしゃで あそぼう!"
+horizontal_alignment = 1
+theme_override_colors/font_color = Color(0.157, 0.408, 0.788, 1)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 36
+
+[node name="StartButton" type="Button" parent="Root/Center/VBox"]
+custom_minimum_size = Vector2(320, 110)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "はじめる"
+theme_override_colors/font_color = Color(0.4, 0.27, 0.06, 1)
+theme_override_font_sizes/font_size = 48
+theme_override_styles/normal = SubResource("Style_start_normal")
+theme_override_styles/hover = SubResource("Style_start_normal")
+theme_override_styles/pressed = SubResource("Style_start_pressed")
+theme_override_styles/focus = SubResource("Style_start_normal")

@@ -1,4 +1,4 @@
-[gd_scene load_steps=46 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=47 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -45,6 +45,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/Rainbow.tscn" id="44_rainbow"]
 [ext_resource type="Script" path="res://scripts/world/mission_manager.gd" id="45_mission"]
 [ext_resource type="Script" path="res://scripts/world/sound_fx.gd" id="46_sound"]
+[ext_resource type="PackedScene" path="res://scenes/ui/TitleScreen.tscn" id="47_title"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -241,6 +242,8 @@ game_state_path = NodePath("../GameState")
 [node name="TouchHUD" parent="UI" instance=ExtResource("5_hud")]
 game_state_path = NodePath("../../GameState")
 book_path = NodePath("../../BookOverlay")
+
+[node name="TitleScreen" parent="." instance=ExtResource("47_title")]
 
 [node name="BookOverlay" parent="." instance=ExtResource("42_book")]
 game_state_path = NodePath("../GameState")

@@ -163,7 +163,9 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 **Phase 0〜2 + Phase 3-1〜3-5 + 2-4 + Phase 4 演出(一部)完了**。新幹線に乗れ、6 駅が立ち、8 種の動物がなかよしになり、星を集め、駅で電車が減速し、図鑑で発見状況を見られる。さらに Glow・星のきらきら/獲得バースト・なかよしハート・SL蒸気・UIボタンのぷにっと演出を追加。主要ループ「集める・出会う・乗る・探す」が一通り動く。次は Phase 3-6(ミッション)/ 音 / トゥーンシェーダー / 季節 / 自由アイデア。詳細は `changelog.md` 参照。
 - 演出(Phase 4): Glow=Main の Environment、星きらきら/バースト=`stars.gd`、なかよしハート=`animal.gd._pop_heart`、SL蒸気=`train.gd._attach_steam`、UIバウンス=`touch_hud.gd._add_press_bounce`、リムライト=`assets/shaders/rim.gdshader`(animal/player)、ホタル=`fireflies.gd`(夜・Player子)、虹=`rainbow.gd`、ミッション=`mission_manager.gd`、効果音=`sound_fx.gd`(プロシージャル WAV)。Glow/リムライト/音の Web での挙動は要実機確認。
-- 列車の車輪回転は負荷(約360個)で見送り中。音は Web の AudioContext がタッチ後に有効になるため、スタート画面での起こし(Phase 5)が必要。
+- 列車の車輪回転は負荷(約360個)で見送り中。
+- スタート画面 `scenes/ui/TitleScreen.tscn`(title.gd)実装済み。「はじめる」押下で AudioContext 起動+フェードアウト。これで Web でも効果音が鳴る想定(実機要確認)。
+- Phase 5 残り: BGM、進捗の LocalStorage 保存、manifest/Service Worker の PWA 化、親モード。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
 - 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._station_slow_factor`、駅発見=`station_manager.gd`。
