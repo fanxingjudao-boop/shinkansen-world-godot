@@ -8,6 +8,7 @@ extends Node3D
 
 const AnimalData = preload("res://scripts/entities/animal_data.gd")
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+const RIM_SHADER = preload("res://assets/shaders/rim.gdshader")
 
 @export var animal_data: AnimalData
 
@@ -296,13 +297,21 @@ func _cyl(radius: float, height: float, color: Color) -> MeshInstance3D:
 
 
 func _mi(mesh: Mesh, color: Color, rough: float, unshaded: bool) -> MeshInstance3D:
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = rough
-	mat.metallic = 0.0
-	if unshaded:
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	var mi := MeshInstance3D.new()
 	mi.mesh = mesh
-	mi.material_override = mat
+	if unshaded:
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = color
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mi.material_override = mat
+	else:
+		# リムライトで輪郭がふんわり光る(Glow と相乗)
+		var sm := ShaderMaterial.new()
+		sm.shader = RIM_SHADER
+		sm.set_shader_parameter("albedo", color)
+		sm.set_shader_parameter("roughness_val", rough)
+		sm.set_shader_parameter("rim_color", Color(1, 1, 0.96))
+		sm.set_shader_parameter("rim_power", 2.5)
+		sm.set_shader_parameter("rim_strength", 0.5)
+		mi.material_override = sm
 	return mi

@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://bbookov00001"]
+[gd_scene format=3 uid="uid://bbookov00001"]
 
 [ext_resource type="Script" path="res://scripts/ui/book.gd" id="1_book"]
 

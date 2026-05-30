@@ -1,4 +1,4 @@
-[gd_scene load_steps=42 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=46 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -41,6 +41,10 @@
 [ext_resource type="Script" path="res://scripts/world/game_state.gd" id="40_gamestate"]
 [ext_resource type="Script" path="res://scripts/world/station_manager.gd" id="41_statmgr"]
 [ext_resource type="PackedScene" path="res://scenes/ui/BookOverlay.tscn" id="42_book"]
+[ext_resource type="PackedScene" path="res://scenes/fx/Fireflies.tscn" id="43_fireflies"]
+[ext_resource type="PackedScene" path="res://scenes/world/Rainbow.tscn" id="44_rainbow"]
+[ext_resource type="Script" path="res://scripts/world/mission_manager.gd" id="45_mission"]
+[ext_resource type="Script" path="res://scripts/world/sound_fx.gd" id="46_sound"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -64,6 +68,15 @@ script = ExtResource("1_main")
 
 [node name="GameState" type="Node" parent="."]
 script = ExtResource("40_gamestate")
+
+[node name="MissionManager" type="Node" parent="."]
+script = ExtResource("45_mission")
+game_state_path = NodePath("../GameState")
+hud_path = NodePath("../UI/TouchHUD")
+
+[node name="SoundFX" type="Node" parent="."]
+script = ExtResource("46_sound")
+game_state_path = NodePath("../GameState")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_main")
@@ -191,11 +204,18 @@ player_path = NodePath("../Player")
 game_state_path = NodePath("../GameState")
 hud_path = NodePath("../UI/TouchHUD")
 
+[node name="Rainbow" parent="." instance=ExtResource("44_rainbow")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -185)
+
 [node name="Player" parent="." instance=ExtResource("3_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
 
 [node name="CherryPetals" parent="Player" instance=ExtResource("10_petals")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+
+[node name="Fireflies" parent="Player" instance=ExtResource("43_fireflies")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+day_night_path = NodePath("../../DayNightCycle")
 
 [node name="CameraRig" type="Node3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 8)

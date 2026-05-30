@@ -20,6 +20,7 @@ extends Control
 @onready var star_count_label: Label = $TopBar/StarCount
 @onready var friend_count_label: Label = $TopBar/FriendCount
 @onready var btn_book: BaseButton = $TopBar/BookButton
+@onready var mission_label: Label = $Mission
 
 @export var game_state_path: NodePath
 @export var book_path: NodePath
@@ -115,6 +116,10 @@ func _on_state_changed() -> void:
 		star_count_label.text = "ほし %d" % _game_state.star_count
 	if friend_count_label:
 		friend_count_label.text = "なかよし %d" % _game_state.befriended_animals.size()
+
+func set_mission(text: String) -> void:
+	if mission_label:
+		mission_label.text = "ミッション: " + text
 
 func _on_book_pressed() -> void:
 	if _book and _book.has_method("open"):

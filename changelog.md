@@ -2,6 +2,35 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.15.0 — 2026-05-30 — Phase 4 続き(リムライト・季節・ミッション・音)
+
+「ぜんぶ続けて」の依頼で、残りの作り込みをまとめて実装。
+
+- **リムライトシェーダー(4-1)**: `assets/shaders/rim.gdshader` 新規 — 輪郭(視線に斜めの面)が `rim_color` で光るやさしいリム。`albedo` を uniform で受けて 1 つのシェーダーを使い回す。`scripts/entities/animal.gd` の `_mi`(shaded メッシュ)と `scripts/entities/player.gd`(Body/Head/Nose)に適用。Glow と相乗でふんわり光る
+- **季節演出(4-2/6-3)**:
+  - 夜のホタル: `scripts/fx/fireflies.gd` + `scenes/fx/Fireflies.tscn` 新規 — Player の子に GPUParticles3D、黄緑の光が周囲をふわふわ。`day_night` 連動で夜のみ emitting。color_ramp で点滅
+  - 雨上がりの虹: `scripts/world/rainbow.gd` + `scenes/world/Rainbow.tscn` 新規 — 7 色の TorusMesh アーチを遠景 (0,2,-185) に。半透明+emission。`Main.tscn` に配置
+- **ミッション(3-6)**: `scripts/world/mission_manager.gd` 新規(Main 直下)— 5 段階のやさしいおつかい(でんしゃに乗る→なかよし→ほし3→えき発見→ほし6)。`GameState.changed` で達成判定し順に進む。失敗・制限時間なし。HUD 上部中央に「ミッション: ○○」表示(`touch_hud.set_mission` + TouchHUD の Mission ラベル)、クリアで通知
+- **効果音(4-4)**: `scripts/world/sound_fx.gd` 新規(Main 直下)— 正弦波の短い 2 音をスクリプト生成(`AudioStreamWAV`、素材ファイル不要)。星・なかよし・乗車・駅発見で違う音。`GameState.changed` で増分検知して再生
+- `scenes/Main.tscn` — MissionManager / SoundFX / Rainbow / Fireflies を配置・配線
+
+### 見送り
+
+- **列車の車輪回転**: 9 編成 × 5 両 × 8 輪 ≈ 360 個を毎フレーム回す負荷が「かくかく」を悪化させる懸念があり見送り。MultiMesh 化や LOD 整備の後に再検討
+
+### 検証
+
+- パースエラーなし(rim シェーダー、ホタル/虹の GPUParticles・TorusMesh、ミッション、WAV 生成すべて OK)
+- 夜の FOUR_TIMES で ホタル(黄緑の光点)+ 虹アーチ全体 + 星・窓の Glow を確認
+- AUTO_BOOK で「ミッション: ほしを 6こ あつめよう」(4 つクリア済みで 5 番目を表示)+ 図鑑 + カウンターを確認
+
+### メモ(実機確認したい点)
+
+- 音は Web の AudioContext がタッチ後に有効化されるため、最初の操作前は鳴らない可能性(スタート画面での起こし対応は Phase 5)
+- Glow / リムライトの WebGL2 での効き具合
+
+次のステップ: 改善さんに体験確認 → スタート画面 + 音の起こし(Phase 5)/ BGM / さらなる季節(紅葉・雪)/ 自由アイデア
+
 ## v0.14.0 — 2026-05-30 — Phase 4 演出の作り込み(光・キラキラ・動き)
 
 「光って、はじけて、ふわふわする」表現を追加して世界をリッチに。Compatibility レンダラーで効く範囲に絞った。

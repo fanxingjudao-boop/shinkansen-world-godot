@@ -285,6 +285,24 @@ theme_override_styles/hover = SubResource("Style_dpad_normal")
 theme_override_styles/normal = SubResource("Style_dpad_normal")
 theme_override_styles/pressed = SubResource("Style_dpad_pressed")
 
+[node name="Mission" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -320.0
+offset_top = 88.0
+offset_right = 320.0
+offset_bottom = 138.0
+grow_horizontal = 2
+mouse_filter = 2
+text = "ミッション: "
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.28, 0.5, 0.2, 1)
+theme_override_font_sizes/font_size = 26
+theme_override_styles/normal = SubResource("Style_prompt_bg")
+
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15

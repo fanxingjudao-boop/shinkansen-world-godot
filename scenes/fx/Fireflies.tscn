@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bfirefly00001"]
+
+[ext_resource type="Script" path="res://scripts/fx/fireflies.gd" id="1_ff"]
+
+[node name="Fireflies" type="GPUParticles3D"]
+script = ExtResource("1_ff")

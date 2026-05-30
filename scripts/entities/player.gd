@@ -4,6 +4,8 @@ extends CharacterBody3D
 # 設計方針: ロジック層(pure 関数)と Godot 操作層を明確に分離し、
 # 将来 C# 移植時のコストを抑える(docs/ARCHITECTURE.md 参照)。
 
+const RIM_SHADER = preload("res://assets/shaders/rim.gdshader")
+
 const SPEED: float = 5.0
 const JUMP_VELOCITY: float = 6.5
 const ROTATION_SPEED: float = 12.0
@@ -13,6 +15,20 @@ signal jumped
 func _ready() -> void:
 	if not is_in_group("player"):
 		add_to_group("player")
+	_apply_rim($Body, Color(1, 0.62, 0.753), 0.7)
+	_apply_rim($Head, Color(1, 0.878, 0.753), 0.7)
+	_apply_rim($Nose, Color(0.937, 0.376, 0.541), 0.6)
+
+
+# 体・頭・鼻にリムライト(輪郭がふんわり光る)を適用
+func _apply_rim(mi: MeshInstance3D, color: Color, rough: float) -> void:
+	var sm := ShaderMaterial.new()
+	sm.shader = RIM_SHADER
+	sm.set_shader_parameter("albedo", color)
+	sm.set_shader_parameter("roughness_val", rough)
+	sm.set_shader_parameter("rim_color", Color(1, 1, 0.96))
+	sm.set_shader_parameter("rim_strength", 0.5)
+	mi.material_override = sm
 
 func _physics_process(delta: float) -> void:
 	var input_dir: Vector2 = Input.get_vector(
