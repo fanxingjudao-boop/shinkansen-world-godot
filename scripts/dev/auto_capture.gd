@@ -159,10 +159,10 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(-50, -3, 80))
 		cam.fov = 60.0
 	elif VIEW == ViewMode.TRAIN_CLOSE:
-		# 本線リング外側 (232,0) 付近(はやぶさが dwell する地点)を斜め上から
-		cam.global_position = Vector3(272, 22, 52)
-		cam.look_at(Vector3(228, 2, 0))
-		cam.fov = 50.0
+		# 中央の立体交差(高架つばめ +8m + 橋脚)と中央ループを近くから
+		cam.global_position = Vector3(135, 34, 95)
+		cam.look_at(Vector3(35, 8, -10))
+		cam.fov = 55.0
 	elif VIEW == ViewMode.STATION:
 		# みどり駅(track_t=0)→ プラットフォームは外側 (104.4, 0)
 		cam.global_position = Vector3(116, 8, 15)

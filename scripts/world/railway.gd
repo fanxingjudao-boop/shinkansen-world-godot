@@ -24,6 +24,8 @@ const TIE_SPACING: float = 3.8       # 枕木の弧長間隔(m)
 
 const RAIL_COLOR: Color = Color(0.6, 0.6, 0.6)    # #999999 メタリック灰
 const TIE_COLOR: Color = Color(0.42, 0.27, 0.14)  # #6b4423 茶
+const PIER_COLOR: Color = Color(0.72, 0.72, 0.76) # 高架・橋脚のコンクリ灰
+const PIER_MIN_H: float = 2.5                     # この高さ以上で橋脚を立てる
 
 @export var terrain_path: NodePath
 
@@ -75,6 +77,9 @@ func _build_route(spec: Dictionary) -> void:
 	_routes_root.add_child(ties)
 	_build_ties_for(curve, ties, true)
 
+	# 高架・水上区間に橋脚を立てる
+	_build_piers_for(curve)
+
 	var stops: Array = []
 	for s in spec.get("stops", []):
 		stops.append({
@@ -91,7 +96,8 @@ func _build_route(spec: Dictionary) -> void:
 	}
 
 
-# 楕円リングのウェイポイント列(XZ, 重複なし、rot_deg 回転)
+# 楕円リングのウェイポイント列(XZ, 重複なし、rot_deg 回転)。
+# wave_amp/wave_freq があれば半径を sin で波打たせる(本線の蛇行)。
 func _ring_waypoints(spec: Dictionary) -> Array:
 	var wps: Array = []
 	var center: Vector2 = spec["center"]
@@ -99,11 +105,54 @@ func _ring_waypoints(spec: Dictionary) -> Array:
 	var rz: float = spec["rz"]
 	var rot: float = deg_to_rad(spec.get("rot_deg", 0.0))
 	var n: int = int(spec.get("wp_count", 48))
+	var amp: float = spec.get("wave_amp", 0.0)
+	var freq: float = spec.get("wave_freq", 0.0)
 	for i in range(n):
 		var a: float = float(i) / float(n) * TAU
-		var local := Vector2(rx * cos(a), rz * sin(a)).rotated(rot)
+		var rmul: float = 1.0 + amp * sin(freq * a)
+		var local := Vector2(rx * rmul * cos(a), rz * rmul * sin(a)).rotated(rot)
 		wps.append(center + local)
 	return wps
+
+
+# 高架・水上区間の橋脚を自動生成(線路面が地面より PIER_MIN_H 以上高い所に柱を立てる)。
+# 1 ルートぶんを 1 個の MultiMesh にまとめてドローコールを抑える。
+func _build_piers_for(curve: Curve3D) -> void:
+	var length: float = curve.get_baked_length()
+	if length <= 0.0:
+		return
+	var step: float = 6.0
+	var n: int = int(length / step)
+	# まず橋脚が要る位置と高さを集める
+	var xforms: Array = []
+	for i in range(n):
+		var off: float = float(i) * step
+		var p: Vector3 = curve.sample_baked(off, true)
+		var gy: float = _terrain.height_at(p.x, p.z)
+		var h: float = p.y - RAIL_HEIGHT_OFFSET - gy  # レール下端〜地面の高さ
+		if h > PIER_MIN_H:
+			var basis := Basis().scaled(Vector3(1.2, h, 1.2))
+			xforms.append(Transform3D(basis, Vector3(p.x, gy + h * 0.5, p.z)))
+	if xforms.is_empty():
+		return
+
+	var box := BoxMesh.new()
+	box.size = Vector3(1.0, 1.0, 1.0)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = PIER_COLOR
+	mat.roughness = 0.85
+	box.material = mat
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = box
+	mm.instance_count = xforms.size()
+	for i in range(xforms.size()):
+		mm.set_instance_transform(i, xforms[i])
+
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	_routes_root.add_child(mmi)
 
 
 # === 公開 API(Train が自分のルートを取得する) ===
