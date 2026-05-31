@@ -21,6 +21,8 @@ extends Control
 @onready var friend_count_label: Label = $TopBar/FriendCount
 @onready var btn_book: BaseButton = $TopBar/BookButton
 @onready var mission_label: Label = $Mission
+@onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
+@onready var btn_cam_right: BaseButton = $CameraButtons/CamRight
 
 @export var game_state_path: NodePath
 @export var book_path: NodePath
@@ -28,6 +30,7 @@ extends Control
 var _notice_tween: Tween
 var _game_state: Node
 var _book: Node
+var _camera_rig: Node
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -46,7 +49,14 @@ func _ready() -> void:
 	if btn_book:
 		btn_book.pressed.connect(_on_book_pressed)
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book]:
+	# カメラ向きボタン(CameraRig をシーンから探して回転を依頼)
+	_camera_rig = get_tree().root.find_child("CameraRig", true, false)
+	if btn_cam_left:
+		btn_cam_left.pressed.connect(func() -> void: _rotate_camera(-1))
+	if btn_cam_right:
+		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
+
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
@@ -124,6 +134,11 @@ func set_mission(text: String) -> void:
 func _on_book_pressed() -> void:
 	if _book and _book.has_method("open"):
 		_book.open()
+
+# カメラの向きを段階回転(CameraRig.rotate_view)。dir=-1 左/+1 右。
+func _rotate_camera(dir: int) -> void:
+	if _camera_rig and _camera_rig.has_method("rotate_view"):
+		_camera_rig.rotate_view(dir)
 
 
 # === ボタン押下でぷにっと縮む(ease_out_back) ===

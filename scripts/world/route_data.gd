@@ -9,7 +9,7 @@ extends RefCounted
 #   - 本線: 波打つ大きな 3 車線ループ(マップ外周を蛇行)。同心スケールなので互いに交差しない。
 #   - 名所ループ: 湖(SL=線路が水上に出て自動で橋脚)/ 山B(つばさ=トンネル候補)/ 街(やまのて)。
 #   - 立体交差: つばめを高架の長い横長ループ(+8m、橋脚つき)にして他ルートの上を通す。
-#   - ドクターイエロー: 車庫で待機(park、将来プレイヤーが呼べる目玉)。
+#   - ドクターイエロー: 他編成と同様に走行(dwell)。
 #
 # spec フィールド:
 #   slug, center, rx, rz, rot_deg, wp_count
@@ -76,9 +76,10 @@ static func specs() -> Array:
 			"start_ratio": 0.0, "stops": [{ "ratio": 0.0, "kind": "dwell", "seconds": 4.0 }],
 		},
 		{
-			# ドクターイエロー: 車庫(park)。普段は車庫で待機、将来プレイヤーが呼べる目玉。
+			# ドクターイエロー: 他の編成と同じく走行(dwell)。子供には「止まっている=こわれた」に
+			# 見えるため、車庫待機(park)はやめて走らせる(将来プレイヤーが呼べる機能は別途検討)。
 			"slug": "doctor_yellow", "center": Vector2(-35.0, -45.0),
 			"rx": 36.0, "rz": 32.0, "rot_deg": 0.0, "wp_count": 36,
-			"start_ratio": 0.1, "stops": [{ "ratio": 0.0, "kind": "park", "seconds": 0.0 }],
+			"start_ratio": 0.1, "stops": [{ "ratio": 0.0, "kind": "dwell", "seconds": 3.0 }],
 		},
 	]

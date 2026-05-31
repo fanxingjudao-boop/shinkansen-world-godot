@@ -66,8 +66,8 @@ func _process(delta: float) -> void:
 		global_position.x = next.x
 		global_position.z = next.z
 		_settle_y()
-		# 進行方向へ滑らかに向く
-		rotation.y = lerp_angle(rotation.y, _heading, TURN_SPEED * delta)
+		# 進行方向へ滑らかに向く(モデルの顔は -Z 側なので +PI で進行方向へ正対させる)
+		rotation.y = lerp_angle(rotation.y, _heading + PI, TURN_SPEED * delta)
 		# ぴょこぴょこ
 		_bounce_phase += delta * BOUNCE_FREQ
 		_visual.position.y = _base_visual_y + abs(sin(_bounce_phase)) * BOUNCE_AMP
