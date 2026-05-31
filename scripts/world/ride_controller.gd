@@ -26,16 +26,25 @@ const FADE_TIME: float = 0.25           # フェード片道の秒数
 const LANDING_OFFSET: float = 6.0       # 降車時に線路中心から外側へずらす距離(電車・レールに重ならない)
 const PLAYER_GROUND_OFFSET: float = 1.5 # 降車時の地形からの足元オフセット(main.gd と同値)
 
-# 乗車カメラのローカル配置(屋根の上から見下ろす視点・決定済み)
-const RIDE_CAM_POS: Vector3 = Vector3(0.0, 6.0, 6.0)     # 車両上 6m・後方 +Z 6m
-const RIDE_CAM_PITCH: float = -28.0                       # 進行方向 -Z を見下ろす角度(度)
-const RIDE_CAM_FOV: float = 60.0
+# 乗車カメラのプリセット(やね / うんてんせき / まどぎわ)。HUD の「ながめ」ボタンで巡回。
+# mount: "center"=編成中央 / "front"=先頭車。pos/pitch/yaw はそのマウント子のローカル値。
+# PathFollow3D は ROTATION_ORIENTED で -Z が進行方向なので、固定 transform で揺れず追従する。
+const RIDE_VIEWS: Array = [
+	{ "name": "やね", "mount": "center", "pos": Vector3(0.0, 6.0, 6.0), "pitch": -28.0, "yaw": 0.0, "fov": 60.0 },
+	{ "name": "うんてんせき", "mount": "front", "pos": Vector3(0.0, 2.5, 2.6), "pitch": -7.0, "yaw": 0.0, "fov": 70.0 },
+	{ "name": "まどぎわ", "mount": "center", "pos": Vector3(4.8, 2.4, 0.6), "pitch": -8.0, "yaw": 52.0, "fov": 62.0 },
+]
+
+# 車内アナウンス用
+const MIX_RATE: int = 22050
+const ANNOUNCE_NEAR_STATION: float = 26.0  # 到着位置からこの距離以内の駅名をアナウンス
 
 @export var player_path: NodePath
 @export var trains_path: NodePath
 @export var camera_rig_path: NodePath
 @export var hud_path: NodePath
 @export var game_state_path: NodePath
+@export var stations_path: NodePath  # 車内アナウンスの駅名引き当て用
 
 signal boarded(train_display_name: String)
 signal alighted()
@@ -43,6 +52,7 @@ signal alighted()
 var _state: int = State.WALKING
 var _current_train: Train = null
 var _ride_camera: Camera3D = null
+var _ride_view_idx: int = 0
 var _toggle_cooldown: float = 0.0
 
 var _player: CharacterBody3D
@@ -50,6 +60,9 @@ var _trains: Node3D
 var _camera_rig: Node3D
 var _hud: TouchHud
 var _game_state: Node
+var _stations: Node3D
+var _chime: AudioStreamPlayer
+var _chime_stream: AudioStreamWAV
 
 
 func _ready() -> void:
@@ -58,6 +71,11 @@ func _ready() -> void:
 	_camera_rig = get_node_or_null(camera_rig_path) as Node3D
 	_hud = get_node_or_null(hud_path) as TouchHud
 	_game_state = get_node_or_null(game_state_path)
+	_stations = get_node_or_null(stations_path) as Node3D
+	_chime = AudioStreamPlayer.new()
+	_chime.volume_db = -8.0
+	add_child(_chime)
+	_chime_stream = _make_chime()
 	if _player == null:
 		push_warning("[RideController] player_path が未解決")
 	if _trains == null:
@@ -134,10 +152,14 @@ func _do_board(train: Train) -> void:
 		_player.set_physics_process(false)
 		_player.visible = false
 
-	var mount := train.get_ride_mount()
-	if mount:
-		_ride_camera = _make_ride_camera(mount)
-		_ride_camera.current = true
+	_ride_view_idx = 0
+	_build_ride_camera(RIDE_VIEWS[_ride_view_idx])
+
+	# 車内アナウンス: この編成の到着 / 発車を購読
+	if not train.arrived.is_connected(_on_ride_arrived):
+		train.arrived.connect(_on_ride_arrived)
+	if not train.departed.is_connected(_on_ride_departed):
+		train.departed.connect(_on_ride_departed)
 
 	if _hud:
 		_hud.hide_board_prompt()
@@ -156,6 +178,12 @@ func _alight() -> void:
 
 func _do_alight() -> void:
 	var train := _current_train
+	# 車内アナウンスの購読を解除
+	if train:
+		if train.arrived.is_connected(_on_ride_arrived):
+			train.arrived.disconnect(_on_ride_arrived)
+		if train.departed.is_connected(_on_ride_departed):
+			train.departed.disconnect(_on_ride_departed)
 	if _player and train:
 		var anchor: Vector3 = train.get_ride_anchor_position()
 		var fwd: Vector3 = train.get_ride_forward()
@@ -190,15 +218,98 @@ func _do_alight() -> void:
 
 # === カメラ生成(Godot 操作層) ===
 
-# 屋根の上から見下ろす乗車カメラを mount(PathFollow3D)の子に生成。
-# ローカル固定 transform なので進行方向に追従しつつ揺れない。
-func _make_ride_camera(mount: Node3D) -> Camera3D:
+# 指定プリセットの乗車カメラを、対応するマウント(中央 / 先頭車)の子に生成。
+# 既存カメラがあれば破棄してから作り、current=true で即時に切替える。
+func _build_ride_camera(view: Dictionary) -> void:
+	if _ride_camera:
+		_ride_camera.queue_free()
+		_ride_camera = null
+	if _current_train == null:
+		return
+	var mount: Node3D
+	if String(view["mount"]) == "front":
+		mount = _current_train.get_ride_mount_front()
+	else:
+		mount = _current_train.get_ride_mount()
+	if mount == null:
+		return
 	var cam := Camera3D.new()
-	cam.fov = RIDE_CAM_FOV
+	cam.fov = float(view["fov"])
 	mount.add_child(cam)
-	cam.position = RIDE_CAM_POS
-	cam.rotation = Vector3(deg_to_rad(RIDE_CAM_PITCH), 0.0, 0.0)
-	return cam
+	cam.position = view["pos"]
+	cam.rotation = Vector3(deg_to_rad(float(view["pitch"])), deg_to_rad(float(view["yaw"])), 0.0)
+	cam.current = true
+	_ride_camera = cam
+
+
+# 乗車中の視点を巡回(やね→うんてんせき→まどぎわ→…)。HUD の「ながめ」ボタンから。
+# 切替の瞬間はフェードで隠す(酔わない・怖くない)。
+func cycle_ride_view() -> void:
+	if _state != State.RIDING or _current_train == null:
+		return
+	_ride_view_idx = (_ride_view_idx + 1) % RIDE_VIEWS.size()
+	var view: Dictionary = RIDE_VIEWS[_ride_view_idx]
+	_transition(func() -> void: _build_ride_camera(view))
+	if _hud:
+		_hud.show_notice("%s から ながめる" % String(view["name"]))
+
+
+# === 車内アナウンス(乗車中の編成の到着 / 発車で呼ばれる) ===
+
+func _on_ride_arrived(anchor_pos: Vector3) -> void:
+	var name := _nearest_station_name(anchor_pos)
+	if name != "" and _hud:
+		_hud.show_notice("%s えき に とうちゃく!" % name)
+	# 到着音は StationManager の駅メロが鳴らすので、ここではチャイムを重ねない
+
+
+func _on_ride_departed() -> void:
+	if _hud:
+		_hud.show_notice("しゅっぱつ しんこう!")
+	if _chime and _chime_stream:
+		_chime.stream = _chime_stream
+		_chime.play()
+
+
+# 到着位置に最も近い駅の表示名(なければ "")
+func _nearest_station_name(pos: Vector3) -> String:
+	if _stations == null:
+		return ""
+	var best_name := ""
+	var best_d := ANNOUNCE_NEAR_STATION
+	for child in _stations.get_children():
+		if not child.has_method("get_display_name"):  # Station ノードだけ対象
+			continue
+		var d: float = (child as Node3D).global_position.distance_to(pos)
+		if d < best_d:
+			best_d = d
+			best_name = child.get_display_name()
+	return best_name
+
+
+# 発車チャイム(ピンポーン: 高→低の 2 音)を正弦波で生成
+func _make_chime() -> AudioStreamWAV:
+	return _make_tone(988.0, 740.0, 0.32)
+
+
+func _make_tone(freq_a: float, freq_b: float, dur: float) -> AudioStreamWAV:
+	var n: int = int(MIX_RATE * dur)
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for i in range(n):
+		var t: float = float(i) / float(MIX_RATE)
+		var prog: float = float(i) / float(n)
+		var freq: float = freq_a if prog < 0.5 else freq_b
+		var env: float = sin(prog * PI)
+		var s: float = sin(TAU * freq * t) * env * 0.55
+		var v: int = int(clamp(s, -1.0, 1.0) * 32767.0)
+		data.encode_s16(i * 2, v)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = MIX_RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 
 # === フェード遷移(Godot 操作層) ===

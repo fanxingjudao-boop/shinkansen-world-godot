@@ -14,6 +14,7 @@ extends Control
 @onready var btn_right: BaseButton = $DPad/Right
 @onready var btn_jump: BaseButton = $ActionButtons/Jump
 @onready var btn_touch: BaseButton = $ActionButtons/Touch
+@onready var btn_nagame: BaseButton = $ActionButtons/Nagame
 @onready var prompt: Label = $Prompt
 @onready var notice: Label = $Notice
 @onready var fade: ColorRect = $Fade
@@ -55,6 +56,9 @@ func _ready() -> void:
 	_ride_controller = get_tree().root.find_child("RideController", true, false)
 	if btn_touch:
 		btn_touch.pressed.connect(_on_touch_pressed)
+	# 「ながめ」ボタン: 乗車中だけ表示し、押すと車内視点を巡回
+	if btn_nagame:
+		btn_nagame.pressed.connect(_on_nagame_pressed)
 
 	# カメラ向きボタン(CameraRig をシーンから探して回転を依頼)
 	_camera_rig = get_tree().root.find_child("CameraRig", true, false)
@@ -63,7 +67,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right, btn_nagame]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
@@ -90,6 +94,8 @@ func hide_board_prompt() -> void:
 func set_riding(is_riding: bool) -> void:
 	if btn_touch:
 		btn_touch.text = "おりる" if is_riding else "タッチ"
+	if btn_nagame:
+		btn_nagame.visible = is_riding  # 乗車中だけ「ながめ」ボタンを出す
 	for b in [btn_up, btn_down, btn_left, btn_right]:
 		if b:
 			b.disabled = is_riding
@@ -148,6 +154,11 @@ func _on_book_pressed() -> void:
 func _on_touch_pressed() -> void:
 	if _ride_controller and _ride_controller.has_method("toggle_ride"):
 		_ride_controller.toggle_ride()
+
+# 「ながめ」ボタン: 乗車中の視点を巡回(やね→うんてんせき→まどぎわ)。
+func _on_nagame_pressed() -> void:
+	if _ride_controller and _ride_controller.has_method("cycle_ride_view"):
+		_ride_controller.cycle_ride_view()
 
 # カメラの向きを段階回転(CameraRig.rotate_view)。dir=-1 左/+1 右。
 func _rotate_camera(dir: int) -> void:

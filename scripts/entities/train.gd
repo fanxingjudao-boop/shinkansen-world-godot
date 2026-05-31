@@ -18,6 +18,8 @@ const TrainData = preload("res://scripts/entities/train_data.gd")
 # 駅(dwell)に到着した瞬間に発火。引数は編成中央のワールド位置。
 # StationManager が受けて、その駅のテーマ短メロ(駅メロ)を鳴らす。
 signal arrived(anchor_pos: Vector3)
+# 駅から発車した瞬間(DWELLING→RUNNING)に発火。乗車中アナウンス「しゅっぱつ」用。
+signal departed()
 
 # === 車両構成定数 ===
 const CAR_COUNT: int = 5                  # 5 両編成(LEAD + MID×3 + TAIL)
@@ -63,6 +65,8 @@ var _state: int = State.RUNNING
 var _dwell_timer: float = 0.0
 var _spin_advance: float = 0.0     # 直近フレームの前進量(m)。車輪回転に使う
 var _just_arrived: bool = false    # このフレームに駅へ着いたか(到着後に arrived を発火)
+var _panto: Array = []             # パンタグラフの可動パーツ [{node, base_y}]
+var _panto_phase: float = 0.0      # パンタグラフ上下動の位相
 
 
 var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
@@ -164,6 +168,7 @@ func _physics_process(delta: float) -> void:
 			_dwell_timer -= delta
 			if _dwell_timer <= 0.0:
 				_state = State.RUNNING
+				departed.emit()
 		State.PARKED:
 			pass
 	_apply_progress()
@@ -187,6 +192,18 @@ func _spin_wheels() -> void:
 	var angle: float = _spin_advance / WHEEL_RADIUS
 	for w in _wheels:
 		(w as Node3D).rotate_object_local(Vector3.UP, angle)
+
+
+# パンタグラフをゆっくり上下に微動させて生命感を出す(架線に追従する雰囲気)。
+# 走行中は少し高め、停車中はわずかに下がる。視覚のみで負荷は軽微。
+func _process(delta: float) -> void:
+	if _panto.is_empty():
+		return
+	_panto_phase += delta
+	var raised: float = 0.0 if _state == State.RUNNING else -0.04
+	var bob: float = sin(_panto_phase * 1.6) * 0.03 + raised
+	for p in _panto:
+		(p["node"] as Node3D).position.y = float(p["base_y"]) + bob
 
 
 # このフレームの前進(prev から advance メートル)で跨いだ停車点を返す(なければ null)。
@@ -260,6 +277,12 @@ func get_ride_anchor_position() -> Vector3:
 # 進行方向に自動追従し、ローカル固定 transform なら一切揺れない。
 func get_ride_mount() -> Node3D:
 	return _path_follow
+
+# 先頭車の PathFollow(前面展望カメラ用)。_parts[0] は lead 車(_build_cars で最初に追加)。
+func get_ride_mount_front() -> Node3D:
+	if _parts.is_empty():
+		return _path_follow
+	return _parts[0]["follow"]
 
 # 編成中央の現在の進行方向(ワールド)。-Z が進行方向(先頭)。
 func get_ride_forward() -> Vector3:
@@ -568,6 +591,7 @@ func _attach_pantograph(car: Node3D) -> void:
 		arm_mi.position = Vector3(x_off, roof_y + 0.42, 0)
 		arm_mi.rotate_x(0.35)
 		car.add_child(arm_mi)
+		_panto.append({ "node": arm_mi, "base_y": arm_mi.position.y })
 
 	# 集電板(上の横長 BoxMesh)
 	var contact := BoxMesh.new()
@@ -577,6 +601,7 @@ func _attach_pantograph(car: Node3D) -> void:
 	contact_mi.material_override = _make_material(WHEEL_COLOR, 0.5)
 	contact_mi.position = Vector3(0, roof_y + 0.8, 0)
 	car.add_child(contact_mi)
+	_panto.append({ "node": contact_mi, "base_y": contact_mi.position.y })
 
 
 # === マテリアル生成 ===

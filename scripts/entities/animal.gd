@@ -102,6 +102,45 @@ func befriend() -> void:
 	tw.tween_callback(func() -> void: _celebrating = false)
 
 
+# なかよし済みの動物がときどき歌う(音符を出してリズムよくバウンス)。AnimalManager から呼ばれる。
+# 歌っている間は _celebrating で移動/歩行バウンスを止め、tween と競合させない。
+func sing() -> void:
+	if not _befriended or _celebrating:
+		return
+	_celebrating = true
+	_state = St.IDLE
+	_pop_note()
+	var tw := create_tween()
+	tw.tween_property(_visual, "position:y", _base_visual_y + 0.34, 0.18) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_visual, "position:y", _base_visual_y + 0.12, 0.16)
+	tw.tween_property(_visual, "position:y", _base_visual_y + 0.30, 0.16)
+	tw.tween_property(_visual, "position:y", _base_visual_y, 0.22) \
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _celebrating = false)
+
+
+# 頭上に音符をふわっと出して斜め上に上昇フェード
+func _pop_note() -> void:
+	var note := Label3D.new()
+	note.text = "♪"
+	note.font = FONT_BODY
+	note.font_size = 96
+	note.pixel_size = 0.01
+	note.modulate = Color(1.0, 0.85, 0.3)
+	note.outline_size = 12
+	note.outline_modulate = Color(1, 1, 1, 1)
+	note.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	note.position = Vector3(0.2, 1.6, 0)
+	add_child(note)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(note, "position:y", 2.7, 1.0).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(note, "position:x", 0.7, 1.0)
+	tw.tween_property(note, "modulate:a", 0.0, 1.0)
+	tw.chain().tween_callback(note.queue_free)
+
+
 # 頭上にハートをふわっと出して上昇フェード
 func _pop_heart() -> void:
 	var heart := Label3D.new()

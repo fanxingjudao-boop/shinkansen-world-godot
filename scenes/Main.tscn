@@ -1,4 +1,4 @@
-[gd_scene load_steps=52 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=53 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -51,6 +51,7 @@
 [ext_resource type="PackedScene" path="res://scenes/world/Town.tscn" id="50_town"]
 [ext_resource type="Script" path="res://scripts/world/landmark.gd" id="51_landmark"]
 [ext_resource type="Script" path="res://scripts/fx/shooting_star.gd" id="52_shootstar"]
+[ext_resource type="Script" path="res://scripts/world/grass.gd" id="53_grass"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -253,6 +254,7 @@ trains_path = NodePath("../Trains")
 camera_rig_path = NodePath("../CameraRig")
 hud_path = NodePath("../UI/TouchHUD")
 game_state_path = NodePath("../GameState")
+stations_path = NodePath("../Stations")
 
 [node name="UI" type="CanvasLayer" parent="."]
 
@@ -270,3 +272,6 @@ script = ExtResource("52_shootstar")
 day_night_path = NodePath("../DayNightCycle")
 player_path = NodePath("../Player")
 hud_path = NodePath("../UI/TouchHUD")
+
+[node name="Grass" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("53_grass")
