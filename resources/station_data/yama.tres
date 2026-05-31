@@ -11,3 +11,5 @@ main_color = Color(0.55, 0.65, 0.78, 1)
 accent_color = Color(0.96, 0.98, 1.0, 1)
 decor_type = "mountain"
 track_t = 3.1416
+route_slug = "tsubasa"
+route_ratio = 0.0

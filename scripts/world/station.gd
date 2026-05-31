@@ -10,6 +10,7 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const Railway = preload("res://scripts/world/railway.gd")
 
 @export var station_data: StationData
+@export var railway_path: NodePath = NodePath("../../Railway")
 
 const PLATFORM_LEN: float = 12.0    # 線路沿いの長さ(ローカル Z)
 const PLATFORM_DEPTH: float = 4.0   # 線路からの奥行(ローカル X)
@@ -27,21 +28,29 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	var t: float = station_data.track_t
-	var center: Vector2 = Railway.ellipse_point(t)
-	var tangent: Vector2 = Railway.ellipse_tangent(t)
-	var perp: Vector2 = Vector2(-tangent.y, tangent.x)
-	if perp.dot(center) < 0.0:
-		perp = -perp  # 楕円の外向き(線路の外側にプラットフォームを置く)
-	var plat2: Vector2 = center + perp * SIDE_OFFSET
-	var ground: float = TerrainHeight.compute_height(plat2.x, plat2.y)
-	# 湖の上の区間では線路と同様に水面以上へ持ち上げる(沈み防止)
-	var lake_d: float = (center - TerrainHeight.LAKE_POS).length()
+	# 線路網: 自駅の編成ルートの ratio 位置を railway から取得し、線路脇(外向き)に配置。
+	var railway := get_node_or_null(railway_path)
+	if railway == null or not railway.has_method("get_route_sample"):
+		push_warning("[Station] railway が見つからない: %s" % station_data.slug)
+		return
+	var s: Dictionary = railway.get_route_sample(station_data.route_slug, station_data.route_ratio)
+	if s.is_empty():
+		push_warning("[Station] ルートが見つからない: %s" % station_data.route_slug)
+		return
+	var track_pos: Vector3 = s["position"]
+	var outward: Vector3 = s["outward"]
+	var forward: Vector3 = s["forward"]
+
+	var plat_x: float = track_pos.x + outward.x * SIDE_OFFSET
+	var plat_z: float = track_pos.z + outward.z * SIDE_OFFSET
+	var ground: float = TerrainHeight.compute_height(plat_x, plat_z)
+	# 湖の上の区間ではプラットフォームも水面以上へ(沈み防止)
+	var lake_d: float = Vector2(plat_x - TerrainHeight.LAKE_POS.x, plat_z - TerrainHeight.LAKE_POS.y).length()
 	if lake_d < TerrainHeight.LAKE_RADIUS:
 		ground = max(ground, TerrainHeight.compute_water_y())
-	position = Vector3(plat2.x, ground, plat2.y)
+	position = Vector3(plat_x, ground, plat_z)
 	# ローカル -Z を線路接線方向へ(プラットフォーム長辺 Z が線路に沿う)
-	rotation.y = atan2(tangent.x, tangent.y)
+	rotation.y = atan2(forward.x, forward.z)
 
 	_build_platform()
 	_build_roof()

@@ -11,3 +11,5 @@ main_color = Color(0.45, 0.78, 0.95, 1)
 accent_color = Color(0.95, 0.99, 1.0, 1)
 decor_type = "lake"
 track_t = 2.0944
+route_slug = "sl_hitoyoshi"
+route_ratio = 0.0

@@ -11,3 +11,5 @@ main_color = Color(1.0, 0.66, 0.35, 1)
 accent_color = Color(1.0, 0.95, 0.8, 1)
 decor_type = "sweets"
 track_t = 4.1888
+route_slug = "e235_yamanote"
+route_ratio = 0.0

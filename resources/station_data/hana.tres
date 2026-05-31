@@ -11,3 +11,5 @@ main_color = Color(1.0, 0.62, 0.75, 1)
 accent_color = Color(1.0, 0.97, 0.98, 1)
 decor_type = "flower"
 track_t = 1.0472
+route_slug = "komachi"
+route_ratio = 0.5

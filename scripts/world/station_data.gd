@@ -23,5 +23,9 @@ extends Resource
 # 固有装飾: "tree" / "flower" / "mountain" / "lake" / "sweets" / "rainbow"
 @export var decor_type: String = "tree"
 
-# 楕円トラック上の配置位置(0..TAU)。6 駅で重ならないよう分散
+# 楕円トラック上の配置位置(0..TAU)。旧単一線路用(線路網化で route_slug+route_ratio に移行)
 @export var track_t: float = 0.0
+
+# 線路網: どの編成ルートのどこ(全長比 0..1)に駅を置くか。stop(dwell)位置と一致させる。
+@export var route_slug: String = ""
+@export var route_ratio: float = 0.0

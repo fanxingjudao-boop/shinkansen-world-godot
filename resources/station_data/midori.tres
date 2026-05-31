@@ -11,3 +11,5 @@ main_color = Color(0.3, 0.7, 0.4, 1)
 accent_color = Color(0.95, 0.97, 0.92, 1)
 decor_type = "tree"
 track_t = 0.0
+route_slug = "hayabusa"
+route_ratio = 0.0

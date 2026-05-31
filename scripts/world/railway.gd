@@ -93,6 +93,7 @@ func _build_route(spec: Dictionary) -> void:
 		"length": length,
 		"start_offset": float(spec.get("start_ratio", 0.0)) * length,
 		"stops": stops,
+		"center": spec.get("center", Vector2.ZERO),
 	}
 
 
@@ -174,6 +175,25 @@ func get_route_start_offset(slug: String) -> float:
 	if _routes.has(slug):
 		return _routes[slug]["start_offset"]
 	return 0.0
+
+# ルート上 ratio(0..1)の { position(Vector3), forward(進行方向), outward(ループ中心と反対=外向き) }。
+# 駅・名所などを線路脇に置くのに使う。
+func get_route_sample(slug: String, ratio: float) -> Dictionary:
+	if not _routes.has(slug):
+		return {}
+	var r: Dictionary = _routes[slug]
+	var curve: Curve3D = r["path"].curve
+	var length: float = r["length"]
+	var off: float = fposmod(ratio * length, length)
+	var pos: Vector3 = curve.sample_baked(off, true)
+	var ahead: Vector3 = curve.sample_baked(fposmod(off + 0.5, length), true)
+	var fwd: Vector3 = ahead - pos
+	fwd.y = 0.0
+	fwd = fwd.normalized() if fwd.length() > 0.0001 else Vector3(0, 0, 1)
+	var c: Vector2 = r["center"]
+	var outward := Vector3(pos.x - c.x, 0.0, pos.z - c.y)
+	outward = outward.normalized() if outward.length() > 0.0001 else Vector3(1, 0, 0)
+	return { "position": pos, "forward": fwd, "outward": outward }
 
 
 # 後方互換: 旧 API。現在は本線先頭ルート(はやぶさ)の Path3D を返す。

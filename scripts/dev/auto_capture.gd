@@ -164,10 +164,10 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(35, 8, -10))
 		cam.fov = 55.0
 	elif VIEW == ViewMode.STATION:
-		# みどり駅(track_t=0)→ プラットフォームは外側 (104.4, 0)
-		cam.global_position = Vector3(116, 8, 15)
-		cam.look_at(Vector3(104, 3, 2))
-		cam.fov = 58.0
+		# みどり駅(はやぶさ本線 ratio0 ≈ (285,0))を斜めから
+		cam.global_position = Vector3(318, 14, 30)
+		cam.look_at(Vector3(288, 3, 0))
+		cam.fov = 56.0
 	elif VIEW == ViewMode.ANIMAL:
 		# うさぎ(home 8,12 付近)に寄って造形を確認
 		cam.global_position = Vector3(12, 3.5, 3)
