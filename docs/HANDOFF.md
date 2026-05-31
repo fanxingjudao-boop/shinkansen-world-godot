@@ -159,6 +159,24 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
+## 進捗(2026-06-01 時点 — 作りこみ本格化 Phase 6 / 第1・第2ウェーブ)
+
+改善さんが「作りこみを本格化」と指示。3方向「世界をにぎやかに・見た目を磨く・電車を深く」を選択(四季は今回見送り)。独立デプロイ可能なウェーブに分けて実装中。詳細は `changelog.md` の v0.25.0 / v0.26.0、計画は `C:\Users\papa\.claude\plans\golden-humming-shamir.md`。
+
+**第1ウェーブ(v0.25.0・commit `0fdda30`):**
+- 車輪回転(`train.gd` `_wheels`/`_spin_wheels`、カメラ110m以内のみ)/ 駅メロ(`train.gd` `arrived` シグナル + `station_manager.gd` の `_make_jingle`、6駅ぶん)/ トゥーンシェーディング(`rim.gdshader` に `light()` 追加・`toon_steps`)/ おだんごで げんき(`GameState.energy` 新規・保存、HUD「げんき」カウンタ、おかし駅で近接トリガー)/ 流れ星(新規 `scripts/fx/shooting_star.gd`、夜にランダム)。
+
+**第2ウェーブ(v0.26.0・commit `f5e4ee8`):**
+- 車内視点(`ride_controller.gd` `RIDE_VIEWS`/`cycle_ride_view`、前面=`train.get_ride_mount_front`、HUD「ながめ」ボタン)/ 車内アナウンス(`train.departed` シグナル + 到着/発車テロップ + 発車チャイム、`stations_path` で駅名)/ 動物の歌(`animal.sing` + `animal_manager` が定期発火)/ パンタ可動(`train._panto`/`_process`)/ 草の揺れ(新規 `assets/shaders/grass.gdshader` + `scripts/world/grass.gd`、MultiMesh 1 draw call・中央95m約1400株)。
+
+**その後の調整:**
+- 昼夜サイクルを 84秒→840秒(約10倍ゆっくり、commit `2729e70`)。実機で日替わりが速すぎたため。`day_night_cycle.gd` `CYCLE_SEC`。さらに調整するならここ。
+
+**未完・次にやること(第3ウェーブ・要設計判断):**
+- **改善さんの iPad 確認待ち(第1・2ウェーブ)**: 車輪の回る向き / おだんご / 駅メロ・もぐもぐ音 / 流れ星 / 視点切替の酔い・前面展望 / 車内アナウンス・発車チャイム / 動物の歌 / パンタの動き / **草の fps 影響(最重要・密度上限の判断、`grass.gd` の `BLADE_COUNT`/`FIELD_RADIUS`)**。
+- **第3ウェーブ**: A4 手を振ると沿線が応える / A5 動物の家(MultiMesh か統合メッシュで draw call 抑制)/ C5 分岐で運転手(現アーキは「1編成=1閉ループ専用Path3D」で衝突回避のため物理分岐は重い → **まず安全な「ワープ式」**から)/ B5 仕上げチューニング。C5 は着手前に改善さんへ方針確認。
+- 上記とは別に、旧 v0.24.0 の片付け(下記)も残っている。
+
 ## 進捗(2026-05-31 時点 — iPad 実機フィードバック対応)
 
 iPad/スマホ実機で遊んでもらい、出た不具合を順次修正・デプロイ。最新は commit `5e8bcaf`。
