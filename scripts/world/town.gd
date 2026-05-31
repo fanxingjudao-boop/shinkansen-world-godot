@@ -7,14 +7,25 @@ extends Node3D
 # 見た目は全部スクリプト生成、配置は seed 固定で毎回同じ。窓・街灯・水は光る。
 
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
-const Railway = preload("res://scripts/world/railway.gd")
 
 const TOWN_SEED: int = 2025
 
-# 駅の楕円パラメータ(resources/station_data/*.tres と一致)
-const STATION_TS: Array = [0.0, 1.0472, 2.0944, 3.1416, 4.1888, 5.236]
-# 踏切を置く楕円パラメータ(駅と被らない位置)
-const CROSSING_TS: Array = [0.55, 2.65, 4.75]
+@export var railway_path: NodePath = NodePath("../Railway")
+var _railway: Node
+
+# 集落の中心(広域マップ内のクリア地。線路網と重ならない位置に手配置)
+const VILLAGE_CENTERS: Array = [
+	Vector2(150.0, 45.0),    # メインの街(やまのて線の内側)
+	Vector2(-70.0, 70.0),
+	Vector2(-40.0, -110.0),
+	Vector2(120.0, -150.0),
+]
+# 踏切を置く { ルート, 全長比 }(地表を走るループの上)
+const CROSSINGS: Array = [
+	{ "slug": "komachi", "ratio": 0.0 },
+	{ "slug": "komachi", "ratio": 0.25 },
+	{ "slug": "e235_yamanote", "ratio": 0.5 },
+]
 
 const WALL_COLORS: Array = [
 	Color(1.0, 0.85, 0.85), Color(0.85, 0.92, 1.0), Color(1.0, 0.97, 0.8),
@@ -37,17 +48,15 @@ const YELLOW_C: Color = Color(1.0, 0.85, 0.2)
 
 
 func _ready() -> void:
+	_railway = get_node_or_null(railway_path)
 	seed(TOWN_SEED)
-	# メインの街(中央・線路内側)
-	_build_village(Vector2(46.0, -26.0), 9, true)
-	# 各駅のそばの小さな集落(駅から内側へ)
-	for t in STATION_TS:
-		var sp: Vector2 = Railway.ellipse_point(t)
-		var inward: Vector2 = -sp.normalized() * 26.0
-		_build_village(sp + inward, 3, false)
-	# 踏切
-	for t in CROSSING_TS:
-		_build_crossing(t)
+	# メインの街 + いくつかの集落(広域マップのクリア地)
+	for i in range(VILLAGE_CENTERS.size()):
+		_build_village(VILLAGE_CENTERS[i], 9 if i == 0 else 4, i == 0)
+	# 踏切(地表ループの線路上に横断道路)
+	if _railway and _railway.has_method("get_route_sample"):
+		for c in CROSSINGS:
+			_build_crossing_on(String(c["slug"]), float(c["ratio"]))
 
 
 # === 集落 ===
@@ -174,14 +183,17 @@ func _build_bench(x: float, z: float, rot: float) -> void:
 
 # === 踏切 ===
 
-func _build_crossing(t: float) -> void:
-	var c: Vector2 = Railway.ellipse_point(t)
-	var tangent: Vector2 = Railway.ellipse_tangent(t)
-	var g: float = TerrainHeight.compute_height(c.x, c.y) + 0.32
+func _build_crossing_on(slug: String, ratio: float) -> void:
+	var s: Dictionary = _railway.get_route_sample(slug, ratio)
+	if s.is_empty():
+		return
+	var pos: Vector3 = s["position"]
+	var fwd: Vector3 = s["forward"]
+	var g: float = TerrainHeight.compute_height(pos.x, pos.z) + 0.32
 	var root := Node3D.new()
-	root.position = Vector3(c.x, g, c.y)
+	root.position = Vector3(pos.x, g, pos.z)
 	# ローカル -Z を線路方向へ(道はローカル X 方向に線路を横断)
-	root.rotation.y = atan2(tangent.x, tangent.y)
+	root.rotation.y = atan2(fwd.x, fwd.z)
 	add_child(root)
 
 	# 道(線路を横切る板)

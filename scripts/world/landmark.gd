@@ -1,103 +1,65 @@
 extends Node3D
 
 # 線路の見どころ。Main 直下のノード。
-# - 鉄橋: 湖を渡る区間に赤いトラス橋(橋脚+主桁+上弦+斜材)
-# - トンネル: 山を抜ける区間にレンガの坑口+かまぼこ天井
-# 線路の楕円パラメータ(t)に合わせて配置。Y は railway と同じく湖上では水面以上に。
+# - トンネル: 「つばさ」ルート(山B のふもとをめぐる)の一区間にレンガ坑口+かまぼこ天井。
+# - 鉄橋(湖)は railway の自動橋脚(線路が水上に出る所)で表現されるのでここでは作らない。
+# 位置は railway のルートサンプル(線路上の点+進行方向)に沿わせる。
 
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
-const Railway = preload("res://scripts/world/railway.gd")
 
-const RAIL_OFF: float = 0.3  # railway.RAIL_HEIGHT_OFFSET と同じ
-const BRIDGE_C: Color = Color(0.82, 0.34, 0.3)   # 赤い鉄橋
-const PIER_C: Color = Color(0.6, 0.6, 0.63)      # 橋脚(コンクリ)
-const STONE_C: Color = Color(0.62, 0.6, 0.56)    # 石
-const BRICK_C: Color = Color(0.68, 0.42, 0.38)   # レンガ
+const STONE_C: Color = Color(0.62, 0.6, 0.56)    # 石(天井)
+const BRICK_C: Color = Color(0.68, 0.42, 0.38)   # レンガ(坑口)
+
+@export var railway_path: NodePath = NodePath("../Railway")
+var _railway: Node
 
 
 func _ready() -> void:
-	_build_bridge(1.85, 2.18, 6)   # 湖(-50,80)を渡る区間
-	_build_tunnel(3.62, 3.98)      # 山B(-110,-70)を抜ける区間
-
-
-# 線路面の Y(湖の上では水面以上に持ち上がる)
-func _rail_y(x: float, z: float) -> float:
-	var g: float = TerrainHeight.compute_height(x, z)
-	var ld: float = Vector2(x - TerrainHeight.LAKE_POS.x, z - TerrainHeight.LAKE_POS.y).length()
-	if ld < TerrainHeight.LAKE_RADIUS:
-		return max(g, TerrainHeight.compute_water_y()) + RAIL_OFF
-	return g + RAIL_OFF
-
-
-# === 鉄橋 ===
-
-func _build_bridge(t0: float, t1: float, n: int) -> void:
-	# 橋脚
-	for i in range(n + 1):
-		var t: float = lerpf(t0, t1, float(i) / n)
-		var p: Vector2 = Railway.ellipse_point(t)
-		var ry: float = _rail_y(p.x, p.y)
-		var gy: float = TerrainHeight.compute_height(p.x, p.y)
-		var h: float = ry - gy
-		if h > 0.6:
-			_box(Vector3(1.6, h, 1.6), Vector3(p.x, gy + h * 0.5, p.y), 0.0, PIER_C)
-
-	# 主桁・上弦・斜材(赤いトラス)
-	for i in range(n):
-		var ta: float = lerpf(t0, t1, float(i) / n)
-		var tb: float = lerpf(t0, t1, float(i + 1) / n)
-		var pa: Vector2 = Railway.ellipse_point(ta)
-		var pb: Vector2 = Railway.ellipse_point(tb)
-		var mid: Vector2 = (pa + pb) * 0.5
-		var ry: float = _rail_y(mid.x, mid.y)
-		var seg: float = pa.distance_to(pb)
-		var tangent: Vector2 = (pb - pa).normalized()
-		var yaw: float = atan2(tangent.x, tangent.y)
-		var perp: Vector2 = Vector2(-tangent.y, tangent.x)
-		for s in [-1.0, 1.0]:
-			var gx: float = mid.x + perp.x * 1.1 * s
-			var gz: float = mid.y + perp.y * 1.1 * s
-			# 主桁(線路の下)
-			_box(Vector3(0.3, 0.5, seg + 0.4), Vector3(gx, ry - 0.3, gz), yaw, BRIDGE_C)
-			# 上弦(線路の上)
-			_box(Vector3(0.24, 0.24, seg + 0.4), Vector3(gx, ry + 1.7, gz), yaw, BRIDGE_C)
-			# 斜材
-			_box(Vector3(0.16, 2.1, 0.16), Vector3(gx, ry + 0.7, gz), yaw, BRIDGE_C)
+	_railway = get_node_or_null(railway_path)
+	if _railway == null or not _railway.has_method("get_route_sample"):
+		return
+	# つばさルートの一区間にトンネル(山B を抜ける見立て)
+	_build_tunnel_on("tsubasa", 0.55, 0.80)
 
 
 # === トンネル ===
 
-func _build_tunnel(t0: float, t1: float) -> void:
-	_portal(t0)
-	_portal(t1)
+func _build_tunnel_on(slug: String, r0: float, r1: float) -> void:
+	_portal_at(slug, r0)
+	_portal_at(slug, r1)
 	# かまぼこ天井(坑口の間を覆う)
-	var m: int = 5
+	var m: int = 6
 	for i in range(1, m):
-		var t: float = lerpf(t0, t1, float(i) / m)
-		var p: Vector2 = Railway.ellipse_point(t)
-		var tangent: Vector2 = Railway.ellipse_tangent(t)
-		var ry: float = _rail_y(p.x, p.y)
-		var yaw: float = atan2(tangent.x, tangent.y)
-		var perp: Vector2 = Vector2(-tangent.y, tangent.x)
+		var rr: float = lerpf(r0, r1, float(i) / float(m))
+		var s: Dictionary = _railway.get_route_sample(slug, rr)
+		if s.is_empty():
+			continue
+		var pos: Vector3 = s["position"]
+		var fwd: Vector3 = s["forward"]
+		var yaw: float = atan2(fwd.x, fwd.z)
+		var perp: Vector3 = fwd.cross(Vector3.UP).normalized()
 		# 天井
-		_box(Vector3(4.8, 0.5, 3.0), Vector3(p.x, ry + 3.3, p.y), yaw, STONE_C)
+		_box(Vector3(4.8, 0.5, 4.0), Vector3(pos.x, pos.y + 3.3, pos.z), yaw, STONE_C)
 		# 側壁
-		for s in [-1.0, 1.0]:
-			_box(Vector3(0.5, 3.6, 3.0),
-				Vector3(p.x + perp.x * 2.2 * s, ry + 1.7, p.y + perp.y * 2.2 * s), yaw, STONE_C)
+		for sgn in [-1.0, 1.0]:
+			_box(Vector3(0.5, 3.6, 4.0),
+				Vector3(pos.x + perp.x * 2.2 * sgn, pos.y + 1.7, pos.z + perp.z * 2.2 * sgn),
+				yaw, STONE_C)
 
 
-func _portal(t: float) -> void:
-	var p: Vector2 = Railway.ellipse_point(t)
-	var tangent: Vector2 = Railway.ellipse_tangent(t)
-	var ry: float = _rail_y(p.x, p.y)
+func _portal_at(slug: String, ratio: float) -> void:
+	var s: Dictionary = _railway.get_route_sample(slug, ratio)
+	if s.is_empty():
+		return
+	var pos: Vector3 = s["position"]
+	var fwd: Vector3 = s["forward"]
 	var root := Node3D.new()
-	root.position = Vector3(p.x, ry, p.y)
-	root.rotation.y = atan2(tangent.x, tangent.y)
+	root.position = pos
+	root.rotation.y = atan2(fwd.x, fwd.z)
 	add_child(root)
 	# 左右の柱(レンガ)
-	for s in [-1.0, 1.0]:
-		_box_local(root, Vector3(1.1, 4.6, 1.8), Vector3(s * 2.5, 2.0, 0), BRICK_C)
+	for sgn in [-1.0, 1.0]:
+		_box_local(root, Vector3(1.1, 4.6, 1.8), Vector3(sgn * 2.5, 2.0, 0), BRICK_C)
 	# 上の梁
 	_box_local(root, Vector3(6.2, 1.2, 1.8), Vector3(0, 4.3, 0), BRICK_C)
 	# アーチ飾り(石)

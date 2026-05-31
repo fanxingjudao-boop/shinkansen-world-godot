@@ -184,13 +184,13 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(0, 1.2, 0))
 		cam.fov = 42.0
 	elif VIEW == ViewMode.TOWN:
-		# 街(ORIGIN 18,-48 ~ の区画、中心 ~ (46,-27))を斜め上から
-		cam.global_position = Vector3(46, 18, 14)
-		cam.look_at(Vector3(46, 2, -28))
+		# メインの街(150,45、やまのて線の内側)を斜め上から
+		cam.global_position = Vector3(150, 30, 110)
+		cam.look_at(Vector3(150, 3, 45))
 		cam.fov = 58.0
 	elif VIEW == ViewMode.TUNNEL:
-		# トンネル(山B、線路 t≈3.8 → (-107,-64) 付近)
-		cam.global_position = Vector3(-82, 20, -42)
-		cam.look_at(Vector3(-106, 9, -66))
+		# トンネル(つばさ/山B ふもと ≈ (-190,-138) 付近)
+		cam.global_position = Vector3(-150, 28, -95)
+		cam.look_at(Vector3(-188, 8, -135))
 		cam.fov = 55.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)
