@@ -72,15 +72,26 @@ func _process(delta: float) -> void:
 	if _state == State.WALKING:
 		_update_prompt()
 
-	if Input.is_action_just_pressed("interact") and _toggle_cooldown <= 0.0:
-		if _state == State.WALKING:
-			var train := _find_nearest_ridable()
-			if train != null:
-				_board(train)
-				_toggle_cooldown = TOGGLE_DEBOUNCE
-		else:
-			_alight()
+	# キーボード(E/Enter)用。タッチボタンは touch_hud が toggle_ride() を直接呼ぶ
+	# (タッチ/Web では action のリリース取りこぼしで押されっぱなしになり、2 回目の
+	#  「押された瞬間」が検出されず降りられない事故があるため、pressed シグナル直結にした)。
+	if Input.is_action_just_pressed("interact"):
+		toggle_ride()
+
+
+# 乗降トグル(タッチボタンの pressed / キーボード interact の共通入口)。
+# 歩行中なら最寄りの電車に乗り、乗車中なら降りる。直後の誤連打はクールダウンで防ぐ。
+func toggle_ride() -> void:
+	if _toggle_cooldown > 0.0:
+		return
+	if _state == State.WALKING:
+		var train := _find_nearest_ridable()
+		if train != null:
+			_board(train)
 			_toggle_cooldown = TOGGLE_DEBOUNCE
+	else:
+		_alight()
+		_toggle_cooldown = TOGGLE_DEBOUNCE
 
 
 # === 乗れる電車の検出 ===

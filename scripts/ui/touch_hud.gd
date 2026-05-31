@@ -31,6 +31,7 @@ var _notice_tween: Tween
 var _game_state: Node
 var _book: Node
 var _camera_rig: Node
+var _ride_controller: Node
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -39,7 +40,6 @@ func _ready() -> void:
 	_bind(btn_left, "move_left")
 	_bind(btn_right, "move_right")
 	_bind(btn_jump, "jump")
-	_bind(btn_touch, "interact")
 
 	_game_state = get_node_or_null(game_state_path)
 	if _game_state and _game_state.has_signal("changed"):
@@ -48,6 +48,12 @@ func _ready() -> void:
 	_book = get_node_or_null(book_path)
 	if btn_book:
 		btn_book.pressed.connect(_on_book_pressed)
+
+	# タッチ/おりる ボタンは pressed シグナルで直接 RideController を呼ぶ
+	# (interact action のエッジ検出はタッチ/Web で取りこぼしうるため。降車不可の対策)
+	_ride_controller = get_tree().root.find_child("RideController", true, false)
+	if btn_touch:
+		btn_touch.pressed.connect(_on_touch_pressed)
 
 	# カメラ向きボタン(CameraRig をシーンから探して回転を依頼)
 	_camera_rig = get_tree().root.find_child("CameraRig", true, false)
@@ -134,6 +140,11 @@ func set_mission(text: String) -> void:
 func _on_book_pressed() -> void:
 	if _book and _book.has_method("open"):
 		_book.open()
+
+# タッチ/おりる ボタン: RideController に乗降トグルを依頼(タップごとに確実に発火)。
+func _on_touch_pressed() -> void:
+	if _ride_controller and _ride_controller.has_method("toggle_ride"):
+		_ride_controller.toggle_ride()
 
 # カメラの向きを段階回転(CameraRig.rotate_view)。dir=-1 左/+1 右。
 func _rotate_camera(dir: int) -> void:
