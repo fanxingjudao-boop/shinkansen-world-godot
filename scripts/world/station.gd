@@ -1,13 +1,12 @@
 extends Node3D
 
 # 駅シーン。station_data に応じて線路脇に駅を組み立てる。
-# - 楕円トラック上 track_t の位置を Railway.ellipse_point で求め、外側にプラットフォーム
+# - railway.get_route_sample(route_slug, route_ratio) で線路上の点を求め、外側にプラットフォーム
 # - プラットフォーム + 屋根(柱4本+屋根板)+ 看板(Label3D, 常に読める Y ビルボード)+ 固有装飾
 # - 見た目は全部スクリプト生成(駅ごとに色・装飾が変わるので静的シーン化しない、Train と同方針)
 
 const StationData = preload("res://scripts/world/station_data.gd")
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
-const Railway = preload("res://scripts/world/railway.gd")
 
 @export var station_data: StationData
 @export var railway_path: NodePath = NodePath("../../Railway")

@@ -3,7 +3,6 @@ extends Node3D
 # class_name は Godot エディタが project をスキャンするまで CLI で
 # 認識されないため preload 両対応
 const TrainData = preload("res://scripts/entities/train_data.gd")
-const Railway = preload("res://scripts/world/railway.gd")
 
 # 列車本体スクリプト。
 # - _ready で railway の Path3D を取得し、PathFollow3D を動的に add_child

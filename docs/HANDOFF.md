@@ -169,13 +169,13 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 - Phase 5 残り: 完全オフライン化(Service Worker キャッシュ。Export ダイアログで PWA ON or SW 追加)、親モード(音量・データリセット・PIN)。
 - 順序の注意: GameState→SaveSystem を最前に。HUD に書く処理(ミッション)は call_deferred で HUD の _ready を待つ。効果音は _ready で prev を現在値に初期化して起動時の誤発火を防ぐ。
 - 操作/見た目: 移動=D-pad・WASD/矢印。カメラは**固定追従**(`camera_rig.gd`、yaw0/pitch0.5。orbit は画面酔いするとのことで撤去)。プレイヤーは 3 頭身の運転士キャラ(`player.gd` でスクリプト生成、帽子・大きいうるうる目+キラキラ・ほっぺ・歩行アニメ)。Player.tscn は当たり判定のみ。
-- オープンワールド: 線路は楕円を拡大(`railway.gd` TRACK_R_X 135 / R_Z 105、駅・電車・虹・星は ellipse_point 連動)。線路は Path3D 1 本前提なので分岐は未対応。
+- オープンワールド(v0.23.0 で広域+線路網化): 地形 `WORLD_SIZE 700`/`MESH_SUBDIV 180`。線路は **9 ルートの線路網**(`scripts/world/route_data.gd` でデータ駆動定義 → `railway.gd` が各ルートの Curve3D/Path3D/レール/枕木/橋脚を生成)。**各編成に専用の閉ループ**を与え曲線を共有しないので、速度差があっても衝突・数珠つなぎが構造的に起きない。交差は高さ(elevation)で分離。波打つ 3 車線本線 + 名所ループ(湖/山/街)+ 高架立体交差(つばめ)。駅・名所・街は `railway.get_route_sample(slug, ratio)` でルート脇に配置。`get_route_path/get_route_stops/get_route_start_offset` が公開 API。
 - 街は `town.gd`+`Town.tscn`: メイン街(中央)+ 各駅のそばの小集落、駅前広場(噴水/ベンチ/街灯)、街路樹、踏切(track_t 0.55/2.65/4.75)。窓・街灯・水は夜光る。
-- 線路の見どころ `landmark.gd`(Main の Landmarks): 鉄橋(湖区間 t1.85〜2.18、赤トラス)、トンネル(山B区間 t3.62〜3.98、レンガ坑口+天井)。`_rail_y` で湖上の線路高さを再現。
+- 線路の見どころ `landmark.gd`(Main の Landmarks): トンネルを つばさルート(山B)に配置(レンガ坑口+かまぼこ天井)。湖の鉄橋は railway の自動橋脚(線路が水上に出る所)で表現。
 - 建物・小物が増えたので負荷は実機要確認(重ければ town/landmark の数・窓を減らす)。
 - `auto_capture.gd` 検証フック: MODE=AUTO_RIDE/AUTO_BEFRIEND/AUTO_BOOK、ViewMode=STATION/ANIMAL/STEAM。
 - 進捗は `scripts/world/game_state.gd`(Main 直下、Autoload 不使用)が一元管理。`signal changed` で HUD カウンターと図鑑が更新。永続セーブは Phase 5。
-- 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd._slow_factor_at`(弧長判定)、駅発見=`station_manager.gd`。列車は弧長 `progress` で等速移動(v0.22.0、坂での速度サージを解消)。線路は Catmull-Rom で滑らかな閉曲線。
+- 星=`stars.gd`(近接獲得)、HUD カウンター/ずかんボタン=`touch_hud.gd`+`TouchHUD.tscn`、図鑑=`book.gd`+`BookOverlay.tscn`(.tres 走査でマスター化)、駅停車=`train.gd` の状態機械(`_slow_factor_at` で減速→ dwell/park、`get_route_stops` 由来)、駅発見=`station_manager.gd`。列車は弧長 `progress` で等速移動 + 各車両を個別 PathFollow で屈折(v0.22)。ドクターイエローは車庫で park(`depart()` で将来発車)。
 - interact(タッチ)は乗車専用。なかよし・星・駅発見はすべて近接自動で競合回避。
 - `auto_capture.gd` の検証フック: AUTO_RIDE(乗車)/ AUTO_BEFRIEND(なかよし)/ AUTO_BOOK(図鑑)、ViewMode に STATION / ANIMAL。
 - 乗車システムは `scripts/world/ride_controller.gd`(Main 直下ノード)が中核。視点は屋根上俯瞰(改善さん選択)。運転席視点・列車運転は将来候補。

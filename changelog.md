@@ -2,6 +2,30 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.23.0 — 2026-05-31 — 広域マップ + 分岐つき線路網(列車の重なり/数珠つなぎ解消)
+
+改善さん要望「世界を広く・線路網を複雑化・各編成に止まる場所・自動分岐で数珠つなぎ防止」への対応。7 フェーズで実装。
+
+- **Phase 1 地形拡大**: `WORLD_SIZE 400→700`, `MESH_SUBDIV 120→180`(頂点 ~33k), `COLLISION_SAMPLE_STEP 2.0→3.0`。山・湖を外周へ再配置。フォグ密度 0.002→0.0009。
+- **Phase 2 railway 一般化**: 単一楕円前提 → 任意の Curve3D 駆動(`_build_curve_from_waypoints`/`_build_rails_for`/`_build_ties_for`、`sample_baked` + 弧長間隔)。
+- **Phase 3+4 線路網 + 列車ルート専用化**: `scripts/world/route_data.gd` で 9 ルートをデータ駆動定義。**各編成に専用の閉ループ**(独立 Curve3D/Path3D)→ 曲線を共有しないので速度差があっても**構造的に衝突・数珠つなぎゼロ**。train に状態機械 RUNNING/DWELLING/PARKED(dwell=数秒停車→再発車, park=車庫待機, `depart()` で解除)。`get_route_path/get_route_stops/get_route_start_offset` 公開。
+- **レイアウト刷新**(改善さん要望 名所/枝分かれ/立体交差/本線形状): 波打つ 3 車線本線 + 名所ループ(湖 SL=自動橋脚 / 山B つばさ / 街 やまのて)+ **高架の立体交差**(つばめ +8m、橋脚を自動生成・ルート毎 MultiMesh)。
+- **Phase 5 配置物移行**: StationData に route_slug/route_ratio、`railway.get_route_sample(slug, ratio)` で駅を停車点へ。6 駅割当(みどり→はやぶさ等)。街を広域クリア地へ(メイン街は やまのて線の内側)、踏切を地表ループの線路上へ。トンネルを つばさルート(山B)に作り直し。
+- **Phase 6 空間配置物**: 雲 18→28(±340)、星 12→18(半径120)。乗車(屋根上視点)が新本線で正常動作を確認。撮影視点を新座標へ。
+- **Phase 7 整理**: 旧 `ellipse_point/ellipse_tangent/get_track_path/_ellipse_waypoints` と関連定数・未使用 import を全廃。
+
+### 検証
+- パースエラーなし、9 編成正常走行(BIRD/SIDE/TRAIN_CLOSE/STATION/TOWN/TUNNEL/LAKE/AUTO_RIDE で確認)
+- 各編成=専用曲線 + 交差は高さ分離 → 重なり/数珠つなぎが起きないことを構造的に保証
+- みどり駅で はやぶさが停車・屋根上視点 OK・高架の立体交差/橋脚 OK・トンネル OK・湖ループ OK
+
+### メモ
+- 「枝分かれ」は衝突回避のため**別ルートが分岐・合流して見える**表現(実体は専用曲線)。プレイヤーが切り替える運転手機能は将来。
+- 橋脚は線路面が地面より 2.5m 以上高い所に自動生成(高架・水上)。
+- 旧 Railway.tscn の $TrackPath/$Rails/$Ties は未使用(空)で残置。
+
+次のステップ: 改善さんの実機確認(広さ・動作の重さ・線路網の見た目)→ OK ならビルド成果物コミット。
+
 ## v0.22.1 — 2026-05-31 — 編成を車両ごとに屈折(改善さん指摘: 坂で先頭車が浮く)
 
 改善さん「1車両ごとにばらけていないため、坂をのぼると1車両目が宙に浮く」への対応(v0.22.0 の本質的な原因)。
