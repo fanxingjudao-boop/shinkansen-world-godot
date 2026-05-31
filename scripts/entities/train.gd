@@ -6,7 +6,7 @@ const TrainData = preload("res://scripts/entities/train_data.gd")
 
 # 列車本体スクリプト。
 # - _ready で railway の Path3D を取得し、PathFollow3D を動的に add_child
-# - _process で「弧長(実距離)」progress を等速で進める。
+# - _physics_process で「弧長(実距離)」progress を等速で進める(固定 60Hz)。
 #   ※ 旧実装は progress_ratio = 角度t/TAU だったが、楕円+高低差で
 #     「角度あたりの実距離」が変動するため坂で急加速/急減速していた。
 #     弧長ベースにして線路上を常に一定速度で走るようにした(滑らか)。
@@ -54,10 +54,6 @@ var _stops: Array = []             # [{ offset, kind, seconds }] 自ルートの
 var _state: int = State.RUNNING
 var _dwell_timer: float = 0.0
 
-
-# 巨大 delta(Web のロード直後フレームなど)で一気に進んで停車点を飛び越さないよう
-# 1 フレームの前進量を抑えるための delta 上限。
-const MAX_DELTA: float = 0.1
 
 var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
 var _dead: bool = false         # 設定ミスなど回復不能 → 再試行しない
@@ -121,7 +117,11 @@ func _fail(reason: String) -> void:
 
 
 var _dbg_frames: int = 0
-func _process(delta: float) -> void:
+# 物理フレーム(固定 60Hz)で走らせる。_process(描画レート)だと iPad など描画 fps が
+# 低い端末で電車だけ進まず「止まって見える」(プレイヤーは _physics_process なので滑らか)。
+# 物理プロセスなら描画が重くてもキャッチアップで時間どおり進む(delta も一定なので
+# 巨大 delta による停車点スキップも起きず、クランプ不要)。
+func _physics_process(delta: float) -> void:
 	if _dead:
 		return
 	if not _inited:
@@ -130,8 +130,6 @@ func _process(delta: float) -> void:
 			if _init_tries == 120:
 				push_warning("[Train] 初期化が未完のまま(ルート未取得): %s" % (train_data.slug if train_data else "?"))
 			return
-	# Web ロード直後などの巨大 delta で停車点を飛ばさないようクランプ。
-	delta = minf(delta, MAX_DELTA)
 	_dbg_frames += 1
 	if _dbg_frames == 1 or _dbg_frames % 300 == 0:
 		print("[DBG Train] run slug=%s f=%d progress=%.2f state=%d delta=%.4f" % [train_data.slug, _dbg_frames, _progress, _state, delta])
