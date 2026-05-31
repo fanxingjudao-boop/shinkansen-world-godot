@@ -8,7 +8,7 @@ extends Node
 
 const SkyColor = preload("res://scripts/world/sky_color.gd")
 
-const CYCLE_SEC: float = 84.0           # 1 サイクル(Three.js 版と同じテンポ)
+const CYCLE_SEC: float = 840.0          # 1 サイクル(実機で日替わりが速すぎたため約10倍ゆっくりに)
 const SUN_RADIUS: float = 80.0
 const SUN_HEIGHT_OFFSET: float = 5.0
 const SUN_Z: float = 30.0
