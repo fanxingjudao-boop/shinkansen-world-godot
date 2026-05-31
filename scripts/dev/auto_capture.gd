@@ -154,9 +154,9 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(0, 8, 0))
 		cam.fov = 62.0
 	elif VIEW == ViewMode.LAKE:
-		# 湖(-50, ?, 80)の上を斜め見下ろし
-		cam.global_position = Vector3(-50, 15, 110)
-		cam.look_at(Vector3(-50, -3, 80))
+		# 湖(-88,140)+ SL ループ(線路が水上→自動橋脚)を斜め見下ろし
+		cam.global_position = Vector3(-40, 22, 200)
+		cam.look_at(Vector3(-88, 0, 140))
 		cam.fov = 60.0
 	elif VIEW == ViewMode.TRAIN_CLOSE:
 		# 中央の立体交差(高架つばめ +8m + 橋脚)と中央ループを近くから
@@ -174,9 +174,9 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(7, 1.2, 13))
 		cam.fov = 50.0
 	elif VIEW == ViewMode.STEAM:
-		# SL人吉(initial_t=5.0 → 楕円 (28,-75) 付近)の蒸気を撮る
-		cam.global_position = Vector3(58, 9, -52)
-		cam.look_at(Vector3(36, 4, -72))
+		# SL人吉(湖ループ -88,140)の蒸気を撮る
+		cam.global_position = Vector3(-130, 10, 150)
+		cam.look_at(Vector3(-95, 4, 138))
 		cam.fov = 52.0
 	elif VIEW == ViewMode.CHAR:
 		# プレイヤー(初期 (0,0,0) 付近、yaw0 で -Z を向く)の顔を斜め前から

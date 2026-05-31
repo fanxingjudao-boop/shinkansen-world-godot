@@ -4,11 +4,11 @@ extends Node3D
 # 各雲は 6 個の SphereMesh の集合(Three.js プロトタイプの makeCloud 移植)。
 # マテリアルは UNSHADED で常に白(ライト変化の影響を受けない)。
 
-const CLOUD_COUNT: int = 18
-const CLOUD_HEIGHT_MIN: float = 35.0
-const CLOUD_HEIGHT_MAX: float = 60.0
-const CLOUD_X_RANGE: float = 220.0
-const CLOUD_Z_RANGE: float = 200.0
+const CLOUD_COUNT: int = 28
+const CLOUD_HEIGHT_MIN: float = 40.0
+const CLOUD_HEIGHT_MAX: float = 70.0
+const CLOUD_X_RANGE: float = 340.0
+const CLOUD_Z_RANGE: float = 330.0
 const CLOUD_SPEED_MIN: float = 0.6
 const CLOUD_SPEED_MAX: float = 1.2
 const CLOUD_SPHERE_COUNT: int = 6

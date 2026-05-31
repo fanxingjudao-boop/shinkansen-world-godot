@@ -8,10 +8,10 @@ const TouchHud = preload("res://scripts/ui/touch_hud.gd")
 # 常時きらきら光って浮遊・回転し、プレイヤーが近づくと獲得(タッチ不要=動物のなかよしと同じやさしい方式)。
 # 獲得で GameState.add_star + HUD 通知 + ぴょこっと消える演出。
 
-const STAR_COUNT: int = 12
+const STAR_COUNT: int = 18
 const STAR_SIZE: float = 0.55
 const STAR_COLOR: Color = Color(1.0, 0.88, 0.4)
-const PLACE_RADIUS: float = 75.0
+const PLACE_RADIUS: float = 120.0
 const HEIGHT_OFFSET: float = 1.6
 const SPIN_SPEED: float = 1.2
 const FLOAT_AMP: float = 0.3
