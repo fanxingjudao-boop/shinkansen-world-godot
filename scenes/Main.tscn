@@ -113,39 +113,39 @@ terrain_path = NodePath("../Terrain")
 
 [node name="Hayabusa" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("12_hayabusa")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="Komachi" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("13_komachi")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="Kagayaki" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("14_kagayaki")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="N700" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("15_n700")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="DoctorYellow" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("16_drycr")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="Tsubasa" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("17_tsbsa")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="Tsubame" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("18_tsbme")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="SLHitoyoshi" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("19_sl")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="E235Yamanote" parent="Trains" instance=ExtResource("11_train")]
 train_data = ExtResource("20_e235")
-railway_path = NodePath("../../Railway/TrackPath")
+railway_path = NodePath("../../Railway")
 
 [node name="Stations" type="Node3D" parent="."]
 script = ExtResource("41_statmgr")

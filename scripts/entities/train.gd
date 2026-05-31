@@ -39,18 +39,21 @@ const BOGIE_COLOR: Color = Color(0.25, 0.25, 0.28)     # 台車の濃灰
 const COUPLER_COLOR: Color = Color(0.18, 0.18, 0.20)   # 連結部の暗灰
 const HEADLIGHT_COLOR: Color = Color(1.0, 1.0, 0.8)
 
-# 駅停車: 駅の track_t 近くで減速(resources/station_data/*.tres の track_t と一致させること)
-const STATION_TS: Array = [0.0, 1.0472, 2.0944, 3.1416, 4.1888, 5.236]
-const STATION_SLOW_RANGE: float = 0.22   # 駅前後この角度幅で減速
-const STATION_MIN_FACTOR: float = 0.25   # 駅中心での速度係数(25%)
+# 停車: 停車点(dwell/park)の手前で減速し、点を跨いだら停止する。
+const STOP_SLOW_RANGE_M: float = 26.0    # 停車点の手前この距離(m)で減速
+const STOP_MIN_FACTOR: float = 0.18      # 停車点直前の速度係数
+
+# 走行状態。RUNNING=走行 / DWELLING=数秒停車中 / PARKED=車庫で待機(発車待ち)
+enum State { RUNNING, DWELLING, PARKED }
 
 var _path_follow: PathFollow3D     # 編成中央(乗車カメラ/アンカー用。見た目は持たない)
 var _parts: Array = []             # 各車両・連結部 {follow: PathFollow3D, offset: float(弧長)}
 var _progress: float = 0.0          # 線路上の現在位置(弧長, メートル)
 var _length: float = 0.0            # 線路一周の弧長
 var _linear_speed: float = 0.0      # 実速度(m/s)。旧角速度から周回時間を保つよう換算
-var _station_offsets: PackedFloat32Array = PackedFloat32Array()  # 各駅の弧長オフセット
-var _station_range_m: float = 0.0   # 駅減速の範囲(メートル)
+var _stops: Array = []             # [{ offset, kind, seconds }] 自ルートの停車点
+var _state: int = State.RUNNING
+var _dwell_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -60,24 +63,27 @@ func _ready() -> void:
 	if railway_path.is_empty():
 		push_warning("[Train] railway_path が未設定")
 		return
-	var path_node := get_node_or_null(railway_path) as Path3D
+	# railway_path は Railway ノードを指す。自編成 slug 専用の Path3D を取得する。
+	var railway := get_node_or_null(railway_path)
+	if railway == null or not railway.has_method("get_route_path"):
+		push_warning("[Train] railway_path の参照先が Railway でない")
+		return
+	var path_node: Path3D = railway.get_route_path(train_data.slug)
 	if path_node == null:
-		push_warning("[Train] railway_path の参照先が Path3D でない")
+		push_warning("[Train] ルートが見つからない: %s" % train_data.slug)
 		return
 
 	# 弧長ベースの移動を準備
 	var curve := path_node.curve
 	_length = curve.get_baked_length()
-	# 旧: 一周 = TAU/speed 秒。新: 一周 = _length/_linear_speed 秒。周回時間を一致させる。
+	# 一周 = TAU/speed 秒(編成ごとの速度感を維持。ルート長が違っても周回時間は speed 基準)。
 	_linear_speed = train_data.speed * _length / TAU
-	_station_range_m = _length * STATION_SLOW_RANGE / TAU
-	# 初期位置(角度)を弧長オフセットへ変換
-	var ip: Vector2 = Railway.ellipse_point(train_data.initial_t)
-	_progress = curve.get_closest_offset(Vector3(ip.x, 0.0, ip.y))
-	# 各駅の弧長オフセットを事前計算(減速判定に使う)
-	for st in STATION_TS:
-		var sp: Vector2 = Railway.ellipse_point(st)
-		_station_offsets.append(curve.get_closest_offset(Vector3(sp.x, 0.0, sp.y)))
+	_progress = railway.get_route_start_offset(train_data.slug)
+	_stops = railway.get_route_stops(train_data.slug)
+	if not _stops.is_empty() and String(_stops[0]["kind"]) == "park":
+		# park 編成は最初から車庫位置で停止しておく
+		_progress = float(_stops[0]["offset"])
+		_state = State.PARKED
 
 	# 中央 PathFollow(乗車カメラ/アンカー)+ 各車両・連結部を個別の PathFollow に載せる。
 	# 編成を弧長方向にずらして配置することで、坂やカーブで各車両が自分の位置の
@@ -90,9 +96,48 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if _path_follow == null or train_data == null or _length <= 0.0:
 		return
-	var factor: float = _slow_factor_at(_progress)
-	_progress = fposmod(_progress + _linear_speed * factor * delta, _length)
+	match _state:
+		State.RUNNING:
+			var factor: float = _slow_factor_at(_progress)
+			var advance: float = _linear_speed * factor * delta
+			var prev: float = _progress
+			_progress = fposmod(prev + advance, _length)
+			var hit = _crossed_stop(prev, advance)
+			if hit != null:
+				_progress = fposmod(float(hit["offset"]), _length)
+				if String(hit["kind"]) == "park":
+					_state = State.PARKED
+				else:
+					_state = State.DWELLING
+					_dwell_timer = float(hit["seconds"])
+		State.DWELLING:
+			_dwell_timer -= delta
+			if _dwell_timer <= 0.0:
+				_state = State.RUNNING
+		State.PARKED:
+			pass
 	_apply_progress()
+
+
+# このフレームの前進(prev から advance メートル)で跨いだ停車点を返す(なければ null)。
+# 直前に発車した点を即再ヒットしないよう d_to は厳密に正のものだけ採用。
+func _crossed_stop(prev: float, advance: float):
+	if advance <= 0.0:
+		return null
+	var best = null
+	var best_d: float = advance + 1.0
+	for s in _stops:
+		var d_to: float = fposmod(float(s["offset"]) - prev, _length)
+		if d_to > 0.0001 and d_to <= advance and d_to < best_d:
+			best = s
+			best_d = d_to
+	return best
+
+
+# 将来プレイヤーが車庫の編成を発車させる(park 解除)
+func depart() -> void:
+	if _state == State.PARKED:
+		_state = State.RUNNING
 
 
 # 中央 + 各パートの PathFollow を現在の弧長位置に反映
@@ -113,14 +158,14 @@ func _make_follow(path_node: Path3D) -> PathFollow3D:
 
 # === ロジック層 ===
 
-# 現在の弧長位置が駅に近いほど速度係数を STATION_MIN_FACTOR まで落とす(駅でゆっくり通過)。
-# 複数駅が近い場合は最も遅い係数を採用。距離は周回のラップを考慮。
+# 停車点に近いほど速度係数を STOP_MIN_FACTOR まで落とす(急停止を避けバネ感のある減速)。
+# 複数点が近い場合は最も遅い係数を採用。距離は周回のラップを考慮。
 func _slow_factor_at(progress: float) -> float:
 	var factor: float = 1.0
-	for off in _station_offsets:
-		var d: float = absf(_wrap_dist(progress, off))
-		if d < _station_range_m:
-			factor = minf(factor, lerpf(STATION_MIN_FACTOR, 1.0, d / _station_range_m))
+	for s in _stops:
+		var d: float = absf(_wrap_dist(progress, float(s["offset"])))
+		if d < STOP_SLOW_RANGE_M:
+			factor = minf(factor, lerpf(STOP_MIN_FACTOR, 1.0, d / STOP_SLOW_RANGE_M))
 	return factor
 
 

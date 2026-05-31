@@ -3,6 +3,7 @@ extends Node3D
 # class_name TerrainHeight は Godot エディタが project をスキャンするまで CLI で
 # 認識されないため、preload で同名参照を作って両対応にする
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+const RouteSpecs = preload("res://scripts/world/route_data.gd")
 
 # 線路シーン。楕円形 Path3D を地形高さに追従させて配置し、
 # レール 2 本(ArrayMesh 1 つに統合)と枕木(MultiMeshInstance3D)を構築する。
@@ -31,6 +32,10 @@ var _terrain: Node
 @onready var _rails_mesh: MeshInstance3D = $Rails
 @onready var _ties_multi: MultiMeshInstance3D = $Ties
 
+# slug -> { path: Path3D, length: float, start_offset: float, stops: Array }
+var _routes: Dictionary = {}
+var _routes_root: Node3D
+
 
 func _ready() -> void:
 	if not terrain_path.is_empty():
@@ -38,17 +43,93 @@ func _ready() -> void:
 	if _terrain == null or not _terrain.has_method("height_at"):
 		push_warning("[Railway] terrain_path が未設定または height_at() を持たない")
 		return
-	# Phase 2: 旧単一楕円を「ウェイポイント → Curve3D → レール/枕木」の一般経路で再現。
-	# Phase 3 で複数ルート(RouteData)に拡張する土台。
-	var curve := _build_curve_from_waypoints(_ellipse_waypoints(), [], true)
-	_track_path.curve = curve
-	_build_rails_for(curve, _rails_mesh, true)
-	_build_ties_for(curve, _ties_multi, true)
+	# 旧単一楕円ノードは未使用に(空にしておく)。線路網は _routes_root 配下に動的生成。
+	_routes_root = Node3D.new()
+	_routes_root.name = "Routes"
+	add_child(_routes_root)
+	for spec in RouteSpecs.specs():
+		_build_route(spec)
 
 
-# 公開 API: 楕円トラックの Path3D ノードを返す(Train が PathFollow3D を add_child するため)
+# 1 ルート分を構築: ウェイポイント → Curve3D → Path3D + レール + 枕木。
+func _build_route(spec: Dictionary) -> void:
+	var wps: Array = _ring_waypoints(spec)
+	var elev_all: Array = []
+	var elevation: float = spec.get("elevation", 0.0)
+	if elevation != 0.0:
+		for i in range(wps.size()):
+			elev_all.append(elevation)
+	var curve := _build_curve_from_waypoints(wps, elev_all, true)
+	var length: float = curve.get_baked_length()
+
+	var path := Path3D.new()
+	path.name = String(spec["slug"])
+	path.curve = curve
+	_routes_root.add_child(path)
+
+	var rails := MeshInstance3D.new()
+	_routes_root.add_child(rails)
+	_build_rails_for(curve, rails, true)
+
+	var ties := MultiMeshInstance3D.new()
+	_routes_root.add_child(ties)
+	_build_ties_for(curve, ties, true)
+
+	var stops: Array = []
+	for s in spec.get("stops", []):
+		stops.append({
+			"offset": float(s["ratio"]) * length,
+			"kind": String(s.get("kind", "dwell")),
+			"seconds": float(s.get("seconds", 3.0)),
+		})
+
+	_routes[String(spec["slug"])] = {
+		"path": path,
+		"length": length,
+		"start_offset": float(spec.get("start_ratio", 0.0)) * length,
+		"stops": stops,
+	}
+
+
+# 楕円リングのウェイポイント列(XZ, 重複なし、rot_deg 回転)
+func _ring_waypoints(spec: Dictionary) -> Array:
+	var wps: Array = []
+	var center: Vector2 = spec["center"]
+	var rx: float = spec["rx"]
+	var rz: float = spec["rz"]
+	var rot: float = deg_to_rad(spec.get("rot_deg", 0.0))
+	var n: int = int(spec.get("wp_count", 48))
+	for i in range(n):
+		var a: float = float(i) / float(n) * TAU
+		var local := Vector2(rx * cos(a), rz * sin(a)).rotated(rot)
+		wps.append(center + local)
+	return wps
+
+
+# === 公開 API(Train が自分のルートを取得する) ===
+
+# 編成 slug 専用の Path3D(Train が PathFollow3D を add_child する)
+func get_route_path(slug: String) -> Path3D:
+	if _routes.has(slug):
+		return _routes[slug]["path"]
+	return null
+
+# 編成 slug の停車点 [{ offset(弧長), kind, seconds }]
+func get_route_stops(slug: String) -> Array:
+	if _routes.has(slug):
+		return _routes[slug]["stops"]
+	return []
+
+# 編成 slug の初期位置(弧長)
+func get_route_start_offset(slug: String) -> float:
+	if _routes.has(slug):
+		return _routes[slug]["start_offset"]
+	return 0.0
+
+
+# 後方互換: 旧 API。現在は本線先頭ルート(はやぶさ)の Path3D を返す。
 func get_track_path() -> Path3D:
-	return _track_path
+	return get_route_path("hayabusa")
 
 
 # === ロジック層(static、純粋関数) ===
