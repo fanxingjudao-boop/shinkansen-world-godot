@@ -9,6 +9,8 @@ extends Node3D
 const AnimalData = preload("res://scripts/entities/animal_data.gd")
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const RIM_SHADER = preload("res://assets/shaders/rim.gdshader")
+# Label3D は既定テーマが効かないので、♥ も内蔵フォント欠落で豆腐化しないよう明示指定。
+const FONT_BODY = preload("res://assets/fonts/MPLUSRounded1c-Medium.ttf")
 
 @export var animal_data: AnimalData
 
@@ -104,6 +106,7 @@ func befriend() -> void:
 func _pop_heart() -> void:
 	var heart := Label3D.new()
 	heart.text = "♥"
+	heart.font = FONT_BODY
 	heart.font_size = 96
 	heart.pixel_size = 0.01
 	heart.modulate = Color(1.0, 0.42, 0.6)

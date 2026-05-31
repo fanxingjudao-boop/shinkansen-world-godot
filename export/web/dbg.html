@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+	<title>しんかんせんワールド (しんだん)</title>
+	<style>
+		html, body { margin:0; padding:0; width:100%; height:100dvh; background:#7ec8f5; overflow:hidden; }
+		#canvas { display:block; width:100%; height:100%; outline:none; touch-action:none; }
+		#dbglog {
+			position:absolute; left:0; top:0; right:0; max-height:42vh; overflow-y:auto;
+			background:rgba(0,0,0,0.72); color:#9effa0; font:11px/1.35 monospace;
+			padding:6px 8px; white-space:pre-wrap; word-break:break-all; z-index:9999;
+			-webkit-overflow-scrolling:touch;
+		}
+		#dbglog .e { color:#ff8a8a; }
+		#dbglog .w { color:#ffe08a; }
+	</style>
+	<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+</head>
+<body>
+	<div id="dbglog">[しんだんモード] ログをここに表示します…</div>
+	<canvas id="canvas"></canvas>
+	<script>
+	(function(){
+		var box=document.getElementById('dbglog'); var n=0;
+		function add(cls, t, args){
+			try{
+				var m=Array.prototype.map.call(args,function(x){try{return typeof x==='object'?JSON.stringify(x):String(x)}catch(e){return'?'}}).join(' ');
+				var line=document.createElement('div'); if(cls)line.className=cls;
+				line.textContent=(n++)+' '+t+' '+m; box.appendChild(line);
+				while(box.childNodes.length>240) box.removeChild(box.firstChild);
+				box.scrollTop=box.scrollHeight;
+			}catch(e){}
+		}
+		var ol=console.log.bind(console), ow=console.warn.bind(console), oe=console.error.bind(console);
+		console.log=function(){add('','',arguments); ol.apply(console,arguments);};
+		console.warn=function(){add('w','WARN',arguments); ow.apply(console,arguments);};
+		console.error=function(){add('e','ERR',arguments); oe.apply(console,arguments);};
+		window.addEventListener('error',function(e){add('e','WINERR',[e.message,(e.filename||'')+':'+(e.lineno||'')]);});
+		window.addEventListener('unhandledrejection',function(e){add('e','REJECT',[e.reason&&e.reason.message?e.reason.message:e.reason]);});
+		add('','BOOT',['dbg page loaded']);
+	})();
+	</script>
+	<script src="index.js"></script>
+	<script>
+		const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":5793908,"index.wasm":37700666},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+		const GODOT_THREADS_ENABLED = false;
+		const engine = new Engine(GODOT_CONFIG);
+		(function () {
+			const missing = Engine.getMissingFeatures({ threads: GODOT_THREADS_ENABLED });
+			console.log('missingFeatures', JSON.stringify(missing));
+			if (missing.length !== 0) { console.error('たいおうしていないきのう', missing.join(', ')); return; }
+			engine.startGame({ 'onProgress': function(c,t){} })
+				.then(() => { console.log('startGame resolved (ゲーム開始)'); })
+				.catch((err) => { console.error('startGame rejected', err && err.message ? err.message : err); });
+		})();
+	</script>
+</body>
+</html>

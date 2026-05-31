@@ -55,26 +55,45 @@ var _state: int = State.RUNNING
 var _dwell_timer: float = 0.0
 
 
+# 巨大 delta(Web のロード直後フレームなど)で一気に進んで停車点を飛び越さないよう
+# 1 フレームの前進量を抑えるための delta 上限。
+const MAX_DELTA: float = 0.1
+
+var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
+var _dead: bool = false         # 設定ミスなど回復不能 → 再試行しない
+var _init_tries: int = 0
+
+
 func _ready() -> void:
+	# 初期化は _try_init() に集約。Railway のルート生成や Curve3D のベイクが
+	# まだ間に合っていない(ノード順・書き出し環境のタイミング差)場合でも、
+	# ここで諦めず _process で準備できるまで毎フレーム再試行する。
+	# ※ 旧実装は _ready 一発で失敗すると永久に動かなかった(Web で電車が止まる一因の疑い)。
+	_try_init()
+
+
+# 初期化を試みる。成功したら _inited=true。準備未完なら false を返し後で再試行。
+func _try_init() -> bool:
 	if train_data == null:
-		push_warning("[Train] train_data が未設定")
-		return
+		_fail("train_data が未設定")
+		return false
 	if railway_path.is_empty():
-		push_warning("[Train] railway_path が未設定")
-		return
-	# railway_path は Railway ノードを指す。自編成 slug 専用の Path3D を取得する。
+		_fail("railway_path が未設定")
+		return false
 	var railway := get_node_or_null(railway_path)
 	if railway == null or not railway.has_method("get_route_path"):
-		push_warning("[Train] railway_path の参照先が Railway でない")
-		return
+		return false  # Railway がまだ _ready していない可能性 → 次フレーム再試行
 	var path_node: Path3D = railway.get_route_path(train_data.slug)
-	if path_node == null:
-		push_warning("[Train] ルートが見つからない: %s" % train_data.slug)
-		return
+	if path_node == null or path_node.curve == null:
+		return false  # ルート未生成 → 再試行
 
-	# 弧長ベースの移動を準備
+	# 弧長ベースの移動を準備。書き出し環境で長さ 0 が返る事故に備え、
+	# まずベイクを明示的に促してから長さを取得し、0 なら準備未完として再試行する。
 	var curve := path_node.curve
+	curve.get_baked_points()
 	_length = curve.get_baked_length()
+	if _length <= 0.0:
+		return false
 	# 一周 = TAU/speed 秒(編成ごとの速度感を維持。ルート長が違っても周回時間は speed 基準)。
 	_linear_speed = train_data.speed * _length / TAU
 	_progress = railway.get_route_start_offset(train_data.slug)
@@ -90,11 +109,32 @@ func _ready() -> void:
 	_path_follow = _make_follow(path_node)
 	_build_cars(path_node)
 	_apply_progress()
+	_inited = true
+	print("[DBG Train] init slug=%s len=%.1f lin_speed=%.2f start=%.1f state=%d stops=%d" % [train_data.slug, _length, _linear_speed, _progress, _state, _stops.size()])
+	return true
 
 
+func _fail(reason: String) -> void:
+	if not _dead:
+		_dead = true
+		push_warning("[Train] %s" % reason)
+
+
+var _dbg_frames: int = 0
 func _process(delta: float) -> void:
-	if _path_follow == null or train_data == null or _length <= 0.0:
+	if _dead:
 		return
+	if not _inited:
+		_init_tries += 1
+		if not _try_init():
+			if _init_tries == 120:
+				push_warning("[Train] 初期化が未完のまま(ルート未取得): %s" % (train_data.slug if train_data else "?"))
+			return
+	# Web ロード直後などの巨大 delta で停車点を飛ばさないようクランプ。
+	delta = minf(delta, MAX_DELTA)
+	_dbg_frames += 1
+	if _dbg_frames == 1 or _dbg_frames % 300 == 0:
+		print("[DBG Train] run slug=%s f=%d progress=%.2f state=%d delta=%.4f" % [train_data.slug, _dbg_frames, _progress, _state, delta])
 	match _state:
 		State.RUNNING:
 			var factor: float = _slow_factor_at(_progress)

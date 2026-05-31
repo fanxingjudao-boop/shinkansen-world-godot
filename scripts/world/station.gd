@@ -8,6 +8,11 @@ extends Node3D
 const StationData = preload("res://scripts/world/station_data.gd")
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 
+# 日本語フォント(Web 書き出しでは内蔵フォントに日本語が無く豆腐化するため明示指定が必須)。
+# Label3D はプロジェクト既定テーマ(gui/theme/custom_font)が効かないので個別に設定する。
+const FONT_HEADING = preload("res://assets/fonts/MochiyPopOne-Regular.ttf")
+const FONT_BODY = preload("res://assets/fonts/MPLUSRounded1c-Medium.ttf")
+
 @export var station_data: StationData
 @export var railway_path: NodePath = NodePath("../../Railway")
 
@@ -120,6 +125,7 @@ func _build_sign() -> void:
 	# 駅名(大)
 	var name_label := Label3D.new()
 	name_label.text = station_data.display_name
+	name_label.font = FONT_HEADING
 	name_label.font_size = 130
 	name_label.pixel_size = 0.01
 	name_label.modulate = Color.WHITE
@@ -134,6 +140,7 @@ func _build_sign() -> void:
 	if station_data.sub_text != "":
 		var sub_label := Label3D.new()
 		sub_label.text = station_data.sub_text
+		sub_label.font = FONT_BODY
 		sub_label.font_size = 70
 		sub_label.pixel_size = 0.01
 		sub_label.modulate = station_data.main_color.darkened(0.3)
