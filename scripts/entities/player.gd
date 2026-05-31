@@ -92,6 +92,18 @@ func _animate_walk(delta: float, moving: bool) -> void:
 		_visual.position.y = lerp(_visual.position.y, 0.0, t)
 
 
+# おだんごを食べたとき等の「やったね!」のぴょこっと喜び(scale バウンス)。
+# 歩行アニメは position.y/rotation を触るが scale は触らないので競合しない。
+func celebrate() -> void:
+	if _visual == null:
+		return
+	var tw := create_tween()
+	tw.tween_property(_visual, "scale", Vector3.ONE * 1.25, 0.12) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_visual, "scale", Vector3.ONE, 0.22) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
 # === ロジック層(言語非依存・テスト可能) ===
 
 static func _compute_horizontal_velocity(input_dir: Vector2, speed: float) -> Vector3:

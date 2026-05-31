@@ -19,6 +19,7 @@ extends Control
 @onready var fade: ColorRect = $Fade
 @onready var star_count_label: Label = $TopBar/StarCount
 @onready var friend_count_label: Label = $TopBar/FriendCount
+@onready var energy_count_label: Label = $TopBar/EnergyCount
 @onready var btn_book: BaseButton = $TopBar/BookButton
 @onready var mission_label: Label = $Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
@@ -132,6 +133,8 @@ func _on_state_changed() -> void:
 		star_count_label.text = "ほし %d" % _game_state.star_count
 	if friend_count_label:
 		friend_count_label.text = "なかよし %d" % _game_state.befriended_animals.size()
+	if energy_count_label:
+		energy_count_label.text = "げんき %d" % _game_state.energy
 
 func set_mission(text: String) -> void:
 	if mission_label:

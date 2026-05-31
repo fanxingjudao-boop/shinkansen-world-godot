@@ -12,6 +12,7 @@ var boarded_trains: Array[String] = []
 var befriended_animals: Array[String] = []
 var visited_stations: Array[String] = []
 var star_count: int = 0
+var energy: int = 0  # おだんごを食べて増える「げんき」(駅のお団子で +1)
 
 
 func add_boarded(slug: String) -> void:
@@ -37,6 +38,13 @@ func add_station(slug: String) -> void:
 
 func add_star() -> void:
 	star_count += 1
+	changed.emit()
+
+
+func add_energy(amount: int = 1) -> void:
+	if amount <= 0:
+		return
+	energy += amount
 	changed.emit()
 
 

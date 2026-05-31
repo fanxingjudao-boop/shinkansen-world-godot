@@ -1,4 +1,4 @@
-[gd_scene load_steps=51 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=52 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -50,6 +50,7 @@
 [ext_resource type="Script" path="res://scripts/world/bgm.gd" id="49_bgm"]
 [ext_resource type="PackedScene" path="res://scenes/world/Town.tscn" id="50_town"]
 [ext_resource type="Script" path="res://scripts/world/landmark.gd" id="51_landmark"]
+[ext_resource type="Script" path="res://scripts/fx/shooting_star.gd" id="52_shootstar"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -152,6 +153,7 @@ script = ExtResource("41_statmgr")
 player_path = NodePath("../Player")
 hud_path = NodePath("../UI/TouchHUD")
 game_state_path = NodePath("../GameState")
+trains_path = NodePath("../Trains")
 
 [node name="Midori" parent="Stations" instance=ExtResource("22_station")]
 station_data = ExtResource("23_midori")
@@ -262,3 +264,9 @@ book_path = NodePath("../../BookOverlay")
 
 [node name="BookOverlay" parent="." instance=ExtResource("42_book")]
 game_state_path = NodePath("../GameState")
+
+[node name="ShootingStar" type="Node3D" parent="."]
+script = ExtResource("52_shootstar")
+day_night_path = NodePath("../DayNightCycle")
+player_path = NodePath("../Player")
+hud_path = NodePath("../UI/TouchHUD")

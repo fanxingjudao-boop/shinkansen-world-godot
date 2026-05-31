@@ -32,6 +32,7 @@ func _save() -> void:
 		"boarded": _gs.boarded_trains,
 		"befriended": _gs.befriended_animals,
 		"stations": _gs.visited_stations,
+		"energy": _gs.energy,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -55,6 +56,7 @@ func _load() -> void:
 	_gs.boarded_trains = _to_str_array(d.get("boarded", []))
 	_gs.befriended_animals = _to_str_array(d.get("befriended", []))
 	_gs.visited_stations = _to_str_array(d.get("stations", []))
+	_gs.energy = int(d.get("energy", 0))
 
 
 func _to_str_array(a: Variant) -> Array[String]:

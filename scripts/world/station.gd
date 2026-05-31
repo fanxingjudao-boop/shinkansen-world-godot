@@ -71,6 +71,17 @@ func get_display_name() -> String:
 	return station_data.display_name if station_data else ""
 
 
+# おだんご(三色だんご装飾)を持つ駅か。おかし駅(decor_type=="sweets")だけ true。
+func has_treat() -> bool:
+	return station_data != null and station_data.decor_type == "sweets"
+
+# おだんごのワールド位置(食べる近接判定用)。だんごの中央あたりを返す。
+func get_treat_position() -> Vector3:
+	# _decor_sweets と同じ base。だんごは base.y + 0.7〜1.9 にあるので中央 +1.3。
+	var base := Vector3(0, PLATFORM_THICK, PLATFORM_LEN * 0.5 + 2.0)
+	return to_global(base + Vector3(0, 1.3, 0))
+
+
 # === パーツ構築(Godot 操作層) ===
 
 func _build_platform() -> void:

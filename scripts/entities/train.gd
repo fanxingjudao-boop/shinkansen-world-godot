@@ -15,6 +15,10 @@ const TrainData = preload("res://scripts/entities/train_data.gd")
 @export var train_data: TrainData
 @export var railway_path: NodePath
 
+# 駅(dwell)に到着した瞬間に発火。引数は編成中央のワールド位置。
+# StationManager が受けて、その駅のテーマ短メロ(駅メロ)を鳴らす。
+signal arrived(anchor_pos: Vector3)
+
 # === 車両構成定数 ===
 const CAR_COUNT: int = 5                  # 5 両編成(LEAD + MID×3 + TAIL)
 const LEAD_LENGTH: float = 5.5
@@ -31,6 +35,9 @@ const WINDOW_PER_LEAD: int = 4            # 先頭/末尾車の窓の数(ノー�
 const WINDOW_PER_MID: int = 6             # 中間車の窓の数
 const WHEEL_RADIUS: float = 0.32
 const BOGIE_OFFSET_RATIO: float = 0.32    # 車両長に対する台車位置(前後 32%)
+# 車輪を回すのはカメラからこの距離(m)以内の編成だけ(遠くの編成は静止でも気づかれない)。
+# 9 編成 × 40 輪を毎フレーム回すと塵も積もるため、近接ゲートで負荷を抑える。
+const WHEEL_ANIM_RANGE: float = 110.0
 
 const WINDOW_COLOR: Color = Color(0.4, 0.8, 1.0)       # #66ccff
 const WHEEL_COLOR: Color = Color(0.13, 0.13, 0.13)
@@ -47,12 +54,15 @@ enum State { RUNNING, DWELLING, PARKED }
 
 var _path_follow: PathFollow3D     # 編成中央(乗車カメラ/アンカー用。見た目は持たない)
 var _parts: Array = []             # 各車両・連結部 {follow: PathFollow3D, offset: float(弧長)}
+var _wheels: Array = []            # 全車輪の MeshInstance3D(走行に応じて回す。近接時のみ)
 var _progress: float = 0.0          # 線路上の現在位置(弧長, メートル)
 var _length: float = 0.0            # 線路一周の弧長
 var _linear_speed: float = 0.0      # 実速度(m/s)。旧角速度から周回時間を保つよう換算
 var _stops: Array = []             # [{ offset, kind, seconds }] 自ルートの停車点
 var _state: int = State.RUNNING
 var _dwell_timer: float = 0.0
+var _spin_advance: float = 0.0     # 直近フレームの前進量(m)。車輪回転に使う
+var _just_arrived: bool = false    # このフレームに駅へ着いたか(到着後に arrived を発火)
 
 
 var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
@@ -133,10 +143,12 @@ func _physics_process(delta: float) -> void:
 	_dbg_frames += 1
 	if _dbg_frames == 1 or _dbg_frames % 300 == 0:
 		print("[DBG Train] run slug=%s f=%d progress=%.2f state=%d delta=%.4f" % [train_data.slug, _dbg_frames, _progress, _state, delta])
+	_spin_advance = 0.0
 	match _state:
 		State.RUNNING:
 			var factor: float = _slow_factor_at(_progress)
 			var advance: float = _linear_speed * factor * delta
+			_spin_advance = advance
 			var prev: float = _progress
 			_progress = fposmod(prev + advance, _length)
 			var hit = _crossed_stop(prev, advance)
@@ -147,6 +159,7 @@ func _physics_process(delta: float) -> void:
 				else:
 					_state = State.DWELLING
 					_dwell_timer = float(hit["seconds"])
+					_just_arrived = true  # 位置確定後(_apply_progress 後)に arrived を発火
 		State.DWELLING:
 			_dwell_timer -= delta
 			if _dwell_timer <= 0.0:
@@ -154,6 +167,26 @@ func _physics_process(delta: float) -> void:
 		State.PARKED:
 			pass
 	_apply_progress()
+	_spin_wheels()
+	if _just_arrived:
+		_just_arrived = false
+		arrived.emit(_path_follow.global_position)  # 位置確定後に発火(駅メロ用)
+
+
+# 走行に応じて車輪を回す。近くの編成だけ(遠方は静止でも気づかれない=負荷削減)。
+# 車輪は _build_wheel で rotate_z(90°) 済み = ローカル Y 軸が車軸(左右)。
+# その軸まわりに回せば転がって見える。回す角度 = 進んだ距離 / 半径。
+func _spin_wheels() -> void:
+	if _spin_advance <= 0.0 or _wheels.is_empty():
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	if _path_follow.global_position.distance_to(cam.global_position) > WHEEL_ANIM_RANGE:
+		return
+	var angle: float = _spin_advance / WHEEL_RADIUS
+	for w in _wheels:
+		(w as Node3D).rotate_object_local(Vector3.UP, angle)
 
 
 # このフレームの前進(prev から advance メートル)で跨いだ停車点を返す(なければ null)。
@@ -355,6 +388,7 @@ func _attach_bogie(car: Node3D, car_len: float, side_z: float) -> void:
 			var wheel := _build_wheel()
 			wheel.position = Vector3(wx, bogie_y - 0.1, bogie_z + wz_offset)
 			car.add_child(wheel)
+			_wheels.append(wheel)  # 走行に応じた回転のため参照を保持
 
 
 func _build_wheel() -> Node3D:

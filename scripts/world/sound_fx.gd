@@ -21,11 +21,13 @@ var _prev_star: int = 0
 var _prev_friend: int = 0
 var _prev_board: int = 0
 var _prev_station: int = 0
+var _prev_energy: int = 0
 
 var _tone_star: AudioStreamWAV
 var _tone_friend: AudioStreamWAV
 var _tone_board: AudioStreamWAV
 var _tone_station: AudioStreamWAV
+var _tone_energy: AudioStreamWAV
 
 
 func _ready() -> void:
@@ -38,12 +40,15 @@ func _ready() -> void:
 	_tone_friend = _make_tone(660.0, 990.0, 0.22)
 	_tone_board = _make_tone(523.0, 784.0, 0.20)
 	_tone_station = _make_tone(784.0, 1047.0, 0.20)
+	# おだんご もぐもぐ(低めのまるい 2 音=やさしく満足感)
+	_tone_energy = _make_tone(392.0, 523.0, 0.20)
 	if _gs:
 		# 起動時(ロード済み)の値で初期化 → 起動直後に音が誤発火しない
 		_prev_star = _gs.star_count
 		_prev_friend = _gs.befriended_animals.size()
 		_prev_board = _gs.boarded_trains.size()
 		_prev_station = _gs.visited_stations.size()
+		_prev_energy = _gs.energy
 		_gs.changed.connect(_on_changed)
 
 
@@ -59,10 +64,13 @@ func _on_changed() -> void:
 		_play(_tone_board)
 	elif _gs.visited_stations.size() > _prev_station:
 		_play(_tone_station)
+	elif _gs.energy > _prev_energy:
+		_play(_tone_energy)
 	_prev_star = _gs.star_count
 	_prev_friend = _gs.befriended_animals.size()
 	_prev_board = _gs.boarded_trains.size()
 	_prev_station = _gs.visited_stations.size()
+	_prev_energy = _gs.energy
 
 
 func _play(stream: AudioStreamWAV) -> void:
