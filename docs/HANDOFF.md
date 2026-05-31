@@ -159,6 +159,30 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
+## 進捗(2026-05-31 時点 — iPad 実機フィードバック対応)
+
+iPad/スマホ実機で遊んでもらい、出た不具合を順次修正・デプロイ。最新は commit `5e8bcaf`。
+
+**この日のデプロイ内容(すべて push 済み・要 iPad 再確認):**
+- **日本語フォント埋め込み**(文字化け解消): `assets/fonts/MPLUSRounded1c-Medium.ttf`(本文・既定 `project.godot gui/theme/custom_font`)+ `MochiyPopOne-Regular.ttf`(見出し)。**Label3D は既定テーマが効かない**ので `station.gd`/`animal.gd` で個別に `font` 指定。Web には日本語システムフォントが無いので埋め込み必須(PC エディタ実行で出るのは OS フォント補完のため)。
+- **電車を `_physics_process` に移動**(`train.gd`): プレイヤーは `_physics_process`(固定60Hz・低fpsでもキャッチアップ)、電車は `_process`(描画fps依存)だったため、iPad の低fpsで「キャラは滑らかなのに電車だけ止まる」状態だった。物理プロセス化で解決。初期化は再試行式(ルート未生成でも諦めない)。
+- **ベース解像度 1920×1080 → 1024×576**(`project.godot`): UI が小さく操作しにくい対策。UI が相対的に約1.9倍・iPad 描画も軽量化。
+- **セキュリティ強化(子供向け配信)**: `vercel.json` に CSP / Permissions-Policy / X-Frame-Options(DENY)/ Referrer-Policy / X-Content-Type-Options / X-Robots-Tag。検索除外 `export/web/robots.txt` + `noindex`(`web/template.html` の meta)。`CLAUDE.md` に「セキュリティ原則」節を追加。コード調査で PII無し・入力欄無し・外部リンク無し・通信無し・トラッキング無しを確認。CSP はローカル headless 検証で違反0件・wasm 起動到達を確認済み。
+- **実機4点修正**(`dff2b14`): ①「ミッション クリア!」通知をミッション表示と重ならないよう画面中央へ移動(`TouchHUD.tscn` Notice)②ドクターイエローを車庫待機(park)→走行(dwell)に(`route_data.gd`、子供には故障に見えるため)③動物が顔と逆向きに走る→`animal.gd` で `rotation.y = _heading + PI`(モデルの顔は -Z)④**カメラ手動回転ボタン**追加: `camera_rig.gd` に `rotate_view(dir)`(45°ずつ・なめらか=酔いにくい)、`TouchHUD.tscn` に緑「カメラ ◀ ▶」、`touch_hud.gd` で配線。
+- **降車できない不具合修正**(`5e8bcaf`): タッチの「おりる」は `interact` action のエッジ検出だったが、タッチ/Web で**指離しが取りこぼされ action が押されっぱなし**になり2回目タップでエッジが立たず降車不可だった。**タッチボタンを `Button.pressed` 直結**にし `RideController.toggle_ride()` を呼ぶ方式へ(タップごとに確実)。キーボード(E/Enter)は `_process` の interact 経由で `toggle_ride()` を呼び維持。
+
+**⚠️ 重要な落とし穴(次回のために):**
+- **`export_presets.cfg` の `vram_texture_compression/for_mobile` は必ず `false`**。`true` だと Web export が「Cannot export ... due to configuration errors」で失敗する(headless では詳細が出ず原因特定に苦労した)。`Godot --headless --editor` を実行するとこの値が勝手に `true` に書き換わることがある → エディタ起動系を使ったら export 前に `git diff export_presets.cfg` で確認・復元する。
+- 再帰削除(`rm -rf`)・`powershell Remove-Item -Recurse` はこの環境のポリシーで拒否される。ディレクトリを消したい時は `mv` で退避するしかない。
+- `.godot` を `mv` で退避した残骸 **`.godot_bak/` が未追跡で残っている**(コミット対象外。手元で削除可)。`git add -A` で拾わないよう、コミットは個別ファイル指定で行うこと。
+
+**未完・次にやること:**
+- **改善さんの iPad 再確認待ち**: 降車できるか / 前回4点(ミッション重なり・黄色い電車・動物の向き・カメラ◀▶)が直ったか。OK なら下記の片付けへ。
+- **診断ログの除去**: `train.gd` の `[DBG Train]` の `print`(`_try_init` と `_physics_process` 内、`_dbg_frames`)はコンソールのみの一時診断。動作確定後に削除。
+- **診断ページ `export/web/dbg.html`**: コンソールを画面表示する診断用(電車停止調査で作成)。不要になったら削除(公開URLにも出る)。
+- **親モード**(音量・データリセット・誤操作防止)は改善さんの希望で「不具合修正が落ち着いてから」。仕様相談から。
+- パフォーマンス余地: 描画が重い場合、電車の見た目を保ったままメッシュ統合で draw call(約1200)を削減する案がある。
+
 ## 進捗(2026-05-30 時点)
 
 **Phase 0〜2 + Phase 3-1〜3-5 + 2-4 + Phase 4 演出(一部)完了**。新幹線に乗れ、6 駅が立ち、8 種の動物がなかよしになり、星を集め、駅で電車が減速し、図鑑で発見状況を見られる。さらに Glow・星のきらきら/獲得バースト・なかよしハート・SL蒸気・UIボタンのぷにっと演出を追加。主要ループ「集める・出会う・乗る・探す」が一通り動く。次は Phase 3-6(ミッション)/ 音 / トゥーンシェーダー / 季節 / 自由アイデア。詳細は `changelog.md` 参照。

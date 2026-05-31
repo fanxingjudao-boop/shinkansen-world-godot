@@ -2,6 +2,19 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.24.0 — 2026-05-31 — iPad 実機フィードバック対応(文字化け/電車停止/UI/操作/降車)
+
+改善さんに iPad・スマホ実機で遊んでもらい、出た不具合を順次修正・デプロイ。
+
+- **日本語フォント埋め込み**(文字化け解消): `assets/fonts/` に M PLUS Rounded 1c(本文・既定 `gui/theme/custom_font`)+ Mochiy Pop One(見出し)。Label3D(駅看板・♥)は `station.gd`/`animal.gd` で個別 `font` 指定。Web には日本語システムフォントが無く豆腐化していた(PC エディタ実行は OS フォント補完で出ていた)。
+- **電車を `_physics_process` 化**(`train.gd`): プレイヤーは物理(固定60Hz)、電車は描画 `_process` だったため、iPad の低fpsで電車だけ止まって見えた。物理プロセス化で低fpsでも時間どおり走行。初期化を再試行式に堅牢化。
+- **ベース解像度 1920×1080 → 1024×576**(`project.godot`): UI が小さく操作しにくい対策(約1.9倍大・描画も軽量化)。
+- **セキュリティ強化**: `vercel.json` に CSP/Permissions-Policy/X-Frame-Options(DENY)/Referrer-Policy/X-Content-Type-Options/X-Robots-Tag。`robots.txt`+`noindex` で検索除外。`CLAUDE.md` に「セキュリティ原則(子供向け配信)」追加。
+- **実機4点**: ①「ミッション クリア!」通知をミッション表示と分離(中央へ移動)②ドクターイエローを park→dwell(走行)③動物の向きを進行方向へ正対(`rotation.y=_heading+PI`)④カメラ手動回転ボタン(`camera_rig.rotate_view` 45°ずつ・なめらか、TouchHUD に緑「カメラ ◀ ▶」)。
+- **降車できない不具合**: タッチの「おりる」が `interact` action のエッジ検出で、タッチ/Web の指離し取りこぼしで押されっぱなしになり2回目が効かなかった。`Button.pressed` 直結 → `RideController.toggle_ride()` 方式へ(キーボードは interact 経由で維持)。
+- ⚠️ `export_presets.cfg` の `vram_texture_compression/for_mobile` は `false` 必須(`true` だと Web export が configuration error で失敗)。`--headless --editor` 実行で勝手に `true` 化することがあるので export 前に要確認。
+- 一時的に診断用 `[DBG Train]` print(`train.gd`)と `export/web/dbg.html` を残置。動作確定後に除去予定。
+
 ## v0.23.0 — 2026-05-31 — 広域マップ + 分岐つき線路網(列車の重なり/数珠つなぎ解消)
 
 改善さん要望「世界を広く・線路網を複雑化・各編成に止まる場所・自動分岐で数珠つなぎ防止」への対応。7 フェーズで実装。
