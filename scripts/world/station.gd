@@ -124,8 +124,8 @@ func _build_roof() -> void:
 			)
 			pmi.position = ppos
 			add_child(pmi)
-			# 柱の当たり判定(細い角柱)
-			_add_box_collision(Vector3(PILLAR_R * 2.4, PILLAR_H, PILLAR_R * 2.4), ppos)
+			# 柱には当たり判定を付けない(細くて子供がぶつかる必然性が薄い + 物理コスト削減)。
+			# ホーム本体(プラットフォーム)の当たり判定だけで「駅は固い」は十分伝わる。
 
 	# 屋根板(少しオーバーハング)
 	var roof := BoxMesh.new()

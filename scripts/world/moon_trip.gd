@@ -43,6 +43,7 @@ var _gs: Node     # GameState(月に行った記録=ミッション用)
 var _on_moon: bool = false
 var _busy: bool = false
 var _rocket_pos: Vector3 = Vector3.ZERO
+var _moon_built: bool = false   # 月は初回ワープ時に組み立てる(起動時のノード/メモリ節約)
 
 
 func _ready() -> void:
@@ -59,8 +60,9 @@ func _ready() -> void:
 	if _btn:
 		_btn.pressed.connect(_on_pressed)
 		_btn.visible = false
+	# 月本体は重い(星40・縁36・地球・うさぎ等)ので起動時には作らず、初回ワープ時に作る。
+	# 発射台(地球側)は近接判定に必要なので最初から作る。
 	_build_launch_pad()
-	_build_moon()
 
 
 func _process(_delta: float) -> void:
@@ -106,6 +108,10 @@ func _on_pressed() -> void:
 func _go_moon() -> void:
 	_busy = true
 	_btn.visible = false
+	# 初回だけ月を組み立てる(フェード中なので見えない)
+	if not _moon_built:
+		_build_moon()
+		_moon_built = true
 	_transition(func() -> void:
 		_on_moon = true
 		_player.global_position = MOON_POS + Vector3(0, 4, 0)

@@ -79,6 +79,7 @@ var _reward_stream: AudioStreamWAV
 var _driving: bool = false            # 運転手モードか
 var _shown_branch = null              # 現在表示中の分岐 dict(重複表示防止。null=非表示)
 var _branch_cooldown: float = 0.0     # 乗り換え直後に逆方向分岐を即提示しないための猶予(秒)
+var _prompt_timer: float = 0.0        # 歩行中の「のる?」プロンプト更新の間引き用
 
 
 func _ready() -> void:
@@ -107,9 +108,12 @@ func _process(delta: float) -> void:
 	if _toggle_cooldown > 0.0:
 		_toggle_cooldown = max(0.0, _toggle_cooldown - delta)
 
-	# 歩行中は最寄りの乗れる電車を案内表示
+	# 歩行中は最寄りの乗れる電車を案内表示(毎フレームでなく約0.15秒間隔=11編成走査を間引き)
 	if _state == State.WALKING:
-		_update_prompt()
+		_prompt_timer -= delta
+		if _prompt_timer <= 0.0:
+			_prompt_timer = 0.15
+			_update_prompt()
 
 	# 運転中は分岐への接近を監視(2択の表示/消去)
 	if _branch_cooldown > 0.0:
