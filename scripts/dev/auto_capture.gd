@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -53,7 +53,73 @@ func _ready() -> void:
 			await _capture_moon()
 		CaptureMode.AUTO_MENU:
 			await _capture_menu()
+		CaptureMode.AUTO_FIXCHECK:
+			await _fixcheck()
 	get_tree().quit()
+
+
+# P0修正の動作検証(撮影なし・ログ出力): B2 分岐スワップ不変条件 / B5 ホーム登坂。
+func _fixcheck() -> void:
+	var rc := get_tree().root.find_child("RideController", true, false)
+	var trains := get_tree().root.find_child("Trains", true, false)
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+
+	# --- B2: 分岐スワップで「1ルート1編成」が保たれるか ---
+	if rc and trains:
+		var haya := trains.get_node_or_null("Hayabusa")
+		if haya:
+			rc._do_board(haya)
+			await get_tree().physics_frame
+			rc.toggle_driver_mode()
+			await get_tree().create_timer(0.9).timeout
+			rc._branch_cooldown = 999.0  # _check_branch に消されないよう抑止
+			rc._offer_branch({ "from": "hayabusa", "at_ratio": 0.18, "to": "kagayaki", "to_ratio": 0.18 })
+			rc.take_branch()  # 直後に呼ぶ(間に _process を挟まない)
+			await get_tree().create_timer(1.0).timeout  # フェード+スワップ完了待ち
+			var routes := {}
+			var dup := false
+			for t in trains.get_children():
+				var rs: String = t.get_route_slug()
+				if routes.has(rs):
+					dup = true
+				routes[rs] = true
+			print("[FixCheck] B2 swap: 編成数=%d 占有ルート数=%d 重複=%s / はやぶさ編成は今 '%s' / かがやき編成は今 '%s'" % [
+				trains.get_child_count(), routes.size(), str(dup),
+				haya.get_route_slug(),
+				(trains.get_node_or_null("Kagayaki").get_route_slug() if trains.get_node_or_null("Kagayaki") else "?")])
+			rc._do_alight()
+			await get_tree().physics_frame
+
+	# --- B5: 駅ホーム(段差0.3m)へジャンプ無しで歩いて乗れるか ---
+	if rc and player:
+		var stations := get_tree().root.find_child("Stations", true, false)
+		var st: Node3D = null
+		if stations:
+			for c in stations.get_children():
+				if c.has_method("get_slug"):
+					st = c as Node3D
+					break
+		if st:
+			var sp := st.global_position
+			# ホーム +Z 側 7m・地表より少し上に置き、カメラをスナップ(追従lerp中だと
+			# カメラ基準移動の向きが定まらないため)してから move_forward(-Z=画面奥)で歩かせる
+			player.global_position = sp + Vector3(0, 0.6, 7.0)
+			player.set("gravity_scale", 1.0)
+			var rig2 := get_tree().root.find_child("CameraRig", true, false)
+			if rig2 and rig2.has_method("snap_to_target"):
+				rig2.snap_to_target()
+			await get_tree().physics_frame
+			await get_tree().physics_frame
+			var z_before := player.global_position.z
+			Input.action_press("move_forward")
+			for i in range(90):
+				await get_tree().physics_frame
+			Input.action_release("move_forward")
+			var y_after := player.global_position.y
+			var z_after := player.global_position.z
+			var climbed: bool = (y_after - sp.y) > 0.1
+			print("[FixCheck] B5 home-climb: 駅Y=%.2f 歩行後Y=%.2f Δz=%.2f 段差を登れた=%s" % [
+				sp.y, y_after, z_after - z_before, str(climbed)])
 
 
 # メニュー検証: 閉じた状態(メニュー/ずかんボタンだけ)→「メニュー」を押して開いた状態。

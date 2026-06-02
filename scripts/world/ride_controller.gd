@@ -124,6 +124,11 @@ func _process(delta: float) -> void:
 		toggle_ride()
 
 
+# いま電車に乗っているか(月旅行など、乗車中に発動してはいけない機能のガード用)。
+func is_riding() -> bool:
+	return _state == State.RIDING
+
+
 # 乗降トグル(タッチボタンの pressed / キーボード interact の共通入口)。
 # 歩行中なら最寄りの電車に乗り、乗車中なら降りる。直後の誤連打はクールダウンで防ぐ。
 func toggle_ride() -> void:
@@ -334,7 +339,8 @@ func driver_stop() -> void:
 func _check_branch() -> void:
 	if _current_train == null or _hud == null or _branch_cooldown > 0.0:
 		return
-	var slug: String = _current_train.get_slug()
+	# 実際に走っているルートの slug で分岐を照合(載り替え後も正しく検出するため)
+	var slug: String = _current_train.get_route_slug()
 	var here: float = _current_train.get_progress_ratio()
 	var active = null
 	for b in RouteData.branches():
@@ -352,10 +358,10 @@ func _check_branch() -> void:
 		_hud.hide_branch_choice()
 
 
-# 2択を HUD に提示(行き先の電車名・色を渡す)。
+# 2択を HUD に提示(行き先の電車名・色を渡す)。行き先ルートに今いる編成の名前/色を使う。
 func _offer_branch(b: Dictionary) -> void:
 	_shown_branch = b
-	var to_train := _find_train_by_slug(String(b["to"]))
+	var to_train := _find_train_on_route(String(b["to"]), _current_train)
 	var to_name: String = to_train.get_display_name() if to_train else "となりの でんしゃ"
 	var to_color: Color = Color.WHITE
 	if to_train and to_train.train_data:
@@ -363,7 +369,11 @@ func _offer_branch(b: Dictionary) -> void:
 	_hud.show_branch_choice(to_name, to_color)
 
 
-# 乗り換え(2択の「のりかえる」側が押された)。フェードの中点で switch_route を実行。
+# 乗り換え(2択の「のりかえる」側が押された)。
+# 二重編成を避けるため「ルート入れ替え方式」: 運転中の編成を行き先ルートへ載せ替えると同時に、
+# 行き先ルートに元からいた編成を、こちらが抜けた元ルートへ載せ替える(両者をスワップ)。
+# これで「1ルート1編成」が常に保たれ、線路がカラになったり編成が重なったりしない。
+# 両方の reparent はフェードの中点(画面が隠れている間)で実行するので、瞬間移動は見えない。
 func take_branch() -> void:
 	if _shown_branch == null or _current_train == null:
 		return
@@ -372,23 +382,31 @@ func take_branch() -> void:
 	_hud.hide_branch_choice()
 	if _railway == null or not _railway.has_method("get_route_path"):
 		return
+	var driven: Train = _current_train
+	var from_slug: String = driven.get_route_slug()
 	var to_slug: String = String(b["to"])
-	var new_path: Path3D = _railway.get_route_path(to_slug)
-	var new_len: float = _railway.get_route_length(to_slug)
-	var new_stops: Array = _railway.get_route_stops(to_slug)
-	if new_path == null or new_len <= 0.0:
+	# 行き先・元ルートの情報を取得
+	var to_path: Path3D = _railway.get_route_path(to_slug)
+	var to_len: float = _railway.get_route_length(to_slug)
+	var to_stops: Array = _railway.get_route_stops(to_slug)
+	var from_path: Path3D = _railway.get_route_path(from_slug)
+	var from_len: float = _railway.get_route_length(from_slug)
+	var from_stops: Array = _railway.get_route_stops(from_slug)
+	if to_path == null or to_len <= 0.0 or from_path == null or from_len <= 0.0:
 		return
-	var new_prog: float = float(b["to_ratio"]) * new_len
-	# 乗り換え先の速度感を維持(speed * 周長 / TAU)。target train の train_data から算出。
-	var to_train := _find_train_by_slug(to_slug)
-	var new_speed: float = _linear_speed_for(to_train, new_len)
+	# 行き先ルートに今いる編成(入れ替え相手)
+	var resident: Train = _find_train_on_route(to_slug, driven)
+	var to_prog: float = float(b["to_ratio"]) * to_len      # 運転編成の新位置(分岐点)
+	var from_prog: float = float(b["at_ratio"]) * from_len  # 相手編成を置く位置(元ルートの分岐点)
 	_branch_cooldown = 3.0
 	_transition(func() -> void:
-		if _current_train and _current_train.has_method("switch_route"):
-			_current_train.switch_route(new_path, new_prog, new_len, new_stops, new_speed))
-	var to_name: String = to_train.get_display_name() if to_train else "あたらしい"
+		if driven and driven.has_method("switch_route"):
+			driven.switch_route(to_slug, to_path, to_prog, to_len, to_stops, _route_speed(driven, to_len))
+		if resident and resident.has_method("switch_route"):
+			resident.switch_route(from_slug, from_path, from_prog, from_len, from_stops, _route_speed(resident, from_len)))
 	if _hud:
-		_hud.show_notice("%s の せんろへ!" % to_name)
+		var label := resident.get_display_name() if resident else to_slug
+		_hud.show_notice("%s の せんろへ!" % label)
 
 
 # 直進(2択の「このまま まっすぐ」側が押された)。何もせず2択を畳むだけ。
@@ -405,18 +423,21 @@ func _ratio_ahead(here: float, at: float) -> float:
 	return fposmod(at - here, 1.0)
 
 
-# slug 一致の Train ノードを返す(なければ null)
-func _find_train_by_slug(slug: String) -> Train:
+# いま指定ルート(slug)を走っている編成を返す(exclude は除外。なければ null)。
+# 「1ルート1編成」なので通常1本。分岐スワップの入れ替え相手を見つけるのに使う。
+func _find_train_on_route(slug: String, exclude: Train = null) -> Train:
 	if _trains == null:
 		return null
 	for t in _trains.get_children():
-		if t.has_method("get_slug") and (t as Train).get_slug() == slug:
+		if t == exclude:
+			continue
+		if t.has_method("get_route_slug") and (t as Train).get_route_slug() == slug:
 			return t as Train
 	return null
 
 
-# 乗り換え先の線速度(m/s)を train_data.speed と周長から算出。train_data が無ければ現速度を維持。
-func _linear_speed_for(train: Train, length: float) -> float:
+# 線速度(m/s)を train_data.speed と周長から算出。train_data が無ければ既定値。
+func _route_speed(train: Train, length: float) -> float:
 	if train and train.train_data and length > 0.0:
 		return train.train_data.speed * length / TAU
 	return 1.0

@@ -37,6 +37,7 @@ var _env: WorldEnvironment
 var _sun: DirectionalLight3D
 var _hud: Node
 var _btn: BaseButton
+var _ride: Node   # RideController(乗車中は月ボタンを出さない・押させない)
 
 var _on_moon: bool = false
 var _busy: bool = false
@@ -51,6 +52,7 @@ func _ready() -> void:
 	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
 	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
 	_hud = root.find_child("TouchHUD", true, false)
+	_ride = root.find_child("RideController", true, false)
 	_btn = root.find_child("MoonButton", true, false) as BaseButton
 	if _btn:
 		_btn.pressed.connect(_on_pressed)
@@ -70,7 +72,9 @@ func _process(_delta: float) -> void:
 		if not _btn.visible:
 			_set_btn("おうちへ かえる")
 	else:
-		var near: bool = _player.global_position.distance_to(_rocket_pos) < ENTER_RANGE
+		# 乗車中はロケットに乗れないので月ボタンを出さない(状態崩壊の防止)
+		var riding: bool = _ride != null and _ride.has_method("is_riding") and _ride.is_riding()
+		var near: bool = (not riding) and _player.global_position.distance_to(_rocket_pos) < ENTER_RANGE
 		if near and not _btn.visible:
 			_set_btn("つきへ いく")
 		elif not near and _btn.visible:
@@ -87,7 +91,11 @@ func _on_pressed() -> void:
 		return
 	if _on_moon:
 		_go_home()
-	elif _player.global_position.distance_to(_rocket_pos) < ENTER_RANGE:
+		return
+	# 乗車中は月へ行かない(状態崩壊の防止)
+	if _ride != null and _ride.has_method("is_riding") and _ride.is_riding():
+		return
+	if _player.global_position.distance_to(_rocket_pos) < ENTER_RANGE:
 		_go_moon()
 
 
@@ -235,8 +243,9 @@ func _build_moon_rim() -> void:
 		# 低い見える縁
 		var seg := _box(Vector3(MOON_RADIUS * 0.36, 0.8, 0.6), Vector3(rx, MOON_POS.y + 0.4, rz), MOON_GRAY_DK, 0.7)
 		seg.rotation.y = -a
-		# 高い見えない当たり判定(落下防止)
-		_add_box_collision(Vector3(MOON_RADIUS * 0.36, 4.0, 0.8), Vector3(rx, MOON_POS.y + 2.0, rz), -a)
+		# 高い見えない当たり判定(落下防止)。月は低重力でジャンプ到達が高い(~13m)ので
+		# 飛び越えられないよう十分高く(18m)する。
+		_add_box_collision(Vector3(MOON_RADIUS * 0.36, 18.0, 0.8), Vector3(rx, MOON_POS.y + 9.0, rz), -a)
 
 
 func _build_earth_in_sky() -> void:

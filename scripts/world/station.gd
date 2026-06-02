@@ -18,7 +18,7 @@ const FONT_BODY = preload("res://assets/fonts/MPLUSRounded1c-Medium.ttf")
 
 const PLATFORM_LEN: float = 12.0    # 線路沿いの長さ(ローカル Z)
 const PLATFORM_DEPTH: float = 4.0   # 線路からの奥行(ローカル X)
-const PLATFORM_THICK: float = 0.5
+const PLATFORM_THICK: float = 0.16  # 低い段差。カプセル半径(0.35)より十分低く=ジャンプ無しで歩いて乗れる
 const SIDE_OFFSET: float = 4.4      # 線路中心からプラットフォーム中心まで
 const PILLAR_H: float = 3.0
 const PILLAR_R: float = 0.12

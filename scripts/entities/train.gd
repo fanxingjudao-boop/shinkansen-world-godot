@@ -78,6 +78,11 @@ var _driver_mode: bool = false       # 運転手モードか(opt-in)
 var _driver_throttle: float = 0.0    # 現在のスロットル係数 0..1(実際に advance へ乗算)
 var _driver_target: float = 0.0      # 目標スロットル(ゴー=1.0 / とまれ=0.0)
 
+# いま実際に走っているルートの slug。初期は train_data.slug だが、分岐ワープ(switch_route)
+# で別ルートへ載り替えると更新される。get_slug()(編成の識別子=図鑑用)とは別物。
+# 分岐検出はこの「実トラックの slug」で行う(でないと載り替え後に別ルートの分岐点を見てしまう)。
+var _active_slug: String = ""
+
 
 var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
 var _dead: bool = false         # 設定ミスなど回復不能 → 再試行しない
@@ -118,6 +123,7 @@ func _try_init() -> bool:
 	_linear_speed = train_data.speed * _length / TAU
 	_progress = railway.get_route_start_offset(train_data.slug)
 	_stops = railway.get_route_stops(train_data.slug)
+	_active_slug = train_data.slug  # 起動時は自分の専用ルート上にいる
 	if not _stops.is_empty() and String(_stops[0]["kind"]) == "park":
 		# park 編成は最初から車庫位置で停止しておく
 		_progress = float(_stops[0]["offset"])
@@ -309,9 +315,13 @@ func get_ride_forward() -> Vector3:
 func get_display_name() -> String:
 	return train_data.display_name if train_data else ""
 
-# 内部識別子(図鑑の発見記録用)
+# 内部識別子(図鑑の発見記録用)。編成の「正体」。分岐ワープしても変わらない。
 func get_slug() -> String:
 	return train_data.slug if train_data else ""
+
+# いま実際に走っているルートの slug(分岐ワープで変わる)。分岐検出・ルート入れ替えに使う。
+func get_route_slug() -> String:
+	return _active_slug if _active_slug != "" else get_slug()
 
 
 # === うんてんしゅモード public API(RideController から呼ばれる) ===
@@ -353,13 +363,14 @@ func get_progress_ratio() -> float:
 # 弧長系(_length/_stops/_linear_speed/_progress)を差し替える。
 # 呼び出し側(RideController)は必ずフェードの中点(画面が隠れている間)で呼ぶこと。
 # reparent 直後に古い progress のまま描画されると位置が飛ぶため、ここで即 _apply_progress() する。
-func switch_route(new_path: Path3D, new_progress: float, new_length: float,
+func switch_route(new_slug: String, new_path: Path3D, new_progress: float, new_length: float,
 		new_stops: Array, new_linear_speed: float) -> void:
 	if new_path == null or new_path.curve == null or new_length <= 0.0:
 		return
 	_reparent_follow(_path_follow, new_path)
 	for p in _parts:
 		_reparent_follow(p["follow"] as PathFollow3D, new_path)
+	_active_slug = new_slug       # 実トラックの slug を更新(分岐検出が正しく動く)
 	_length = new_length
 	_stops = new_stops
 	_linear_speed = new_linear_speed
