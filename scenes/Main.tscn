@@ -255,6 +255,7 @@ camera_rig_path = NodePath("../CameraRig")
 hud_path = NodePath("../UI/TouchHUD")
 game_state_path = NodePath("../GameState")
 stations_path = NodePath("../Stations")
+railway_path = NodePath("../Railway")
 
 [node name="UI" type="CanvasLayer" parent="."]
 

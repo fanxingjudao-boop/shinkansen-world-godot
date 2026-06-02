@@ -2,6 +2,18 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.27.0 — 2026-06-02 — 作りこみ本格化 第3ウェーブ(うんてんしゅモード)
+
+改善さんが選んだ方向「電車を深く + 駅まわりを楽しく」を「1テーマを深く磨く」方針で、中心の目玉に **うんてんしゅモード** を実装。乗車体験を「眺める」から「操る」へ。**opt-in**(乗ると今までどおり自動走行。乗車中に「うんてん」を押した時だけ運転操作)で既存挙動は不変(非運転時は throttle=1.0 の恒等乗算)。
+
+- **すすむ・とまる**(`train.gd`): 運転スロットル `_driver_throttle`(目標値へ `move_toward` で ease=バネ感、急発進・急停止しない)を追加。RUNNING の前進量に乗算するだけ(`advance = _linear_speed * _slow_factor_at * throttle * delta`)。`enter/exit_driver_mode()`・`set_driver_throttle()`・`is_driver_stopped()` を公開。throttle≈0 で車輪も自然停止。止めっぱなしでも `_physics_process` は回り続け壊れて見えない。駅の自動停車(DWELLING)は運転中も併用するので、一度も止めなくても駅にはちゃんと止まる(世界が破綻しない)。
+- **ぶんきで みちを えらぶ(ワープ式)**(`train.gd` + `route_data.gd` + `railway.gd` + `ride_controller.gd`): 物理レール分岐は作らず、運転中の編成を別ルートの Path3D へ載せ替える `switch_route()`(全 PathFollow3D を reparent + 弧長系 `_length/_stops/_linear_speed/_progress` を差し替え + 即 `_apply_progress()`)。必ず `_transition` のフェード中点で実行し reparent の乱れを隠す。分岐点は `route_data.branches()` にキュレート(本線3編成 はやぶさ/かがやき/N700 は center(0,0) 同心・近接・同 elevation なので `to_ratio≒at_ratio` で位置がほぼ飛ばない。停車点・start を避けた ratio)。`ride_controller._check_branch()` が接近を監視し、手前で2択(「○○ に のりかえ」/「このまま まっすぐ」)を出す。選ばなければ直進(強制も失敗もなし)。乗り換え直後の逆戻り即提示は `_branch_cooldown` で抑止。二重編成は衝突判定が無いので通り抜け(子供には「お友だちの電車」)。
+- **添え(駅まわり)**(`ride_controller.gd`): 運転中に自分で減速して駅にぴたっと止めると「ぴったり とうちゃく!」のごほうび(上昇音 `_make_tone(660,990)` + 通知 + 星+1。公平に良い結果へ寄せる)。止めなくても通常の到着通知が出るだけ=失敗概念なし。
+- **UI**(`TouchHUD.tscn` + `touch_hud.gd`): 乗車中に出る「うんてん」ボタン(運転中は「じどう」に文言トグル)、運転中だけ出る「ゴー」(緑)「とまれ」(淡パステル赤=怖くない)を左下(運転中は使わない D-pad の上)に配置、分岐2択は中央に縦積み(左右の操作列を避ける)。全ボタン 64px 以上・ひらがな/カタカナ・押下バウンス。降車時は運転 UI を必ず畳む。
+
+検証: 全スクリプト構文チェック通過、Main.tscn ヘッドレス起動でエラー・配線警告なし、AutoCapture(新 `AUTO_DRIVE` モード)で①運転モード突入(ゴー/とまれ表示・じどうトグル・D-pad無効化)②分岐2択の中央表示③乗り換えワープ後の前面展望(かがやきの並走本線へ滑らかに継続)を確認。`vercel.json`/`robots.txt`/`template.html` は不変、外部通信を増やさず、`for_mobile=false` 維持。
+**実機確認待ち(改善さん iPad)**: ①ゴー/とまれの加減速が気持ちよいか(THROTTLE_EASE)②分岐2択が分かりやすいか・ワープが酔わず一瞬か ③止めっぱなしで壊れて見えないか ④「ぴったり とうちゃく」のごほうびが嬉しいか ⑤分岐点の出る場所(at_ratio)が適切か。
+
 ## v0.26.0 — 2026-06-01 — 作りこみ本格化 第2ウェーブ(乗車体験を深める + 生き物感)
 
 第2ウェーブ5点。乗車中の遊びを増やし、世界に生命感を足す。

@@ -68,6 +68,16 @@ var _just_arrived: bool = false    # このフレームに駅へ着いたか(到
 var _panto: Array = []             # パンタグラフの可動パーツ [{node, base_y}]
 var _panto_phase: float = 0.0      # パンタグラフ上下動の位相
 
+# === うんてんしゅモード(運転手スロットル) ===
+# 乗車中に「うんてん」を選ぶと _driver_mode=true。RUNNING の前進量に _driver_throttle を
+# 乗算して「ゴー/とまれ」を実現する。非運転時は乗算係数を 1.0 に固定するので自動走行は不変。
+# _driver_throttle は _driver_target へ THROTTLE_EASE 速度で ease(急発進・急停止しない=バネ感)。
+const THROTTLE_EASE: float = 1.8     # スロットル追従速度(1秒あたり)。小さいほどゆっくり加減速
+const DRIVER_STOP_EPS: float = 0.02  # これ未満は実質停止扱い(添え演出「ぴったり とうちゃく」判定に使う)
+var _driver_mode: bool = false       # 運転手モードか(opt-in)
+var _driver_throttle: float = 0.0    # 現在のスロットル係数 0..1(実際に advance へ乗算)
+var _driver_target: float = 0.0      # 目標スロットル(ゴー=1.0 / とまれ=0.0)
+
 
 var _inited: bool = false       # 初期化(ルート取得+車両組み立て)完了フラグ
 var _dead: bool = false         # 設定ミスなど回復不能 → 再試行しない
@@ -147,11 +157,16 @@ func _physics_process(delta: float) -> void:
 	_dbg_frames += 1
 	if _dbg_frames == 1 or _dbg_frames % 300 == 0:
 		print("[DBG Train] run slug=%s f=%d progress=%.2f state=%d delta=%.4f" % [train_data.slug, _dbg_frames, _progress, _state, delta])
+	# 運転手モード中のみスロットルを目標へ ease(非運転時は触らない=自動走行不変)。
+	if _driver_mode:
+		_driver_throttle = move_toward(_driver_throttle, _driver_target, THROTTLE_EASE * delta)
 	_spin_advance = 0.0
 	match _state:
 		State.RUNNING:
 			var factor: float = _slow_factor_at(_progress)
-			var advance: float = _linear_speed * factor * delta
+			# 運転中は手動スロットル、非運転は 1.0(恒等)を掛ける。
+			var throttle: float = _driver_throttle if _driver_mode else 1.0
+			var advance: float = _linear_speed * factor * throttle * delta
 			_spin_advance = advance
 			var prev: float = _progress
 			_progress = fposmod(prev + advance, _length)
@@ -297,6 +312,72 @@ func get_display_name() -> String:
 # 内部識別子(図鑑の発見記録用)
 func get_slug() -> String:
 	return train_data.slug if train_data else ""
+
+
+# === うんてんしゅモード public API(RideController から呼ばれる) ===
+
+# 運転手モードに入る。突入の段差をなくすため、入った瞬間は今までどおり走り続ける
+# (throttle=1.0)。止まらない=こわくない。以降「ゴー/とまれ」で _driver_target を操作。
+func enter_driver_mode() -> void:
+	_driver_mode = true
+	_driver_target = 1.0
+	_driver_throttle = 1.0
+
+
+# 運転手モードを抜けて自動走行へ滑らかに復帰(常用速度に戻す)。
+func exit_driver_mode() -> void:
+	_driver_mode = false
+	_driver_target = 1.0
+	_driver_throttle = 1.0
+
+
+# 目標スロットルを設定(ゴー=1.0 / とまれ=0.0)。実際の速度は ease で滑らかに追従。
+func set_driver_throttle(target: float) -> void:
+	_driver_target = clampf(target, 0.0, 1.0)
+
+
+# 運転中で、ほぼ止まっているか(添え演出「ぴったり とうちゃく」の判定用)。
+func is_driver_stopped() -> bool:
+	return _driver_mode and _driver_throttle < DRIVER_STOP_EPS
+
+
+# 線路一周に対する現在位置の比(0..1)。分岐接近判定に使う。
+func get_progress_ratio() -> float:
+	if _length <= 0.0:
+		return 0.0
+	return fposmod(_progress, _length) / _length
+
+
+# === ワープ式分岐: 走行中の編成を別ルートの Path3D へ載せ替える ===
+# 物理的な分岐レールは作らず、全 PathFollow3D を新しい Path3D に reparent して
+# 弧長系(_length/_stops/_linear_speed/_progress)を差し替える。
+# 呼び出し側(RideController)は必ずフェードの中点(画面が隠れている間)で呼ぶこと。
+# reparent 直後に古い progress のまま描画されると位置が飛ぶため、ここで即 _apply_progress() する。
+func switch_route(new_path: Path3D, new_progress: float, new_length: float,
+		new_stops: Array, new_linear_speed: float) -> void:
+	if new_path == null or new_path.curve == null or new_length <= 0.0:
+		return
+	_reparent_follow(_path_follow, new_path)
+	for p in _parts:
+		_reparent_follow(p["follow"] as PathFollow3D, new_path)
+	_length = new_length
+	_stops = new_stops
+	_linear_speed = new_linear_speed
+	_progress = fposmod(new_progress, _length)
+	_state = State.RUNNING       # 念のため(DWELLING 跨ぎ事故防止)
+	_dwell_timer = 0.0
+	_apply_progress()            # 即座に新位置へスナップ(フェード中なので不可視)
+
+
+# PathFollow3D を現在の親 Path3D から外して new_path の子にする。
+# loop / rotation_mode はノード自身が保持するので再設定不要(progress は switch_route で代入)。
+func _reparent_follow(f: PathFollow3D, new_path: Path3D) -> void:
+	if f == null:
+		return
+	var parent := f.get_parent()
+	if parent:
+		parent.remove_child(f)
+	new_path.add_child(f)
 
 
 # === メッシュ構築(Godot 操作層) ===

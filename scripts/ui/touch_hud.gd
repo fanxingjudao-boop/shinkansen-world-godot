@@ -25,6 +25,14 @@ extends Control
 @onready var mission_label: Label = $Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
 @onready var btn_cam_right: BaseButton = $CameraButtons/CamRight
+# うんてんしゅモード関連
+@onready var btn_unten: BaseButton = $ActionButtons/Unten
+@onready var drive_buttons: Control = $DriveButtons
+@onready var btn_go: BaseButton = $DriveButtons/Go
+@onready var btn_stop: BaseButton = $DriveButtons/Stop
+@onready var branch_choice: Control = $BranchChoice
+@onready var btn_branch_left: BaseButton = $BranchChoice/Left
+@onready var btn_branch_right: BaseButton = $BranchChoice/Right
 
 @export var game_state_path: NodePath
 @export var book_path: NodePath
@@ -60,6 +68,18 @@ func _ready() -> void:
 	if btn_nagame:
 		btn_nagame.pressed.connect(_on_nagame_pressed)
 
+	# うんてんしゅモードのボタン群を RideController へ橋渡し(btn_nagame と同方式)
+	if btn_unten:
+		btn_unten.pressed.connect(_on_unten_pressed)
+	if btn_go:
+		btn_go.pressed.connect(func() -> void: _call_rc("driver_go"))
+	if btn_stop:
+		btn_stop.pressed.connect(func() -> void: _call_rc("driver_stop"))
+	if btn_branch_left:
+		btn_branch_left.pressed.connect(func() -> void: _call_rc("take_branch"))
+	if btn_branch_right:
+		btn_branch_right.pressed.connect(func() -> void: _call_rc("keep_straight"))
+
 	# カメラ向きボタン(CameraRig をシーンから探して回転を依頼)
 	_camera_rig = get_tree().root.find_child("CameraRig", true, false)
 	if btn_cam_left:
@@ -67,7 +87,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right, btn_nagame]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
@@ -96,10 +116,39 @@ func set_riding(is_riding: bool) -> void:
 		btn_touch.text = "おりる" if is_riding else "タッチ"
 	if btn_nagame:
 		btn_nagame.visible = is_riding  # 乗車中だけ「ながめ」ボタンを出す
+	if btn_unten:
+		btn_unten.visible = is_riding   # 乗車中だけ「うんてん」ボタンを出す
+	if not is_riding:
+		set_driving(false)              # 降車時は運転 UI を必ず畳む
 	for b in [btn_up, btn_down, btn_left, btn_right]:
 		if b:
 			b.disabled = is_riding
 			b.modulate = Color(1, 1, 1, 0.35) if is_riding else Color(1, 1, 1, 1)
+
+
+# 運転手モードの ON/OFF で「ゴー/とまれ」表示と「うんてん」ボタンの文言を出し分け。
+func set_driving(on: bool) -> void:
+	if drive_buttons:
+		drive_buttons.visible = on
+	if btn_unten:
+		btn_unten.text = "じどう" if on else "うんてん"  # トグル状態を明示
+	if not on:
+		hide_branch_choice()
+
+
+# 分岐の2択を表示。Left=「のりかえ」(行き先名・色)/ Right=「このまま まっすぐ」(直進)。
+func show_branch_choice(dest_name: String, dest_color: Color) -> void:
+	if branch_choice == null:
+		return
+	if btn_branch_left:
+		btn_branch_left.text = "%s に のりかえ" % dest_name
+		btn_branch_left.modulate = dest_color.lerp(Color.WHITE, 0.45)
+	branch_choice.visible = true
+
+
+func hide_branch_choice() -> void:
+	if branch_choice:
+		branch_choice.visible = false
 
 # 「○○に のったよ!」を一定時間バウンス表示してフェードアウト
 func show_notice(text: String) -> void:
@@ -159,6 +208,15 @@ func _on_touch_pressed() -> void:
 func _on_nagame_pressed() -> void:
 	if _ride_controller and _ride_controller.has_method("cycle_ride_view"):
 		_ride_controller.cycle_ride_view()
+
+# 「うんてん」ボタン: 運転手モードのトグルを RideController に依頼。
+func _on_unten_pressed() -> void:
+	_call_rc("toggle_driver_mode")
+
+# RideController のメソッドを名前で安全に呼ぶ(運転モード系ボタンの共通入口)。
+func _call_rc(method: String) -> void:
+	if _ride_controller and _ride_controller.has_method(method):
+		_ride_controller.call(method)
 
 # カメラの向きを段階回転(CameraRig.rotate_view)。dir=-1 左/+1 右。
 func _rotate_camera(dir: int) -> void:

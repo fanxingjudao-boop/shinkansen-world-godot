@@ -224,6 +224,20 @@ theme_override_styles/hover = SubResource("Style_touch_normal")
 theme_override_styles/normal = SubResource("Style_touch_normal")
 theme_override_styles/pressed = SubResource("Style_touch_pressed")
 
+[node name="Unten" type="Button" parent="ActionButtons"]
+visible = false
+layout_mode = 0
+offset_top = -210.0
+offset_right = 200.0
+offset_bottom = -114.0
+text = "うんてん"
+theme_override_colors/font_color = Color(0.4, 0.27, 0.06, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_touch_normal")
+theme_override_styles/hover = SubResource("Style_touch_normal")
+theme_override_styles/normal = SubResource("Style_touch_normal")
+theme_override_styles/pressed = SubResource("Style_touch_pressed")
+
 [node name="Prompt" type="Label" parent="."]
 visible = false
 layout_mode = 1
@@ -403,6 +417,100 @@ theme_override_styles/focus = SubResource("Style_cam_normal")
 theme_override_styles/hover = SubResource("Style_cam_normal")
 theme_override_styles/normal = SubResource("Style_cam_normal")
 theme_override_styles/pressed = SubResource("Style_cam_pressed")
+
+[node name="DriveButtons" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 70.0
+offset_top = -200.0
+offset_right = 370.0
+offset_bottom = -90.0
+grow_vertical = 0
+mouse_filter = 2
+
+[node name="Go" type="Button" parent="DriveButtons"]
+layout_mode = 0
+offset_right = 140.0
+offset_bottom = 96.0
+text = "ゴー"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+theme_override_styles/focus = SubResource("Style_cam_normal")
+theme_override_styles/hover = SubResource("Style_cam_normal")
+theme_override_styles/normal = SubResource("Style_cam_normal")
+theme_override_styles/pressed = SubResource("Style_cam_pressed")
+
+[node name="Stop" type="Button" parent="DriveButtons"]
+layout_mode = 0
+offset_left = 160.0
+offset_right = 300.0
+offset_bottom = 96.0
+text = "とまれ"
+theme_override_colors/font_color = Color(0.6, 0.13, 0.27, 1)
+theme_override_font_sizes/font_size = 36
+theme_override_styles/focus = SubResource("Style_jump_normal")
+theme_override_styles/hover = SubResource("Style_jump_normal")
+theme_override_styles/normal = SubResource("Style_jump_normal")
+theme_override_styles/pressed = SubResource("Style_jump_pressed")
+
+[node name="BranchChoice" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -150.0
+offset_right = 180.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ChoiceLabel" type="Label" parent="BranchChoice"]
+layout_mode = 0
+offset_left = 30.0
+offset_right = 330.0
+offset_bottom = 56.0
+mouse_filter = 2
+text = "どっちへ いく?"
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.157, 0.408, 0.788, 1)
+theme_override_font_sizes/font_size = 36
+theme_override_styles/normal = SubResource("Style_prompt_bg")
+
+[node name="Left" type="Button" parent="BranchChoice"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 80.0
+offset_right = 330.0
+offset_bottom = 176.0
+text = "のりかえ"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
+theme_override_styles/focus = SubResource("Style_cam_normal")
+theme_override_styles/hover = SubResource("Style_cam_normal")
+theme_override_styles/normal = SubResource("Style_cam_normal")
+theme_override_styles/pressed = SubResource("Style_cam_pressed")
+
+[node name="Right" type="Button" parent="BranchChoice"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 192.0
+offset_right = 330.0
+offset_bottom = 288.0
+text = "このまま まっすぐ"
+theme_override_colors/font_color = Color(0.4, 0.27, 0.06, 1)
+theme_override_font_sizes/font_size = 30
+theme_override_styles/focus = SubResource("Style_touch_normal")
+theme_override_styles/hover = SubResource("Style_touch_normal")
+theme_override_styles/normal = SubResource("Style_touch_normal")
+theme_override_styles/pressed = SubResource("Style_touch_pressed")
 
 [node name="Fade" type="ColorRect" parent="."]
 layout_mode = 1

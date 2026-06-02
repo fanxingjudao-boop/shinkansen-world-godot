@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -41,7 +41,39 @@ func _ready() -> void:
 			await _capture_befriend()
 		CaptureMode.AUTO_BOOK:
 			await _capture_book()
+		CaptureMode.AUTO_DRIVE:
+			await _capture_drive()
 	get_tree().quit()
+
+
+# うんてんしゅモード検証: はやぶさに乗車 → 運転モード突入(ゴー/とまれ表示)→
+# 分岐2択を表示 → 乗り換え(ワープ)後の前面展望を撮る。
+func _capture_drive() -> void:
+	var rc := get_tree().root.find_child("RideController", true, false)
+	var trains := get_tree().root.find_child("Trains", true, false)
+	if rc == null or trains == null or trains.get_child_count() == 0:
+		print("[AutoCapture] RideController/Trains not found, falling back to single")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var train := trains.get_child(0)  # Hayabusa
+	rc._do_board(train)
+	await get_tree().process_frame
+	rc.toggle_driver_mode()           # 運転モード突入(フェード遷移あり)
+	await get_tree().create_timer(0.8).timeout
+	await _save_screenshot("user://screenshot_drive.png")
+	# 分岐2択を強制表示(はやぶさ→かがやき)。
+	# 列車は実際には分岐手前にいないので、_check_branch が即座に隠さないよう
+	# クールダウンを上げて抑止してから表示する(検証用)。
+	rc._branch_cooldown = 999.0
+	rc._offer_branch({ "from": "hayabusa", "at_ratio": 0.18, "to": "kagayaki", "to_ratio": 0.18 })
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_branch.png")
+	rc._branch_cooldown = 0.0
+	# 乗り換え(ワープ)実行 → フェード後の前面展望
+	rc.take_branch()
+	await get_tree().create_timer(0.8).timeout
+	await _save_screenshot("user://screenshot_warp.png")
 
 
 # 図鑑検証: GameState に発見をいくつか入れ、図鑑を開いて でんしゃ/どうぶつ タブを撮る。

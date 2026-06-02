@@ -17,6 +17,7 @@ extends Node3D
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const Train = preload("res://scripts/entities/train.gd")
 const TouchHud = preload("res://scripts/ui/touch_hud.gd")
+const RouteData = preload("res://scripts/world/route_data.gd")
 
 enum State { WALKING, RIDING }
 
@@ -39,12 +40,19 @@ const RIDE_VIEWS: Array = [
 const MIX_RATE: int = 22050
 const ANNOUNCE_NEAR_STATION: float = 26.0  # 到着位置からこの距離以内の駅名をアナウンス
 
+# うんてんしゅモードの分岐(ワープ)用
+const BRANCH_PREVIEW_RATIO: float = 0.05   # 分岐点の何割手前で2択を出すか(ルート長基準)
+const BRANCH_PASS_RATIO: float = 0.01      # 分岐点をこれだけ過ぎたら直進確定で消す
+const PERFECT_STOP_TONE_A: float = 660.0   # 「ぴったり とうちゃく」ごほうび音(上昇)
+const PERFECT_STOP_TONE_B: float = 990.0
+
 @export var player_path: NodePath
 @export var trains_path: NodePath
 @export var camera_rig_path: NodePath
 @export var hud_path: NodePath
 @export var game_state_path: NodePath
 @export var stations_path: NodePath  # 車内アナウンスの駅名引き当て用
+@export var railway_path: NodePath   # 分岐ワープ時に乗り換え先ルート情報を引く
 
 signal boarded(train_display_name: String)
 signal alighted()
@@ -61,8 +69,16 @@ var _camera_rig: Node3D
 var _hud: TouchHud
 var _game_state: Node
 var _stations: Node3D
+var _railway: Node
 var _chime: AudioStreamPlayer
 var _chime_stream: AudioStreamWAV
+var _reward: AudioStreamPlayer        # 「ぴったり とうちゃく」ごほうび音
+var _reward_stream: AudioStreamWAV
+
+# うんてんしゅモード状態
+var _driving: bool = false            # 運転手モードか
+var _shown_branch = null              # 現在表示中の分岐 dict(重複表示防止。null=非表示)
+var _branch_cooldown: float = 0.0     # 乗り換え直後に逆方向分岐を即提示しないための猶予(秒)
 
 
 func _ready() -> void:
@@ -72,10 +88,15 @@ func _ready() -> void:
 	_hud = get_node_or_null(hud_path) as TouchHud
 	_game_state = get_node_or_null(game_state_path)
 	_stations = get_node_or_null(stations_path) as Node3D
+	_railway = get_node_or_null(railway_path)
 	_chime = AudioStreamPlayer.new()
 	_chime.volume_db = -8.0
 	add_child(_chime)
 	_chime_stream = _make_chime()
+	_reward = AudioStreamPlayer.new()
+	_reward.volume_db = -8.0
+	add_child(_reward)
+	_reward_stream = _make_tone(PERFECT_STOP_TONE_A, PERFECT_STOP_TONE_B, 0.3)
 	if _player == null:
 		push_warning("[RideController] player_path が未解決")
 	if _trains == null:
@@ -89,6 +110,12 @@ func _process(delta: float) -> void:
 	# 歩行中は最寄りの乗れる電車を案内表示
 	if _state == State.WALKING:
 		_update_prompt()
+
+	# 運転中は分岐への接近を監視(2択の表示/消去)
+	if _branch_cooldown > 0.0:
+		_branch_cooldown = max(0.0, _branch_cooldown - delta)
+	if _driving:
+		_check_branch()
 
 	# キーボード(E/Enter)用。タッチボタンは touch_hud が toggle_ride() を直接呼ぶ
 	# (タッチ/Web では action のリリース取りこぼしで押されっぱなしになり、2 回目の
@@ -178,6 +205,14 @@ func _alight() -> void:
 
 func _do_alight() -> void:
 	var train := _current_train
+	# 運転手モードを必ず解除(状態を歩行へ持ち越さない)
+	if train and train.has_method("exit_driver_mode"):
+		train.exit_driver_mode()
+	_driving = false
+	_shown_branch = null
+	if _hud:
+		_hud.hide_branch_choice()
+		_hud.set_driving(false)
 	# 車内アナウンスの購読を解除
 	if train:
 		if train.arrived.is_connected(_on_ride_arrived):
@@ -254,9 +289,153 @@ func cycle_ride_view() -> void:
 		_hud.show_notice("%s から ながめる" % String(view["name"]))
 
 
+# === うんてんしゅモード(運転手になって すすむ・とまる・ぶんき) ===
+
+# 運転手モードのトグル(HUD「うんてん」ボタンから)。乗車中のみ有効。
+func toggle_driver_mode() -> void:
+	if _state != State.RIDING or _current_train == null:
+		return
+	_driving = not _driving
+	if _driving:
+		if _current_train.has_method("enter_driver_mode"):
+			_current_train.enter_driver_mode()
+		# 没入感のため運転席視点へ寄せる(RIDE_VIEWS[1] = うんてんせき)
+		_ride_view_idx = 1
+		_transition(func() -> void: _build_ride_camera(RIDE_VIEWS[_ride_view_idx]))
+		if _hud:
+			_hud.set_driving(true)
+			_hud.show_notice("きみが うんてんしゅ!")
+	else:
+		if _current_train.has_method("exit_driver_mode"):
+			_current_train.exit_driver_mode()
+		_shown_branch = null
+		if _hud:
+			_hud.set_driving(false)
+			_hud.hide_branch_choice()
+			_hud.show_notice("じどう うんてんに もどすよ")
+
+
+# 「ゴー」: 進む(スロットル全開へ ease)
+func driver_go() -> void:
+	if _driving and _current_train and _current_train.has_method("set_driver_throttle"):
+		_current_train.set_driver_throttle(1.0)
+		if _hud:
+			_hud.show_notice("しゅっぱつ!")
+
+
+# 「とまれ」: 止まる(スロットル 0 へ ease)
+func driver_stop() -> void:
+	if _driving and _current_train and _current_train.has_method("set_driver_throttle"):
+		_current_train.set_driver_throttle(0.0)
+
+
+# 分岐への接近を監視。現編成のルートに自分の分岐があり、その手前に来たら2択を出す。
+# 通り過ぎたら(接近窓を外れたら)消す = 何も選ばなければ直進(強制・失敗なし)。
+func _check_branch() -> void:
+	if _current_train == null or _hud == null or _branch_cooldown > 0.0:
+		return
+	var slug: String = _current_train.get_slug()
+	var here: float = _current_train.get_progress_ratio()
+	var active = null
+	for b in RouteData.branches():
+		if String(b["from"]) != slug:
+			continue
+		var d: float = _ratio_ahead(here, float(b["at_ratio"]))
+		if d <= BRANCH_PREVIEW_RATIO:
+			active = b
+			break
+	if active != null:
+		if _shown_branch != active:
+			_offer_branch(active)
+	elif _shown_branch != null:
+		_shown_branch = null
+		_hud.hide_branch_choice()
+
+
+# 2択を HUD に提示(行き先の電車名・色を渡す)。
+func _offer_branch(b: Dictionary) -> void:
+	_shown_branch = b
+	var to_train := _find_train_by_slug(String(b["to"]))
+	var to_name: String = to_train.get_display_name() if to_train else "となりの でんしゃ"
+	var to_color: Color = Color.WHITE
+	if to_train and to_train.train_data:
+		to_color = to_train.train_data.body_color
+	_hud.show_branch_choice(to_name, to_color)
+
+
+# 乗り換え(2択の「のりかえる」側が押された)。フェードの中点で switch_route を実行。
+func take_branch() -> void:
+	if _shown_branch == null or _current_train == null:
+		return
+	var b: Dictionary = _shown_branch
+	_shown_branch = null
+	_hud.hide_branch_choice()
+	if _railway == null or not _railway.has_method("get_route_path"):
+		return
+	var to_slug: String = String(b["to"])
+	var new_path: Path3D = _railway.get_route_path(to_slug)
+	var new_len: float = _railway.get_route_length(to_slug)
+	var new_stops: Array = _railway.get_route_stops(to_slug)
+	if new_path == null or new_len <= 0.0:
+		return
+	var new_prog: float = float(b["to_ratio"]) * new_len
+	# 乗り換え先の速度感を維持(speed * 周長 / TAU)。target train の train_data から算出。
+	var to_train := _find_train_by_slug(to_slug)
+	var new_speed: float = _linear_speed_for(to_train, new_len)
+	_branch_cooldown = 3.0
+	_transition(func() -> void:
+		if _current_train and _current_train.has_method("switch_route"):
+			_current_train.switch_route(new_path, new_prog, new_len, new_stops, new_speed))
+	var to_name: String = to_train.get_display_name() if to_train else "あたらしい"
+	if _hud:
+		_hud.show_notice("%s の せんろへ!" % to_name)
+
+
+# 直進(2択の「このまま まっすぐ」側が押された)。何もせず2択を畳むだけ。
+func keep_straight() -> void:
+	_shown_branch = null
+	if _hud:
+		_hud.hide_branch_choice()
+
+
+# === うんてんしゅモード ヘルパ ===
+
+# 前方向きの ratio 差(0..1)。0 に近い = もうすぐ到達。通過した瞬間 ~1.0 に跳ねる。
+func _ratio_ahead(here: float, at: float) -> float:
+	return fposmod(at - here, 1.0)
+
+
+# slug 一致の Train ノードを返す(なければ null)
+func _find_train_by_slug(slug: String) -> Train:
+	if _trains == null:
+		return null
+	for t in _trains.get_children():
+		if t.has_method("get_slug") and (t as Train).get_slug() == slug:
+			return t as Train
+	return null
+
+
+# 乗り換え先の線速度(m/s)を train_data.speed と周長から算出。train_data が無ければ現速度を維持。
+func _linear_speed_for(train: Train, length: float) -> float:
+	if train and train.train_data and length > 0.0:
+		return train.train_data.speed * length / TAU
+	return 1.0
+
+
 # === 車内アナウンス(乗車中の編成の到着 / 発車で呼ばれる) ===
 
 func _on_ride_arrived(anchor_pos: Vector3) -> void:
+	# 添え: 自分で減速して駅にぴたっと止めたら「ぴったり とうちゃく!」のごほうび。
+	# (止めなくても下の通常到着通知が出るだけ。失敗概念はない)
+	if _driving and _current_train and _current_train.is_driver_stopped():
+		if _hud:
+			_hud.show_notice("ぴったり とうちゃく!")
+		if _reward and _reward_stream:
+			_reward.stream = _reward_stream
+			_reward.play()
+		if _game_state and _game_state.has_method("add_star"):
+			_game_state.add_star()  # 公平に良い結果へ寄せる
+		return
 	var name := _nearest_station_name(anchor_pos)
 	if name != "" and _hud:
 		_hud.show_notice("%s えき に とうちゃく!" % name)

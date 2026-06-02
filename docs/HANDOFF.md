@@ -159,9 +159,18 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-01 時点 — 作りこみ本格化 Phase 6 / 第1・第2ウェーブ)
+## 進捗(2026-06-02 時点 — 作りこみ本格化 Phase 6 / 第3ウェーブ うんてんしゅモード)
 
-改善さんが「作りこみを本格化」と指示。3方向「世界をにぎやかに・見た目を磨く・電車を深く」を選択(四季は今回見送り)。独立デプロイ可能なウェーブに分けて実装中。詳細は `changelog.md` の v0.25.0 / v0.26.0、計画は `C:\Users\papa\.claude\plans\golden-humming-shamir.md`。
+改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。
+
+**第3ウェーブ(v0.27.0 — うんてんしゅモード):**
+- **すすむ・とまる**(`train.gd`): 運転スロットル `_driver_throttle`(`move_toward` で ease=バネ感)を RUNNING の前進量に乗算。`enter/exit_driver_mode`・`set_driver_throttle`・`is_driver_stopped`。opt-in(非運転時は throttle=1.0 恒等で自動走行不変)。駅自動停車は運転中も併用。
+- **ぶんきで みちを えらぶ(ワープ式)**(`train.switch_route` + `route_data.branches()` + `railway.get_route_length` + `ride_controller`): 運転中の編成を別ルート Path3D へ reparent + 弧長系差し替え。必ず `_transition` フェード中点で実行。分岐は本線3編成間をキュレート。`_check_branch` が接近監視→2択(のりかえ/まっすぐ)、選ばなければ直進。逆戻り即提示は `_branch_cooldown` で抑止。
+- **添え**: 自分で減速して駅に止めると「ぴったり とうちゃく!」(上昇音 + 星+1)。
+- **UI**(`TouchHUD.tscn` + `touch_hud.gd`): 「うんてん」(運転中「じどう」)/「ゴー」「とまれ」(左下)/分岐2択(中央縦積み)。降車で運転UIを畳む。
+- 検証: AutoCapture 新 `AUTO_DRIVE` モードで運転突入・分岐2択・ワープ後前面展望を確認(`screenshot_drive/branch/warp.png`)。
+
+(以前の指示)3方向「世界をにぎやかに・見た目を磨く・電車を深く」のうち第1・第2ウェーブを実装済み。詳細は `changelog.md` の v0.25.0 / v0.26.0、当時の計画は `C:\Users\papa\.claude\plans\golden-humming-shamir.md`。
 
 **第1ウェーブ(v0.25.0・commit `0fdda30`):**
 - 車輪回転(`train.gd` `_wheels`/`_spin_wheels`、カメラ110m以内のみ)/ 駅メロ(`train.gd` `arrived` シグナル + `station_manager.gd` の `_make_jingle`、6駅ぶん)/ トゥーンシェーディング(`rim.gdshader` に `light()` 追加・`toon_steps`)/ おだんごで げんき(`GameState.energy` 新規・保存、HUD「げんき」カウンタ、おかし駅で近接トリガー)/ 流れ星(新規 `scripts/fx/shooting_star.gd`、夜にランダム)。
@@ -172,9 +181,10 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 **その後の調整:**
 - 昼夜サイクルを 84秒→840秒(約10倍ゆっくり、commit `2729e70`)。実機で日替わりが速すぎたため。`day_night_cycle.gd` `CYCLE_SEC`。さらに調整するならここ。
 
-**未完・次にやること(第3ウェーブ・要設計判断):**
+**未完・次にやること:**
+- **改善さんの iPad 確認待ち(第3ウェーブ・うんてんしゅモード)**: ゴー/とまれの加減速が気持ちよいか(`train.gd` `THROTTLE_EASE`)/ 分岐2択が分かりやすいか・ワープが酔わず一瞬か / 止めっぱなしで壊れて見えないか / 「ぴったり とうちゃく」が嬉しいか / 分岐点の出る場所(`route_data.branches()` の `at_ratio`)が適切か。**まだ push していない**(`feature/driver-mode` ブランチ。実機確認後に Web 再エクスポート→push 予定)。
 - **改善さんの iPad 確認待ち(第1・2ウェーブ)**: 車輪の回る向き / おだんご / 駅メロ・もぐもぐ音 / 流れ星 / 視点切替の酔い・前面展望 / 車内アナウンス・発車チャイム / 動物の歌 / パンタの動き / **草の fps 影響(最重要・密度上限の判断、`grass.gd` の `BLADE_COUNT`/`FIELD_RADIUS`)**。
-- **第3ウェーブ**: A4 手を振ると沿線が応える / A5 動物の家(MultiMesh か統合メッシュで draw call 抑制)/ C5 分岐で運転手(現アーキは「1編成=1閉ループ専用Path3D」で衝突回避のため物理分岐は重い → **まず安全な「ワープ式」**から)/ B5 仕上げチューニング。C5 は着手前に改善さんへ方針確認。
+- **第3ウェーブの残り候補**: A4 手を振ると沿線が応える / A5 動物の家(MultiMesh か統合メッシュで draw call 抑制)/ B5 仕上げチューニング。うんてんしゅモードの拡張(本線以外のルートにも分岐を増やす場合は route 同士の近接が必要=route_data の地理調整 or 専用コネクタ線路を検討)。
 - 上記とは別に、旧 v0.24.0 の片付け(下記)も残っている。
 
 ## 進捗(2026-05-31 時点 — iPad 実機フィードバック対応)

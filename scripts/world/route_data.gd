@@ -83,3 +83,29 @@ static func specs() -> Array:
 			"start_ratio": 0.1, "stops": [{ "ratio": 0.0, "kind": "dwell", "seconds": 3.0 }],
 		},
 	]
+
+
+# === 分岐(ワープ式)データ ===
+# うんてんしゅモードで運転中、from 編成のルート上 at_ratio 付近に来たら
+# 「to 編成のルートへ乗り換える?」の選択肢を出す。選ぶと train.switch_route() で
+# to ルートの to_ratio へ滑らかに(フェードで)載り替わる。
+#
+# 対象は本線3編成(hayabusa/kagayaki/n700)のみ。3編成は center(0,0) の同心・近接
+# (径方向 ~8m)・同 elevation(0)なので、同じ ratio はほぼ同じ角度位置=横に並ぶ。
+# そのため to_ratio ≒ at_ratio にすると、乗り換え前後で位置がほとんど飛ばない。
+# つばめ(+8m 高架)や散在ループは高さ・距離が離れるため対象外。
+#
+# ratio は各ルートの停車点・初期位置を避けて選ぶ(乗り換え直後の停車点即ヒットを防ぐ):
+#   hayabusa 停車 0.00 / kagayaki 停車 0.50 / n700 停車 0.25
+static func branches() -> Array:
+	return [
+		# はやぶさ ⇄ かがやき(ratio 0.18 付近・どの停車点からも離れている)
+		{ "from": "hayabusa", "at_ratio": 0.18, "to": "kagayaki", "to_ratio": 0.18 },
+		{ "from": "kagayaki", "at_ratio": 0.18, "to": "hayabusa", "to_ratio": 0.18 },
+		# かがやき ⇄ N700(ratio 0.40 付近)
+		{ "from": "kagayaki", "at_ratio": 0.40, "to": "n700", "to_ratio": 0.40 },
+		{ "from": "n700", "at_ratio": 0.40, "to": "kagayaki", "to_ratio": 0.40 },
+		# N700 ⇄ はやぶさ(ratio 0.72 付近)
+		{ "from": "n700", "at_ratio": 0.72, "to": "hayabusa", "to_ratio": 0.72 },
+		{ "from": "hayabusa", "at_ratio": 0.72, "to": "n700", "to_ratio": 0.72 },
+	]

@@ -170,6 +170,12 @@ func get_route_start_offset(slug: String) -> float:
 		return _routes[slug]["start_offset"]
 	return 0.0
 
+# 編成 slug のルート一周の弧長(m)。分岐ワープで乗り換え先の弧長・速度換算に使う。
+func get_route_length(slug: String) -> float:
+	if _routes.has(slug):
+		return _routes[slug]["length"]
+	return 0.0
+
 # ルート上 ratio(0..1)の { position(Vector3), forward(進行方向), outward(ループ中心と反対=外向き) }。
 # 駅・名所などを線路脇に置くのに使う。
 func get_route_sample(slug: String, ratio: float) -> Dictionary:
