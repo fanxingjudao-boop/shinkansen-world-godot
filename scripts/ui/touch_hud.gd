@@ -18,11 +18,11 @@ extends Control
 @onready var prompt: Label = $Prompt
 @onready var notice: Label = $Notice
 @onready var fade: ColorRect = $Fade
-@onready var star_count_label: Label = $TopBar/StarCount
-@onready var friend_count_label: Label = $TopBar/FriendCount
-@onready var energy_count_label: Label = $TopBar/EnergyCount
-@onready var btn_book: BaseButton = $TopBar/BookButton
-@onready var mission_label: Label = $Mission
+@onready var star_count_label: Label = $InfoMenu/StarCount
+@onready var friend_count_label: Label = $InfoMenu/FriendCount
+@onready var energy_count_label: Label = $InfoMenu/EnergyCount
+@onready var btn_book: BaseButton = $BookButton
+@onready var mission_label: Label = $InfoMenu/Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
 @onready var btn_cam_right: BaseButton = $CameraButtons/CamRight
 # うんてんしゅモード関連

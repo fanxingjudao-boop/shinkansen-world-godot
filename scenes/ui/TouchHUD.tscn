@@ -1,6 +1,18 @@
-[gd_scene load_steps=11 format=3 uid="uid://b1hudts000001"]
+[gd_scene load_steps=12 format=3 uid="uid://b1hudts000001"]
 
 [ext_resource type="Script" path="res://scripts/ui/touch_hud.gd" id="1_hud"]
+
+[sub_resource type="StyleBoxFlat" id="Style_menu_bg"]
+bg_color = Color(1, 1, 1, 0.93)
+corner_radius_top_left = 24
+corner_radius_top_right = 24
+corner_radius_bottom_right = 24
+corner_radius_bottom_left = 24
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(0.157, 0.408, 0.788, 0.9)
 
 [sub_resource type="StyleBoxFlat" id="Style_dpad_normal"]
 bg_color = Color(0.494, 0.784, 0.961, 0.88)
@@ -280,62 +292,83 @@ theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
 theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 44
 
-[node name="TopBar" type="Control" parent="."]
+[node name="InfoMenu" type="Panel" parent="."]
 layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
+anchors_preset = 0
+offset_left = 16.0
 offset_top = 16.0
-offset_bottom = 80.0
-grow_horizontal = 2
+offset_right = 420.0
+offset_bottom = 216.0
 mouse_filter = 2
+theme_override_styles/panel = SubResource("Style_menu_bg")
 
-[node name="StarCount" type="Label" parent="TopBar"]
+[node name="StarCount" type="Label" parent="InfoMenu"]
 layout_mode = 0
 offset_left = 20.0
-offset_right = 180.0
-offset_bottom = 56.0
+offset_top = 12.0
+offset_right = 384.0
+offset_bottom = 52.0
 mouse_filter = 2
 text = "ほし 0"
-horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_colors/font_color = Color(0.85, 0.6, 0.1, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("Style_prompt_bg")
+theme_override_colors/font_color = Color(0.82, 0.56, 0.05, 1)
+theme_override_font_sizes/font_size = 32
 
-[node name="FriendCount" type="Label" parent="TopBar"]
+[node name="FriendCount" type="Label" parent="InfoMenu"]
 layout_mode = 0
-offset_left = 196.0
-offset_right = 420.0
-offset_bottom = 56.0
+offset_left = 20.0
+offset_top = 54.0
+offset_right = 384.0
+offset_bottom = 94.0
 mouse_filter = 2
 text = "なかよし 0"
-horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_colors/font_color = Color(0.93, 0.38, 0.54, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("Style_prompt_bg")
+theme_override_colors/font_color = Color(0.91, 0.33, 0.5, 1)
+theme_override_font_sizes/font_size = 32
 
-[node name="EnergyCount" type="Label" parent="TopBar"]
+[node name="EnergyCount" type="Label" parent="InfoMenu"]
 layout_mode = 0
-offset_left = 436.0
-offset_right = 640.0
-offset_bottom = 56.0
+offset_left = 20.0
+offset_top = 96.0
+offset_right = 384.0
+offset_bottom = 136.0
 mouse_filter = 2
 text = "げんき 0"
-horizontal_alignment = 1
 vertical_alignment = 1
-theme_override_colors/font_color = Color(0.31, 0.66, 0.27, 1)
-theme_override_font_sizes/font_size = 30
-theme_override_styles/normal = SubResource("Style_prompt_bg")
+theme_override_colors/font_color = Color(0.26, 0.62, 0.22, 1)
+theme_override_font_sizes/font_size = 32
 
-[node name="BookButton" type="Button" parent="TopBar"]
+[node name="MenuSep" type="ColorRect" parent="InfoMenu"]
+layout_mode = 0
+offset_left = 18.0
+offset_top = 144.0
+offset_right = 386.0
+offset_bottom = 147.0
+mouse_filter = 2
+color = Color(0.157, 0.408, 0.788, 0.35)
+
+[node name="Mission" type="Label" parent="InfoMenu"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 152.0
+offset_right = 386.0
+offset_bottom = 196.0
+mouse_filter = 2
+text = "ミッション: "
+autowrap_mode = 2
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.24, 0.46, 0.18, 1)
+theme_override_font_sizes/font_size = 22
+
+[node name="BookButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -160.0
+offset_top = 16.0
 offset_right = -20.0
-offset_bottom = 64.0
+offset_bottom = 80.0
 grow_horizontal = 0
 text = "ずかん"
 theme_override_colors/font_color = Color(1, 1, 1, 1)
@@ -344,24 +377,6 @@ theme_override_styles/focus = SubResource("Style_dpad_normal")
 theme_override_styles/hover = SubResource("Style_dpad_normal")
 theme_override_styles/normal = SubResource("Style_dpad_normal")
 theme_override_styles/pressed = SubResource("Style_dpad_pressed")
-
-[node name="Mission" type="Label" parent="."]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -320.0
-offset_top = 88.0
-offset_right = 320.0
-offset_bottom = 138.0
-grow_horizontal = 2
-mouse_filter = 2
-text = "ミッション: "
-horizontal_alignment = 1
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.28, 0.5, 0.2, 1)
-theme_override_font_sizes/font_size = 26
-theme_override_styles/normal = SubResource("Style_prompt_bg")
 
 [node name="CameraButtons" type="Control" parent="."]
 layout_mode = 1

@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00010"]
+[gd_resource type="Resource" script_class="TrainData" format=3 uid="uid://cqrl3qsvkynvl"]
 
 [ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
 
