@@ -102,6 +102,9 @@ func _build_platform() -> void:
 	emi.position = Vector3(0, PLATFORM_THICK - 0.02, 0)
 	add_child(emi)
 
+	# プラットフォームの当たり判定(ジャンプでホームに乗れる・横は通り抜けない)
+	_add_box_collision(Vector3(PLATFORM_DEPTH, PLATFORM_THICK, PLATFORM_LEN), Vector3(0, PLATFORM_THICK * 0.5, 0))
+
 
 func _build_roof() -> void:
 	var top: float = PLATFORM_THICK
@@ -114,12 +117,15 @@ func _build_roof() -> void:
 			var pmi := MeshInstance3D.new()
 			pmi.mesh = pillar
 			pmi.material_override = _mat(station_data.accent_color, 0.6)
-			pmi.position = Vector3(
+			var ppos := Vector3(
 				sx * (PLATFORM_DEPTH * 0.5 - 0.5),
 				top + PILLAR_H * 0.5,
 				sz * (PLATFORM_LEN * 0.5 - 0.8)
 			)
+			pmi.position = ppos
 			add_child(pmi)
+			# 柱の当たり判定(細い角柱)
+			_add_box_collision(Vector3(PILLAR_R * 2.4, PILLAR_H, PILLAR_R * 2.4), ppos)
 
 	# 屋根板(少しオーバーハング)
 	var roof := BoxMesh.new()
@@ -270,6 +276,19 @@ func _decor_rainbow(base: Vector3) -> void:
 
 
 # === ヘルパー ===
+
+# 駅の当たり判定(StaticBody3D + BoxShape3D)。既定レイヤー=1 でプレイヤー(マスク=1)が衝突。
+# 看板(Label3D)や装飾には付けない。
+func _add_box_collision(size: Vector3, center: Vector3) -> void:
+	var body := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	cs.shape = shape
+	cs.position = center
+	body.add_child(cs)
+	add_child(body)
+
 
 func _add_mesh(mesh: Mesh, pos: Vector3, mat: StandardMaterial3D) -> void:
 	var mi := MeshInstance3D.new()

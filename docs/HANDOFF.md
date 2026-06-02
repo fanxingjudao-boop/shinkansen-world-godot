@@ -163,6 +163,8 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。
 
+**当たり判定(v0.29.0):** これまで地形とプレイヤーだけが固く、他は全すり抜けだった(改善さん指摘)。改善さんの選択で**たてもの(家/お店/ビル)と駅(ホーム+柱)**を `StaticBody3D + BoxShape3D`(`town.gd`/`station.gd` の `_add_box_collision`、既定レイヤー1=プレイヤーのマスク1)で固くした。電車・動物・星・木・小物は意図的にすり抜けのまま。検証は AutoCapture 新 `AUTO_COLLISION`(建物へ歩かせ 1.85m 手前で停止=blocked)。**今後、新しく置く大きな構造物には当たり判定を付けるか都度判断する**(動く電車・小動物・収集物は付けない方針)。
+
 **踏切の本格化(v0.28.0):**
 - 新規 `scripts/world/crossing.gd`(自己完結の踏切ノード)。`town.gd` は CROSSINGS の slug+ratio を渡して生成。遮断機バーの開閉(自ルート編成が22m以内で閉)・黄黒縞バー・2灯の交互点滅(1.6Hz)・×警標・やさしい警報音(閉動作中かつプレイヤー34m以内のみ、-16dB ループ)。接近検知は slug 一致の編成の `get_ride_anchor_position()` とのワールド距離。検証は AutoCapture 新 `AUTO_CROSSING` モード。
 

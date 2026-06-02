@@ -209,6 +209,7 @@ func _build_house(x: float, z: float) -> void:
 	_box(root, Vector3(0.7, 1.2, 0.12), Vector3(0, 0.6, -1.52), DOOR_COLOR, 0.8)
 	for sx in [-0.85, 0.85]:
 		_window(root, Vector3(sx, 1.5, -1.52))
+	_add_box_collision(root, Vector3(3.0, 2.4, 3.0), Vector3(0, 1.2, 0))
 
 
 func _build_shop(x: float, z: float) -> void:
@@ -221,6 +222,7 @@ func _build_shop(x: float, z: float) -> void:
 	_box(root, Vector3(1.9, 0.5, 0.1), Vector3(0, 2.15, -1.55), awning, 0.6)
 	_window(root, Vector3(-0.75, 1.0, -1.52))
 	_box(root, Vector3(0.8, 1.4, 0.12), Vector3(0.75, 0.7, -1.52), DOOR_COLOR, 0.8)
+	_add_box_collision(root, Vector3(3.2, 2.2, 3.0), Vector3(0, 1.1, 0))
 
 
 func _build_tower(x: float, z: float) -> void:
@@ -233,6 +235,7 @@ func _build_tower(x: float, z: float) -> void:
 	for fl in range(floors):
 		for sx in [-0.8, 0.0, 0.8]:
 			_window(root, Vector3(sx, 1.0 + fl * 1.8, -1.52), Vector3(0.5, 0.7, 0.1))
+	_add_box_collision(root, Vector3(3.0, h, 3.0), Vector3(0, h * 0.5, 0))
 
 
 func _build_tree(x: float, z: float) -> void:
@@ -248,6 +251,22 @@ func _build_tree(x: float, z: float) -> void:
 		leaf.radius = 0.95 - i * 0.2
 		leaf.height = leaf.radius * 2.0
 		_mesh(root, leaf, Vector3(0, 1.9 + i * 0.5, 0), Color(0.4, 0.72, 0.38), 0.85)
+
+
+# === コリジョン(プレイヤーがぶつかる) ===
+
+# 建物の足元に直方体の当たり判定(StaticBody3D + BoxShape3D)を付ける。
+# 既定レイヤー=1、プレイヤーのマスク=1(地形と同じ)なので衝突する。
+# 木・ベンチ・噴水などの小物には付けない(すり抜けのまま=子供が引っかからない)。
+func _add_box_collision(root: Node3D, size: Vector3, center: Vector3) -> void:
+	var body := StaticBody3D.new()
+	var cs := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	cs.shape = shape
+	cs.position = center
+	body.add_child(cs)
+	root.add_child(body)
 
 
 # === メッシュヘルパー ===

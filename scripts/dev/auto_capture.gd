@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -45,7 +45,60 @@ func _ready() -> void:
 			await _capture_drive()
 		CaptureMode.AUTO_CROSSING:
 			await _capture_crossing()
+		CaptureMode.AUTO_COLLISION:
+			await _capture_collision()
 	get_tree().quit()
+
+
+# コリジョン検証: プレイヤーを建物の +Z 側に置き、建物へ向かって(move_forward=-Z)
+# 1.5 秒歩かせ、壁で止まるか(すり抜けないか)を距離で判定して撮る。
+func _capture_collision() -> void:
+	var town := get_tree().root.find_child("Town", true, false)
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	if town == null or player == null:
+		print("[AutoCapture] Town/Player not found")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# 建物(StaticBody3D を子に持つ root)を 1 つ探す
+	var target: Node3D = null
+	for child in town.get_children():
+		for sub in child.get_children():
+			if sub is StaticBody3D:
+				target = child
+				break
+		if target:
+			break
+	if target == null:
+		print("[AutoCapture] 建物(StaticBody)が見つからない")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var bpos: Vector3 = target.global_position
+	# プレイヤーを建物の +Z 側 6m に配置
+	player.global_position = bpos + Vector3(0.0, 1.2, 6.0)
+	player.velocity = Vector3.ZERO
+	await get_tree().physics_frame
+	var start_dz: float = player.global_position.z - bpos.z
+	# 建物へ向かって(-Z)歩く
+	Input.action_press("move_forward")
+	for i in range(110):  # ~1.8 秒ぶんの物理フレーム
+		await get_tree().physics_frame
+	Input.action_release("move_forward")
+	var end_dz: float = player.global_position.z - bpos.z
+	var blocked: bool = end_dz > 1.4   # 壁(半幅1.5)+カプセル(0.35)で手前に止まるはず
+	print("[AutoCapture] collision: start_dz=%.2f end_dz=%.2f blocked=%s (建物center=%.1f,%.1f)" \
+		% [start_dz, end_dz, str(blocked), bpos.x, bpos.z])
+	# 壁ぎわのプレイヤーを横から撮る
+	var cam := get_tree().root.find_child("Camera3D", true, false) as Camera3D
+	if cam:
+		var parent := cam.get_parent()
+		if parent and parent.get_script() != null:
+			parent.set_process(false)
+		cam.global_position = bpos + Vector3(7.0, 3.5, 5.0)
+		cam.look_at(bpos + Vector3(0, 1.2, 2.5))
+		cam.fov = 55.0
+		await get_tree().process_frame
+		await get_tree().process_frame
+	await _save_screenshot("user://screenshot_collision.png")
 
 
 # 踏切検証: komachi は start_ratio=0 なので起動時 ratio0 の踏切(≈(102,-30))に編成がいて
