@@ -22,6 +22,8 @@ extends Control
 @onready var friend_count_label: Label = $InfoMenu/FriendCount
 @onready var energy_count_label: Label = $InfoMenu/EnergyCount
 @onready var btn_book: BaseButton = $BookButton
+@onready var btn_menu: BaseButton = $MenuButton
+@onready var info_menu: Panel = $InfoMenu
 @onready var mission_label: Label = $InfoMenu/Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
 @onready var btn_cam_right: BaseButton = $CameraButtons/CamRight
@@ -58,6 +60,9 @@ func _ready() -> void:
 	_book = get_node_or_null(book_path)
 	if btn_book:
 		btn_book.pressed.connect(_on_book_pressed)
+	# 「メニュー」ボタン: 押すたびに情報パネル(ほし/なかよし/げんき/ミッション)を出し入れ
+	if btn_menu:
+		btn_menu.pressed.connect(_on_menu_pressed)
 
 	# タッチ/おりる ボタンは pressed シグナルで直接 RideController を呼ぶ
 	# (interact action のエッジ検出はタッチ/Web で取りこぼしうるため。降車不可の対策)
@@ -87,7 +92,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
@@ -198,6 +203,11 @@ func set_mission(text: String) -> void:
 func _on_book_pressed() -> void:
 	if _book and _book.has_method("open"):
 		_book.open()
+
+# 「メニュー」ボタン: 情報パネルの表示/非表示をトグル(押したら出る・もう一度で隠れる)
+func _on_menu_pressed() -> void:
+	if info_menu:
+		info_menu.visible = not info_menu.visible
 
 # タッチ/おりる ボタン: RideController に乗降トグルを依頼(タップごとに確実に発火)。
 func _on_touch_pressed() -> void:

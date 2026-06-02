@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -51,7 +51,20 @@ func _ready() -> void:
 			await _capture_castle()
 		CaptureMode.AUTO_MOON:
 			await _capture_moon()
+		CaptureMode.AUTO_MENU:
+			await _capture_menu()
 	get_tree().quit()
+
+
+# メニュー検証: 閉じた状態(メニュー/ずかんボタンだけ)→「メニュー」を押して開いた状態。
+func _capture_menu() -> void:
+	var hud := get_tree().root.find_child("TouchHUD", true, false)
+	await _save_screenshot("user://screenshot_menu_closed.png")
+	if hud and hud.has_method("_on_menu_pressed"):
+		hud._on_menu_pressed()  # メニューを開く
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_menu_open.png")
 
 
 # 検証: ①カメラ基準移動(うえ=カメラの前)②城に柱が無い③ロケット④月面。

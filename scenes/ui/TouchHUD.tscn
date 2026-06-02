@@ -293,12 +293,15 @@ theme_override_constants/outline_size = 10
 theme_override_font_sizes/font_size = 44
 
 [node name="InfoMenu" type="Panel" parent="."]
+visible = false
 layout_mode = 1
-anchors_preset = 0
-offset_left = 16.0
-offset_top = 16.0
-offset_right = 420.0
-offset_bottom = 216.0
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -420.0
+offset_top = 92.0
+offset_right = -16.0
+offset_bottom = 292.0
+grow_horizontal = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("Style_menu_bg")
 
@@ -359,6 +362,23 @@ autowrap_mode = 2
 vertical_alignment = 1
 theme_override_colors/font_color = Color(0.24, 0.46, 0.18, 1)
 theme_override_font_sizes/font_size = 22
+
+[node name="MenuButton" type="Button" parent="."]
+layout_mode = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -320.0
+offset_top = 16.0
+offset_right = -180.0
+offset_bottom = 80.0
+grow_horizontal = 0
+text = "メニュー"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
 
 [node name="BookButton" type="Button" parent="."]
 layout_mode = 1
