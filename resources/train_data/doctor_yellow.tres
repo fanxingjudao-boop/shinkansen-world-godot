@@ -6,6 +6,8 @@
 script = ExtResource("1_td")
 display_name = "どくたーいえろー"
 slug = "doctor_yellow"
+description = "きいろい おいしゃさん でんしゃ。みつけたら ラッキー!"
+top_speed_kmh = 270
 body_color = Color(1.0, 0.878, 0.4, 1)
 accent_color = Color(0.0, 0.4, 0.8, 1)
 speed = 0.09

@@ -6,6 +6,8 @@
 script = ExtResource("1_td")
 display_name = "やまのてせん"
 slug = "e235_yamanote"
+description = "みどりの やまのてせん。まちを ぐるぐる。"
+top_speed_kmh = 90
 body_color = Color(0.71, 0.91, 0.325, 1)
 accent_color = Color(1, 1, 1, 1)
 speed = 0.15

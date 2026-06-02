@@ -6,6 +6,8 @@
 script = ExtResource("1_td")
 display_name = "こまち"
 slug = "komachi"
+description = "あかい こまち。びゅーんと はしるよ。"
+top_speed_kmh = 320
 body_color = Color(1.0, 0.333, 0.467, 1)
 accent_color = Color(1, 1, 1, 1)
 speed = 0.11

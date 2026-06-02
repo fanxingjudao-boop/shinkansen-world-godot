@@ -29,5 +29,10 @@ extends Resource
 # 蒸気エフェクトを持つか(SL のみ true、Phase 2 後で実装)
 @export var has_steam: bool = false
 
-# 楕円上の初期位置(0..TAU 単位)。9 編成で重ならないように分散させる
+# 初期位置などの旧フィールド(楕円時代の名残)。現在の配置は route_data.gd の start_ratio
+# で管理しているため未使用だが、既存 .tres 互換のため残置。
 @export var initial_t: float = 0.0
+
+# 図鑑(ずかん)の詳細用。やさしいひらがな/カタカナの説明と、最高速度(km/h、表示は「キロ」)。
+@export_multiline var description: String = ""
+@export var top_speed_kmh: int = 0

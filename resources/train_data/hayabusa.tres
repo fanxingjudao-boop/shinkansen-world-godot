@@ -6,6 +6,8 @@
 script = ExtResource("1_td")
 display_name = "はやぶさ"
 slug = "hayabusa"
+description = "あおと みどりの しんかんせん。とっても はやいよ!"
+top_speed_kmh = 320
 body_color = Color(0.0, 0.6, 0.267, 1)
 accent_color = Color(1.0, 0.42, 0.604, 1)
 speed = 0.13

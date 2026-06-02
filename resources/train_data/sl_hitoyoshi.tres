@@ -6,6 +6,8 @@
 script = ExtResource("1_td")
 display_name = "えすえるひとよし"
 slug = "sl_hitoyoshi"
+description = "もくもく けむりの エスエル。むかしの きかんしゃ。"
+top_speed_kmh = 50
 body_color = Color(0.1, 0.1, 0.1, 1)
 accent_color = Color(0.753, 0.224, 0.169, 1)
 speed = 0.07

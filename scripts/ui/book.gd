@@ -19,6 +19,13 @@ const TAB_DIRS: Dictionary = {
 var _game_state: Node
 var _current_tab: String = "train"
 
+# でんしゃの詳細パネル(セルをタップで表示)。コードで一度だけ組み立てて使い回す。
+var _detail: Panel
+var _detail_swatch: ColorRect
+var _detail_name: Label
+var _detail_desc: Label
+var _detail_speed: Label
+
 @onready var grid: GridContainer = $Root/Panel/VBox/Grid
 @onready var tab_train: BaseButton = $Root/Panel/VBox/Tabs/TabTrain
 @onready var tab_animal: BaseButton = $Root/Panel/VBox/Tabs/TabAnimal
@@ -48,6 +55,7 @@ func close() -> void:
 
 func _show_tab(tab: String) -> void:
 	_current_tab = tab
+	_hide_detail()
 	for c in grid.get_children():
 		c.queue_free()
 	for e in _load_master(tab):
@@ -82,6 +90,8 @@ func _load_master(tab: String) -> Array:
 			"train":
 				entry["color"] = res.get("body_color")
 				entry["found"] = _game_state != null and _game_state.has_train(slug)
+				entry["desc"] = str(res.get("description"))
+				entry["speed"] = int(res.get("top_speed_kmh"))
 			"animal":
 				entry["color"] = res.get("body_color")
 				entry["found"] = _game_state != null and _game_state.has_animal(slug)
@@ -103,10 +113,12 @@ func _make_cell(e: Dictionary) -> Control:
 	margin.add_theme_constant_override("margin_right", 10)
 	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_bottom", 10)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(margin)
 
 	var v := VBoxContainer.new()
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	margin.add_child(v)
 
 	var found: bool = e.get("found", false)
@@ -125,4 +137,104 @@ func _make_cell(e: Dictionary) -> Control:
 	label.add_theme_color_override("font_color", col)
 	v.add_child(label)
 
+	# でんしゃタブで発見済みなら、タップで詳細(説明・最高速度)を出す。
+	# 透明なボタンを上に重ねてタップを拾う(見た目は panel のまま)。
+	if _current_tab == "train" and found:
+		var btn := Button.new()
+		btn.flat = true
+		btn.set_anchors_preset(Control.PRESET_FULL_RECT)
+		btn.pressed.connect(func() -> void: _show_detail(e))
+		panel.add_child(btn)
+
 	return panel
+
+
+# === でんしゃの詳細パネル ===
+
+func _show_detail(e: Dictionary) -> void:
+	_ensure_detail()
+	_detail_swatch.color = e.get("color") as Color
+	_detail_name.text = str(e.get("name"))
+	_detail_desc.text = str(e.get("desc"))
+	var spd: int = int(e.get("speed"))
+	_detail_speed.text = ("さいこうそく %d キロ" % spd) if spd > 0 else ""
+	_detail.visible = true
+
+
+func _hide_detail() -> void:
+	if _detail:
+		_detail.visible = false
+
+
+# 詳細パネルを一度だけ組み立てる(中央オーバーレイ。もどるで閉じる)。
+func _ensure_detail() -> void:
+	if _detail:
+		return
+	var root := $Root
+	_detail = Panel.new()
+	_detail.anchor_left = 0.5
+	_detail.anchor_top = 0.5
+	_detail.anchor_right = 0.5
+	_detail.anchor_bottom = 0.5
+	_detail.offset_left = -320.0
+	_detail.offset_top = -250.0
+	_detail.offset_right = 320.0
+	_detail.offset_bottom = 250.0
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.98, 0.99, 1, 1)
+	sb.set_corner_radius_all(28)
+	sb.set_border_width_all(5)
+	sb.border_color = Color(0.49, 0.78, 0.96, 1)
+	_detail.add_theme_stylebox_override("panel", sb)
+	root.add_child(_detail)
+
+	var v := VBoxContainer.new()
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = 32.0
+	v.offset_top = 28.0
+	v.offset_right = -32.0
+	v.offset_bottom = -28.0
+	v.add_theme_constant_override("separation", 18)
+	_detail.add_child(v)
+
+	_detail_swatch = ColorRect.new()
+	_detail_swatch.custom_minimum_size = Vector2(0, 150)
+	v.add_child(_detail_swatch)
+
+	_detail_name = Label.new()
+	_detail_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_name.add_theme_font_size_override("font_size", 48)
+	_detail_name.add_theme_color_override("font_color", Color(0.157, 0.408, 0.788, 1))
+	v.add_child(_detail_name)
+
+	_detail_desc = Label.new()
+	_detail_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_desc.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_detail_desc.add_theme_font_size_override("font_size", 30)
+	_detail_desc.add_theme_color_override("font_color", Color(0.2, 0.25, 0.35))
+	_detail_desc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	v.add_child(_detail_desc)
+
+	_detail_speed = Label.new()
+	_detail_speed.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_detail_speed.add_theme_font_size_override("font_size", 36)
+	_detail_speed.add_theme_color_override("font_color", Color(0.85, 0.45, 0.1))
+	v.add_child(_detail_speed)
+
+	var back := Button.new()
+	back.custom_minimum_size = Vector2(0, 64)
+	back.text = "もどる"
+	back.add_theme_font_size_override("font_size", 30)
+	back.add_theme_color_override("font_color", Color(1, 1, 1))
+	var bsb := StyleBoxFlat.new()
+	bsb.bg_color = Color(0.49, 0.78, 0.96, 1)
+	bsb.set_corner_radius_all(16)
+	back.add_theme_stylebox_override("normal", bsb)
+	back.add_theme_stylebox_override("hover", bsb)
+	back.add_theme_stylebox_override("focus", bsb)
+	var bsb2 := StyleBoxFlat.new()
+	bsb2.bg_color = Color(0.157, 0.408, 0.788, 1)
+	bsb2.set_corner_radius_all(16)
+	back.add_theme_stylebox_override("pressed", bsb2)
+	back.pressed.connect(_hide_detail)
+	v.add_child(back)

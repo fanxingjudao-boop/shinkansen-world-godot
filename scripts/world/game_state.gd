@@ -13,6 +13,8 @@ var befriended_animals: Array[String] = []
 var visited_stations: Array[String] = []
 var star_count: int = 0
 var energy: int = 0  # おだんごを食べて増える「げんき」(駅のお団子で +1)
+var visited_moon: bool = false  # ロケットで月へ行ったことがある(ミッション/記念用)
+var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
 
 
 func add_boarded(slug: String) -> void:
@@ -45,6 +47,21 @@ func add_energy(amount: int = 1) -> void:
 	if amount <= 0:
 		return
 	energy += amount
+	changed.emit()
+
+
+# 月へ行った/運転手になった、を一度だけ記録(ミッション「目玉ツアー」用)。
+func set_moon_visited() -> void:
+	if visited_moon:
+		return
+	visited_moon = true
+	changed.emit()
+
+
+func set_drove_train() -> void:
+	if drove_train:
+		return
+	drove_train = true
 	changed.emit()
 
 

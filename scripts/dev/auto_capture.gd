@@ -365,6 +365,15 @@ func _capture_book() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _save_screenshot("user://screenshot_book_train.png")
+	# でんしゃの詳細(発見済み はやぶさ)をタップした状態
+	var entries: Array = book.call("_load_master", "train")
+	for e in entries:
+		if e.get("found", false):
+			book.call("_show_detail", e)
+			break
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_book_detail.png")
 	book.call("_show_tab", "animal")
 	await get_tree().process_frame
 	await get_tree().process_frame

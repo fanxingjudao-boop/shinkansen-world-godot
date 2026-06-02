@@ -307,6 +307,8 @@ func toggle_driver_mode() -> void:
 		# 没入感のため運転席視点へ寄せる(RIDE_VIEWS[1] = うんてんせき)
 		_ride_view_idx = 1
 		_transition(func() -> void: _build_ride_camera(RIDE_VIEWS[_ride_view_idx]))
+		if _game_state and _game_state.has_method("set_drove_train"):
+			_game_state.set_drove_train()  # ミッション「うんてんしゅに なろう」
 		if _hud:
 			_hud.set_driving(true)
 			_hud.show_notice("きみが うんてんしゅ!")

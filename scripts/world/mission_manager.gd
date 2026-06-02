@@ -19,11 +19,16 @@ var _missions: Array = []
 func _ready() -> void:
 	_gs = get_node_or_null(game_state_path) as GameState
 	_hud = get_node_or_null(hud_path) as TouchHud
+	# 前半は基本(乗る・なかよし・あつめる・えき)、後半は作り込んだ目玉へ誘導する
+	# 「ツアー」: うんてんしゅ・おしろ・つき。子供が宝物を確実に見つけられるように。
 	_missions = [
 		{"text": "でんしゃに のってみよう", "done": func() -> bool: return _gs.boarded_trains.size() >= 1},
 		{"text": "どうぶつと なかよしに なろう", "done": func() -> bool: return _gs.befriended_animals.size() >= 1},
 		{"text": "ほしを 3こ あつめよう", "done": func() -> bool: return _gs.star_count >= 3},
 		{"text": "えきを みつけよう", "done": func() -> bool: return _gs.visited_stations.size() >= 1},
+		{"text": "「うんてん」ボタンで うんてんしゅに なろう", "done": func() -> bool: return _gs.drove_train},
+		{"text": "おしろの でんしゃに のろう", "done": func() -> bool: return "oshiro" in _gs.boarded_trains},
+		{"text": "ロケットで つきへ いこう", "done": func() -> bool: return _gs.visited_moon},
 		{"text": "ほしを 6こ あつめよう", "done": func() -> bool: return _gs.star_count >= 6},
 	]
 	# ロード済みで達成済みのミッションは通知なしでスキップ

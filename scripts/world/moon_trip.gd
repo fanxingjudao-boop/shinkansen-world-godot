@@ -38,6 +38,7 @@ var _sun: DirectionalLight3D
 var _hud: Node
 var _btn: BaseButton
 var _ride: Node   # RideController(乗車中は月ボタンを出さない・押させない)
+var _gs: Node     # GameState(月に行った記録=ミッション用)
 
 var _on_moon: bool = false
 var _busy: bool = false
@@ -53,6 +54,7 @@ func _ready() -> void:
 	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
 	_hud = root.find_child("TouchHUD", true, false)
 	_ride = root.find_child("RideController", true, false)
+	_gs = root.find_child("GameState", true, false)
 	_btn = root.find_child("MoonButton", true, false) as BaseButton
 	if _btn:
 		_btn.pressed.connect(_on_pressed)
@@ -111,6 +113,8 @@ func _go_moon() -> void:
 		_player.set("gravity_scale", MOON_GRAVITY)
 		_snap_cam()
 		_apply_moon_env()
+		if _gs and _gs.has_method("set_moon_visited"):
+			_gs.set_moon_visited()  # ミッション「ロケットで つきへ いこう」
 	, func() -> void:
 		if _hud and _hud.has_method("show_notice"):
 			_hud.show_notice("つきに とうちゃく!")
