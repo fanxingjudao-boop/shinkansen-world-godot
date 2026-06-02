@@ -159,9 +159,16 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-02 時点 — 作りこみ本格化 Phase 6 / 第3ウェーブ うんてんしゅモード)
+## 進捗(2026-06-02 時点 — 作りこみ本格化 Phase 6 / 第3ウェーブ + プロダクト評価対応)
 
 改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。
+
+**プロダクト評価と対応(v0.34.0〜v0.36.0):** 4観点の独立監査で採点(総合 B+ 8.1/10。安全10・子供UX9.5・コンテンツ8.5・保守8.0・正しさ6.5・性能6.5)。指摘のうち**列車描画の最適化(③)以外をすべて実施**:
+- **P0 バグ修正(v0.34.0)**: B1 乗車中の月ボタン抑止 / B2 分岐の二重編成をルート入れ替え方式で解消 / B3 `_active_slug` で実トラック追従 / B4 月リム18m / B5 駅ホーム段差0.16m。AUTO_FIXCHECK で実測。
+- **P1 コンテンツ(v0.35.0)**: 図鑑の詳細パネル(`train_data` に description/top_speed_kmh、`book.gd` でタップ詳細)/ ミッションの目玉ツアー(うんてん・おしろ・つき を追加、GameState に visited_moon/drove_train)。
+- **P1 性能(v0.35.1、列車描画以外)**: 月の遅延生成 / 駅の柱コリジョン削除 / 歩行プロンプト間引き。
+- **P2 仕上げ(v0.36.0)**: 親モード(`Settings.tscn`/`settings.gd` + HUD「おとな」: 数字ゲート→音ON/OFF・あそんだ かいすう・データけす)/ DBG print・dbg.html 除去・陳腐化コメント修正。
+- **未実施(意図的)**: ③ 列車マテリアル共有/MultiMesh化(描画最適化)。iPad mini 30fps の本命対策として今後の課題。`train.gd` の `_make_material` 系を色キーで共有 or 窓/台車を MultiMesh 化する想定。
 
 **柱撤去/カメラ基準移動/月旅行(v0.32.0):**
 - 線路の柱撤去: `railway.gd` の `_build_piers_for()` 呼び出しを停止(視界優先・空に浮く線路)。
