@@ -7,6 +7,7 @@ extends Node3D
 # 見た目は全部スクリプト生成、配置は seed 固定で毎回同じ。窓・街灯・水は光る。
 
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+const Crossing = preload("res://scripts/world/crossing.gd")
 
 const TOWN_SEED: int = 2025
 
@@ -43,8 +44,6 @@ const WATER_B: Color = Color(0.45, 0.78, 0.95)
 const LAMP_C: Color = Color(1.0, 0.95, 0.6)
 const BENCH_C: Color = Color(0.62, 0.43, 0.28)
 const POLE_C: Color = Color(0.32, 0.32, 0.35)
-const RED_C: Color = Color(0.95, 0.25, 0.25)
-const YELLOW_C: Color = Color(1.0, 0.85, 0.2)
 
 
 func _ready() -> void:
@@ -53,10 +52,18 @@ func _ready() -> void:
 	# メインの街 + いくつかの集落(広域マップのクリア地)
 	for i in range(VILLAGE_CENTERS.size()):
 		_build_village(VILLAGE_CENTERS[i], 9 if i == 0 else 4, i == 0)
-	# 踏切(地表ループの線路上に横断道路)
+	# 踏切(地表ループの線路上に横断道路)。本格版は crossing.gd が自分で組み立て、
+	# 電車の接近に反応して遮断機を開閉・警報灯を点滅・やさしい警報音を鳴らす。
+	# Crossing は Town の子になるので NodePath の基準がずれる。解決済みノードを直接注入する。
 	if _railway and _railway.has_method("get_route_sample"):
+		var trains := get_node_or_null("../Trains")
+		var player := get_node_or_null("../Player")
 		for c in CROSSINGS:
-			_build_crossing_on(String(c["slug"]), float(c["ratio"]))
+			var cr := Crossing.new()
+			cr.route_slug = String(c["slug"])
+			cr.route_ratio = float(c["ratio"])
+			cr.set_sources(_railway, trains, player)
+			add_child(cr)
 
 
 # === 集落 ===
@@ -181,50 +188,6 @@ func _build_bench(x: float, z: float, rot: float) -> void:
 		_box(root, Vector3(0.1, 0.45, 0.45), Vector3(sx, 0.22, 0), POLE_C, 0.7)
 
 
-# === 踏切 ===
-
-func _build_crossing_on(slug: String, ratio: float) -> void:
-	var s: Dictionary = _railway.get_route_sample(slug, ratio)
-	if s.is_empty():
-		return
-	var pos: Vector3 = s["position"]
-	var fwd: Vector3 = s["forward"]
-	var g: float = TerrainHeight.compute_height(pos.x, pos.z) + 0.32
-	var root := Node3D.new()
-	root.position = Vector3(pos.x, g, pos.z)
-	# ローカル -Z を線路方向へ(道はローカル X 方向に線路を横断)
-	root.rotation.y = atan2(fwd.x, fwd.z)
-	add_child(root)
-
-	# 道(線路を横切る板)
-	_box(root, Vector3(9.0, 0.08, 3.4), Vector3(0, 0, 0), Color(0.6, 0.6, 0.62), 0.95)
-
-	# 両脇に警報機+遮断機
-	for sx in [-1.0, 1.0]:
-		var base_x: float = sx * 3.6
-		# ポール
-		_box(root, Vector3(0.22, 2.4, 0.22), Vector3(base_x, 1.2, 0), POLE_C, 0.6)
-		# 赤い警報ライト(光る)
-		var light := SphereMesh.new()
-		light.radius = 0.18
-		light.height = 0.36
-		var mi := MeshInstance3D.new()
-		mi.mesh = light
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = RED_C
-		mat.emission_enabled = true
-		mat.emission = RED_C
-		mat.emission_energy_multiplier = 2.0
-		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		mi.material_override = mat
-		mi.position = Vector3(base_x, 2.5, 0)
-		root.add_child(mi)
-		# 遮断機バー(黄色、線路側へ水平に伸ばす)
-		var bar := BoxMesh.new()
-		bar.size = Vector3(2.6, 0.14, 0.14)
-		_box_node(root, bar, Vector3(base_x - sx * 1.5, 1.7, 0), YELLOW_C)
-
-
 # === 建物(集落から呼ぶ) ===
 
 func _new_root(x: float, z: float) -> Node3D:
@@ -293,10 +256,6 @@ func _box(root: Node3D, size: Vector3, pos: Vector3, color: Color, rough: float)
 	var b := BoxMesh.new()
 	b.size = size
 	_mesh(root, b, pos, color, rough)
-
-
-func _box_node(root: Node3D, mesh: Mesh, pos: Vector3, color: Color) -> void:
-	_mesh(root, mesh, pos, color, 0.7)
 
 
 func _window(root: Node3D, pos: Vector3, size: Vector3 = Vector3(0.6, 0.7, 0.1)) -> void:

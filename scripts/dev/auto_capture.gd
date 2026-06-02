@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -43,7 +43,35 @@ func _ready() -> void:
 			await _capture_book()
 		CaptureMode.AUTO_DRIVE:
 			await _capture_drive()
+		CaptureMode.AUTO_CROSSING:
+			await _capture_crossing()
 	get_tree().quit()
+
+
+# 踏切検証: komachi は start_ratio=0 なので起動時 ratio0 の踏切(≈(102,-30))に編成がいて
+# 「閉」状態、ratio0.25 の踏切(≈(60,6))は「開」状態のはず。両方を斜めから撮る。
+func _capture_crossing() -> void:
+	var cam := get_tree().root.find_child("Camera3D", true, false) as Camera3D
+	if cam == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var parent := cam.get_parent()
+	if parent and parent.get_script() != null:
+		parent.set_process(false)  # CameraRig の追従を止める
+	# 閉(電車が来ている): komachi ratio0 ≈ (102,-30) を線路ぎわから寄って
+	cam.global_position = Vector3(108, 3.5, -24)
+	cam.look_at(Vector3(102, 2.2, -30))
+	cam.fov = 50.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_crossing_closed.png")
+	# 開(電車がいない): komachi ratio0.25 ≈ (60,6) に寄って遮断機の上がりを確認
+	cam.global_position = Vector3(66, 3.5, 12)
+	cam.look_at(Vector3(60, 2.2, 6))
+	cam.fov = 50.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_crossing_open.png")
 
 
 # うんてんしゅモード検証: はやぶさに乗車 → 運転モード突入(ゴー/とまれ表示)→

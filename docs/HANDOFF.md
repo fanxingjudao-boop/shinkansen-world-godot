@@ -163,6 +163,9 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。
 
+**踏切の本格化(v0.28.0):**
+- 新規 `scripts/world/crossing.gd`(自己完結の踏切ノード)。`town.gd` は CROSSINGS の slug+ratio を渡して生成。遮断機バーの開閉(自ルート編成が22m以内で閉)・黄黒縞バー・2灯の交互点滅(1.6Hz)・×警標・やさしい警報音(閉動作中かつプレイヤー34m以内のみ、-16dB ループ)。接近検知は slug 一致の編成の `get_ride_anchor_position()` とのワールド距離。検証は AutoCapture 新 `AUTO_CROSSING` モード。
+
 **第3ウェーブ(v0.27.0 — うんてんしゅモード):**
 - **すすむ・とまる**(`train.gd`): 運転スロットル `_driver_throttle`(`move_toward` で ease=バネ感)を RUNNING の前進量に乗算。`enter/exit_driver_mode`・`set_driver_throttle`・`is_driver_stopped`。opt-in(非運転時は throttle=1.0 恒等で自動走行不変)。駅自動停車は運転中も併用。
 - **ぶんきで みちを えらぶ(ワープ式)**(`train.switch_route` + `route_data.branches()` + `railway.get_route_length` + `ride_controller`): 運転中の編成を別ルート Path3D へ reparent + 弧長系差し替え。必ず `_transition` フェード中点で実行。分岐は本線3編成間をキュレート。`_check_branch` が接近監視→2択(のりかえ/まっすぐ)、選ばなければ直進。逆戻り即提示は `_branch_cooldown` で抑止。
