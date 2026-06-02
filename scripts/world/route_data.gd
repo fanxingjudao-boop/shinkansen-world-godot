@@ -82,6 +82,23 @@ static func specs() -> Array:
 			"rx": 36.0, "rz": 32.0, "rot_deg": 0.0, "wp_count": 36,
 			"start_ratio": 0.1, "stops": [{ "ratio": 0.0, "kind": "dwell", "seconds": 3.0 }],
 		},
+
+		# === お城(castle.gd と連携)===
+		{
+			# おしろでんしゃ: お城のアーチ(中央トンネル)を貫いて走る地上ループ。
+			# 北点(ratio 0.25)= お城の中心(150,135)で、そこで接線が X 方向 = アーチを真っ直ぐ通る。
+			# castle.gd の CASTLE_CENTER と一致させること(中心 + (0, rz) = (150,135))。
+			"slug": "oshiro", "center": Vector2(150.0, 117.0),
+			"rx": 26.0, "rz": 18.0, "rot_deg": 0.0, "wp_count": 40,
+			"start_ratio": 0.0, "stops": [{ "ratio": 0.62, "kind": "dwell", "seconds": 3.0 }],
+		},
+		{
+			# そらでんしゃ: お城の上空を周回する高架ループ(+17m、railway が自動で橋脚)。
+			"slug": "sora", "center": Vector2(150.0, 135.0),
+			"rx": 22.0, "rz": 22.0, "rot_deg": 0.0, "wp_count": 44,
+			"elevation": 17.0,
+			"start_ratio": 0.0, "stops": [{ "ratio": 0.5, "kind": "dwell", "seconds": 3.0 }],
+		},
 	]
 
 

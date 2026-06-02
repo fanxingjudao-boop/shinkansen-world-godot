@@ -1,4 +1,4 @@
-[gd_scene load_steps=53 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=56 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -52,6 +52,9 @@
 [ext_resource type="Script" path="res://scripts/world/landmark.gd" id="51_landmark"]
 [ext_resource type="Script" path="res://scripts/fx/shooting_star.gd" id="52_shootstar"]
 [ext_resource type="Script" path="res://scripts/world/grass.gd" id="53_grass"]
+[ext_resource type="Resource" path="res://resources/train_data/oshiro.tres" id="54_oshiro"]
+[ext_resource type="Resource" path="res://resources/train_data/sora.tres" id="55_sora"]
+[ext_resource type="Script" path="res://scripts/world/castle.gd" id="56_castle"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -149,6 +152,14 @@ railway_path = NodePath("../../Railway")
 train_data = ExtResource("20_e235")
 railway_path = NodePath("../../Railway")
 
+[node name="Oshiro" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("54_oshiro")
+railway_path = NodePath("../../Railway")
+
+[node name="Sora" parent="Trains" instance=ExtResource("11_train")]
+train_data = ExtResource("55_sora")
+railway_path = NodePath("../../Railway")
+
 [node name="Stations" type="Node3D" parent="."]
 script = ExtResource("41_statmgr")
 player_path = NodePath("../Player")
@@ -216,6 +227,9 @@ animal_data = ExtResource("37_buta")
 
 [node name="Landmarks" type="Node3D" parent="."]
 script = ExtResource("51_landmark")
+
+[node name="Castle" type="Node3D" parent="."]
+script = ExtResource("56_castle")
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 

@@ -163,6 +163,8 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。
 
+**お城(v0.30.0):** 新規 `scripts/world/castle.gd`(Main 直下 `Castle` ノード、CASTLE_CENTER(150,135))。中央アーチ(X方向トンネル)を**おしろでんしゃ**(`route_data` "oshiro" 地上ループ、北点=城中心)がくぐり、**そらでんしゃ**(`route_data` "sora" +17m 高架ループ、自動支柱)が上空をめぐる。TrainData は `resources/train_data/oshiro.tres`・`sora.tres`、Main.tscn の Trains に2ノード追加(図鑑11編成に自動増加・おしろは乗車可)。城壁(±Z)と四隅の塔のみ当たり判定(通路は空ける)。検証は AutoCapture 新 `AUTO_CASTLE`。route_data の "oshiro" center+(0,rz) と castle.gd の CASTLE_CENTER は一致させること。
+
 **当たり判定(v0.29.0):** これまで地形とプレイヤーだけが固く、他は全すり抜けだった(改善さん指摘)。改善さんの選択で**たてもの(家/お店/ビル)と駅(ホーム+柱)**を `StaticBody3D + BoxShape3D`(`town.gd`/`station.gd` の `_add_box_collision`、既定レイヤー1=プレイヤーのマスク1)で固くした。電車・動物・星・木・小物は意図的にすり抜けのまま。検証は AutoCapture 新 `AUTO_COLLISION`(建物へ歩かせ 1.85m 手前で停止=blocked)。**今後、新しく置く大きな構造物には当たり判定を付けるか都度判断する**(動く電車・小動物・収集物は付けない方針)。
 
 **踏切の本格化(v0.28.0):**

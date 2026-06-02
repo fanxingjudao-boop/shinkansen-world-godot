@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="TrainData" load_steps=2 format=3 uid="uid://btraindata00010"]
+
+[ext_resource type="Script" path="res://scripts/entities/train_data.gd" id="1_td"]
+
+[resource]
+script = ExtResource("1_td")
+display_name = "おしろでんしゃ"
+slug = "oshiro"
+body_color = Color(0.7, 0.55, 0.86, 1)
+accent_color = Color(1.0, 0.85, 0.3, 1)
+speed = 0.1
+nose_type = "rounded"
+has_pantograph = true
+has_steam = false
+initial_t = 0.0

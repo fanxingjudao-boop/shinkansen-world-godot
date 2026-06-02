@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -47,7 +47,47 @@ func _ready() -> void:
 			await _capture_crossing()
 		CaptureMode.AUTO_COLLISION:
 			await _capture_collision()
+		CaptureMode.AUTO_CASTLE:
+			await _capture_castle()
 	get_tree().quit()
+
+
+# お城検証: おしろでんしゃをアーチ(ratio0.25)に置き、全景/アーチ通過/上空の高架を撮る。
+func _capture_castle() -> void:
+	var trains := get_tree().root.find_child("Trains", true, false)
+	if trains:
+		var oshiro := trains.get_node_or_null("Oshiro")
+		if oshiro:
+			oshiro._progress = 0.25 * 139.4  # ループ北点 = お城のアーチ
+			oshiro._apply_progress()
+	var cam := get_tree().root.find_child("Camera3D", true, false) as Camera3D
+	if cam == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var parent := cam.get_parent()
+	if parent and parent.get_script() != null:
+		parent.set_process(false)
+	# 全景(南東・上空から。お城+上空の高架ループ)
+	cam.global_position = Vector3(205, 46, 200)
+	cam.look_at(Vector3(150, 14, 135))
+	cam.fov = 60.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_castle_overview.png")
+	# アーチ(西の口から +X 方向に覗く。おしろでんしゃが通っている)
+	cam.global_position = Vector3(108, 6.5, 135)
+	cam.look_at(Vector3(160, 6.0, 135))
+	cam.fov = 58.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_castle_arch.png")
+	# 上空(高架ループを見上げる)
+	cam.global_position = Vector3(150, 16, 188)
+	cam.look_at(Vector3(150, 26, 135))
+	cam.fov = 62.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_castle_sky.png")
 
 
 # コリジョン検証: プレイヤーを建物の +Z 側に置き、建物へ向かって(move_forward=-Z)
