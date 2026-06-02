@@ -36,6 +36,9 @@ var _leg_l: Node3D
 var _leg_r: Node3D
 var _walk_phase: float = 0.0
 
+# 重力の倍率。月旅行(moon_trip.gd)で 0.16 にするとふわっと跳べる。
+var gravity_scale: float = 1.0
+
 
 func _ready() -> void:
 	if not is_in_group("player"):
@@ -48,14 +51,15 @@ func _physics_process(delta: float) -> void:
 		"move_left", "move_right", "move_forward", "move_back"
 	)
 
-	# === ロジック層 ===
-	var horiz: Vector3 = _compute_horizontal_velocity(input_dir, SPEED)
-	velocity.x = horiz.x
-	velocity.z = horiz.z
+	# カメラ基準の移動: 「うえ」ボタンはどの向きでも画面の奥(カメラの前)へ進む。
+	# カメラをボタンで回しても、上=奥・下=手前・左右=画面の左右、で直感的に動く。
+	var move: Vector3 = _camera_relative_move(input_dir)
+	velocity.x = move.x
+	velocity.z = move.z
 
 	# === Godot 操作層 ===
 	if not is_on_floor():
-		velocity += get_gravity() * delta
+		velocity += get_gravity() * gravity_scale * delta
 
 	if Input.is_action_just_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
@@ -63,11 +67,34 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 
-	if input_dir.length() > 0.01:
-		var target_yaw: float = _compute_yaw(input_dir)
+	# キャラは進む向きを向く(カメラ基準の移動方向)
+	if input_dir.length() > 0.01 and move.length() > 0.01:
+		var target_yaw: float = atan2(-move.x, -move.z)
 		rotation.y = lerp_angle(rotation.y, target_yaw, ROTATION_SPEED * delta)
 
 	_animate_walk(delta, input_dir.length() > 0.01)
+
+
+# 入力(D-pad/キー)を、いま映しているカメラの向きに合わせたワールド移動ベクトルへ変換。
+# move_forward(うえ)= カメラの前(画面奥)/ move_right(みぎ)= カメラの右。
+func _camera_relative_move(input_dir: Vector2) -> Vector3:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		# カメラが無いときはワールド基準にフォールバック
+		var d := Vector3(input_dir.x, 0.0, input_dir.y)
+		if d.length() > 1.0:
+			d = d.normalized()
+		return d * SPEED
+	var b := cam.global_transform.basis
+	var fwd := Vector3(-b.z.x, 0.0, -b.z.z)   # カメラの前を水平化(画面の奥)
+	var right := Vector3(b.x.x, 0.0, b.x.z)   # カメラの右を水平化
+	fwd = fwd.normalized() if fwd.length() > 0.001 else Vector3(0, 0, -1)
+	right = right.normalized() if right.length() > 0.001 else Vector3(1, 0, 0)
+	# input_dir.y は move_forward で負になるので、前方向は -input_dir.y を掛ける
+	var dir := right * input_dir.x - fwd * input_dir.y
+	if dir.length() > 1.0:
+		dir = dir.normalized()
+	return dir * SPEED
 
 
 # === 歩行アニメ ===
@@ -102,18 +129,6 @@ func celebrate() -> void:
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(_visual, "scale", Vector3.ONE, 0.22) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-
-
-# === ロジック層(言語非依存・テスト可能) ===
-
-static func _compute_horizontal_velocity(input_dir: Vector2, speed: float) -> Vector3:
-	var dir: Vector3 = Vector3(input_dir.x, 0.0, input_dir.y)
-	if dir.length() > 1.0:
-		dir = dir.normalized()
-	return dir * speed
-
-static func _compute_yaw(input_dir: Vector2) -> float:
-	return atan2(-input_dir.x, -input_dir.y)
 
 
 # === 見た目構築(Godot 操作層) ===

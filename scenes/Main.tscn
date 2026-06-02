@@ -1,4 +1,4 @@
-[gd_scene load_steps=56 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=57 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -55,6 +55,7 @@
 [ext_resource type="Resource" path="res://resources/train_data/oshiro.tres" id="54_oshiro"]
 [ext_resource type="Resource" path="res://resources/train_data/sora.tres" id="55_sora"]
 [ext_resource type="Script" path="res://scripts/world/castle.gd" id="56_castle"]
+[ext_resource type="Script" path="res://scripts/world/moon_trip.gd" id="57_moon"]
 
 [sub_resource type="Environment" id="Environment_main"]
 background_mode = 1
@@ -230,6 +231,9 @@ script = ExtResource("51_landmark")
 
 [node name="Castle" type="Node3D" parent="."]
 script = ExtResource("56_castle")
+
+[node name="MoonTrip" type="Node3D" parent="."]
+script = ExtResource("57_moon")
 
 [node name="Clouds" parent="." instance=ExtResource("8_clouds")]
 

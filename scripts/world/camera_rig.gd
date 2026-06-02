@@ -52,6 +52,17 @@ func rotate_view(dir: int) -> void:
 	_yaw_target += float(dir) * ROTATE_STEP
 
 
+# ターゲット位置へカメラを即座にスナップ(月へのワープなど、遠距離テレポート後に
+# なめらか追従だと長くパンしてしまうのを防ぐ)。フェードの中で呼ぶ前提。
+func snap_to_target() -> void:
+	if _target == null:
+		return
+	_yaw = _yaw_target
+	global_position = _target.global_position + _offset(distance) + Vector3(0, height, 0)
+	if _camera:
+		_camera.look_at(_target.global_position + look_offset, Vector3.UP)
+
+
 # === ロジック層 ===
 
 func _offset(dist: float) -> Vector3:

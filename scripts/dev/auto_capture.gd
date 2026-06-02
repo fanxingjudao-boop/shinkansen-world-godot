@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -49,7 +49,76 @@ func _ready() -> void:
 			await _capture_collision()
 		CaptureMode.AUTO_CASTLE:
 			await _capture_castle()
+		CaptureMode.AUTO_MOON:
+			await _capture_moon()
 	get_tree().quit()
+
+
+# 検証: ①カメラ基準移動(うえ=カメラの前)②城に柱が無い③ロケット④月面。
+func _capture_moon() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var rig := get_tree().root.find_child("CameraRig", true, false)
+	var mt := get_tree().root.find_child("MoonTrip", true, false)
+
+	# --- ① カメラ基準移動チェック(本物の追従カメラで) ---
+	if player and rig:
+		player.global_position = Vector3(0, 3, 0)
+		await get_tree().physics_frame
+		rig.rotate_view(2)  # カメラを 90 度回す
+		await get_tree().create_timer(1.2).timeout  # 回転が落ち着くまで
+		var cam0 := get_viewport().get_camera_3d()
+		var camfwd := -cam0.global_transform.basis.z
+		camfwd.y = 0.0
+		camfwd = camfwd.normalized()
+		var p0 := player.global_position
+		Input.action_press("move_forward")
+		for i in range(36):
+			await get_tree().physics_frame
+		Input.action_release("move_forward")
+		var disp := player.global_position - p0
+		disp.y = 0.0
+		var dot := disp.normalized().dot(camfwd) if disp.length() > 0.1 else 0.0
+		print("[AutoCapture] cam-relative: disp_len=%.2f dot(camfwd)=%.2f (1.0=完全一致)" % [disp.length(), dot])
+		rig.rotate_view(-2)  # カメラを戻す
+
+	# 以降は debug カメラで撮影(追従を止める)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+
+	# --- ② 城に柱が無いこと(全景) ---
+	cam.global_position = Vector3(205, 46, 200)
+	cam.look_at(Vector3(150, 14, 135))
+	cam.fov = 60.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_castle_nopillar.png")
+
+	# --- ③ ロケット(発射台) ---
+	if mt and player:
+		var rp: Vector3 = mt._rocket_pos
+		player.global_position = rp + Vector3(0, -1.4, 7)
+		await get_tree().physics_frame
+		cam.global_position = rp + Vector3(8, 3.5, 9)
+		cam.look_at(rp + Vector3(0, -0.5, 0))
+		cam.fov = 52.0
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_rocket.png")
+
+	# --- ④ 月へ行って撮影 ---
+	if mt:
+		mt._go_moon()
+		await get_tree().create_timer(1.2).timeout  # フェード+ワープ+環境切替の完了待ち
+		rigp.set_process(false)  # snap で再開していないが念のため
+		var moon: Vector3 = mt.MOON_POS
+		cam.global_position = moon + Vector3(0, 12, 40)
+		cam.look_at(moon + Vector3(0, 2, -10))
+		cam.fov = 62.0
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_moon.png")
 
 
 # お城検証: おしろでんしゃをアーチ(ratio0.25)に置き、全景/アーチ通過/上空の高架を撮る。

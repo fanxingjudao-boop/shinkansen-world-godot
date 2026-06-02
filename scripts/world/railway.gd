@@ -71,8 +71,9 @@ func _build_route(spec: Dictionary) -> void:
 	_routes_root.add_child(ties)
 	_build_ties_for(curve, ties, true)
 
-	# 高架・水上区間に橋脚を立てる
-	_build_piers_for(curve)
+	# 橋脚(柱)は立てない。改善さん要望: 柱が視界をさえぎって見えにくいため撤去。
+	# 高架・水上の線路は支柱なしで宙に浮かせる(子供向けの「空にうかぶ せんろ」表現)。
+	# ※ _build_piers_for() は将来のために残すが呼ばない。
 
 	var stops: Array = []
 	for s in spec.get("stops", []):
