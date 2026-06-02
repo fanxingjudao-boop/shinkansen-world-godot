@@ -21,6 +21,9 @@ func _ready() -> void:
 		push_warning("[SaveSystem] game_state_path が未解決")
 		return
 	_load()
+	# 起動ごとに「あそんだ かいすう」を +1 して保存(親モードで表示)。
+	_gs.play_count += 1
+	_save()
 	_gs.changed.connect(_save)
 
 
@@ -35,6 +38,7 @@ func _save() -> void:
 		"energy": _gs.energy,
 		"moon": _gs.visited_moon,
 		"drove": _gs.drove_train,
+		"play_count": _gs.play_count,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -61,6 +65,7 @@ func _load() -> void:
 	_gs.energy = int(d.get("energy", 0))
 	_gs.visited_moon = bool(d.get("moon", false))
 	_gs.drove_train = bool(d.get("drove", false))
+	_gs.play_count = int(d.get("play_count", 0))
 
 
 func _to_str_array(a: Variant) -> Array[String]:

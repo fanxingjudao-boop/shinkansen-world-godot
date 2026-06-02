@@ -2,8 +2,9 @@ class_name TrainData
 extends Resource
 
 # 列車の見た目・速度・性能を定義する Resource。
-# 9 編成それぞれ .tres ファイルとして resources/train_data/ に置く。
-# 新編成追加は .tres を 1 つ作るだけ、コード変更不要(データ駆動)。
+# 編成ごとに .tres ファイルとして resources/train_data/ に置く(現在11編成)。
+# 新編成追加は .tres を 1 つ作り Main.tscn の Trains に1ノード足すだけ(データ駆動)。
+# 図鑑・乗車・分岐にも自動で波及する。
 
 # 表示名(ひらがな、図鑑用)
 @export var display_name: String = ""
@@ -17,7 +18,8 @@ extends Resource
 # アクセントライン色(帯)
 @export var accent_color: Color = Color.WHITE
 
-# 楕円トラック上の最高速度(t を 1 秒あたりどれだけ進めるか、ラジアン/秒換算でない単位)
+# 速度感(周回の速さ)。train.gd で「一周 = TAU/speed 秒」に換算され、ルート長が
+# 違っても編成ごとの速度感が保たれる(弧長ベース移動。旧・楕円角度ベースではない)。
 @export var speed: float = 0.1
 
 # ノーズの形状: "sharp"(尖鋭)/ "rounded"(丸い)/ "steam"(SL の煙突)

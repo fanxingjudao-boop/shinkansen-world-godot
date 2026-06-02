@@ -363,6 +363,20 @@ vertical_alignment = 1
 theme_override_colors/font_color = Color(0.24, 0.46, 0.18, 1)
 theme_override_font_sizes/font_size = 22
 
+[node name="AdultButton" type="Button" parent="."]
+layout_mode = 1
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 128.0
+offset_bottom = 68.0
+text = "おとな"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_styles/focus = SubResource("Style_dpad_normal")
+theme_override_styles/hover = SubResource("Style_dpad_normal")
+theme_override_styles/normal = SubResource("Style_dpad_normal")
+theme_override_styles/pressed = SubResource("Style_dpad_pressed")
+
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchor_left = 1.0

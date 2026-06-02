@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -55,7 +55,28 @@ func _ready() -> void:
 			await _capture_menu()
 		CaptureMode.AUTO_FIXCHECK:
 			await _fixcheck()
+		CaptureMode.AUTO_SETTINGS:
+			await _capture_settings()
 	get_tree().quit()
+
+
+# 親モード検証: 「おとな」→ 数字ゲート → 設定画面 を撮る。
+func _capture_settings() -> void:
+	var s := get_tree().root.find_child("Settings", true, false)
+	if s == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	s.open()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_settings_gate.png")
+	# ゲートを 1→2→3 で通過
+	s._on_gate_num(1)
+	s._on_gate_num(2)
+	s._on_gate_num(3)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_settings_panel.png")
 
 
 # P0修正の動作検証(撮影なし・ログ出力): B2 分岐スワップ不変条件 / B5 ホーム登坂。

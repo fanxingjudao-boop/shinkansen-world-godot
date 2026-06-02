@@ -15,6 +15,7 @@ var star_count: int = 0
 var energy: int = 0  # おだんごを食べて増える「げんき」(駅のお団子で +1)
 var visited_moon: bool = false  # ロケットで月へ行ったことがある(ミッション/記念用)
 var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
+var play_count: int = 0         # あそんだ かいすう(起動ごとに +1。親モードで表示)
 
 
 func add_boarded(slug: String) -> void:

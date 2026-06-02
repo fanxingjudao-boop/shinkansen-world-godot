@@ -136,7 +136,6 @@ func _try_init() -> bool:
 	_build_cars(path_node)
 	_apply_progress()
 	_inited = true
-	print("[DBG Train] init slug=%s len=%.1f lin_speed=%.2f start=%.1f state=%d stops=%d" % [train_data.slug, _length, _linear_speed, _progress, _state, _stops.size()])
 	return true
 
 
@@ -146,7 +145,6 @@ func _fail(reason: String) -> void:
 		push_warning("[Train] %s" % reason)
 
 
-var _dbg_frames: int = 0
 # 物理フレーム(固定 60Hz)で走らせる。_process(描画レート)だと iPad など描画 fps が
 # 低い端末で電車だけ進まず「止まって見える」(プレイヤーは _physics_process なので滑らか)。
 # 物理プロセスなら描画が重くてもキャッチアップで時間どおり進む(delta も一定なので
@@ -160,9 +158,6 @@ func _physics_process(delta: float) -> void:
 			if _init_tries == 120:
 				push_warning("[Train] 初期化が未完のまま(ルート未取得): %s" % (train_data.slug if train_data else "?"))
 			return
-	_dbg_frames += 1
-	if _dbg_frames == 1 or _dbg_frames % 300 == 0:
-		print("[DBG Train] run slug=%s f=%d progress=%.2f state=%d delta=%.4f" % [train_data.slug, _dbg_frames, _progress, _state, delta])
 	# 運転手モード中のみスロットルを目標へ ease(非運転時は触らない=自動走行不変)。
 	if _driver_mode:
 		_driver_throttle = move_toward(_driver_throttle, _driver_target, THROTTLE_EASE * delta)
