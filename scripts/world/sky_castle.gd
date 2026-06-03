@@ -209,6 +209,16 @@ func _arrive_sky_done() -> void:
 	if _hud and _hud.has_method("show_notice"):
 		_hud.show_notice("そらの おしろに とうちゃく!")
 	_busy = false
+	_welcome_sky()  # 歓迎バースト + 少しあとに「ほしを あつめよう!」
+
+
+# 到着の歓迎: ピンクのキラキラ + 少し遅れて 目的(ほし集め)を案内。
+func _welcome_sky() -> void:
+	if _player:
+		_spawn_burst(_player.global_position + Vector3(0, 1.6, 0), FLAG_PINK)
+	await get_tree().create_timer(2.2).timeout
+	if _on_sky and _hud and _hud.has_method("show_notice"):
+		_hud.show_notice("ほしを あつめよう!")
 
 
 func _arrive_home_mid() -> void:
@@ -245,11 +255,11 @@ func _ground_airstrip() -> Vector3:
 
 
 func _sky_airstrip() -> Vector3:
-	return SKY_POS + Vector3(0, 0.6, 12)
+	return SKY_POS + Vector3(0, 0.6, 14)   # 城の手前(+z)に駐機
 
 
 func _sky_spawn() -> Vector3:
-	return SKY_POS + Vector3(0, 3, 6)
+	return SKY_POS + Vector3(0, 3, 16)     # 城を正面に見る位置(降りて すぐ城が分かる)
 
 
 func _snap_cam() -> void:
@@ -352,19 +362,31 @@ func _build_sky() -> void:
 
 
 # 雲の島: 平らな当たり判定(歩ける)+ ふわふわした見た目 + ふちの安全壁。
+# 本体は「上面が center.y(歩く面)」になるよう薄く=城が雲に埋もれない・歩く所が分かる。
+# ぷくぷくは 影色(CLOUD_SH)を混ぜて 立体感(真っ白で平坦に見えない)。
 func _build_cloud_island(center: Vector3, radius: float) -> void:
 	# 当たり判定は 平らな円柱(上面が center.y)= 歩きやすく落ちにくい
 	_add_cyl_collision(radius, 5.0, center + Vector3(0, -2.5, 0))
-	# 見た目: つぶした白い雲(本体 + まわりに ぽこぽこ)
-	var body := _lsphere(self, radius, center + Vector3(0, -1.2, 0), CLOUD_W)
-	body.scale = Vector3(1.0, 0.42, 1.0)
-	var n: int = int(radius * 0.7)
+	# 本体: 上面が center.y に来る薄い雲(下にふくらむ=浮島の底)
+	var half: float = radius * 0.2
+	var body := _lsphere(self, radius, center + Vector3(0, -half, 0), CLOUD_W)
+	body.scale = Vector3(1.0, 0.2, 1.0)
+	# ふちの ぷくぷく(上面の縁。色を 白/影色 で変えて立体感)
+	var n: int = int(radius * 0.8)
 	for i in range(n):
 		var a: float = float(i) / float(n) * TAU
-		var rr: float = radius * 0.82
-		var pf := center + Vector3(cos(a) * rr, -0.4, sin(a) * rr)
-		var puff := _lsphere(self, radius * 0.26, pf, CLOUD_W)
-		puff.scale = Vector3(1.0, 0.7, 1.0)
+		var rr: float = radius * 0.86
+		var pf := center + Vector3(cos(a) * rr, -0.15, sin(a) * rr)
+		var col: Color = CLOUD_W if (i % 3 != 0) else CLOUD_SH
+		var puff := _lsphere(self, radius * (0.2 + 0.05 * float(i % 2)), pf, col)
+		puff.scale = Vector3(1.0, 0.62, 1.0)
+	# 底の ぷくぷく(浮島らしく 下に ふっくら。影色で奥行き)
+	var nb: int = int(radius * 0.45)
+	for j in range(nb):
+		var a3: float = float(j) / float(nb) * TAU + 0.4
+		var rr3: float = radius * 0.5
+		_lsphere(self, radius * 0.26, center + Vector3(cos(a3) * rr3, -half - radius * 0.12, sin(a3) * rr3), CLOUD_SH) \
+			.scale = Vector3(1.0, 0.7, 1.0)
 	# ふちの 見えない高い壁(落下防止)。大きな島だけに付ける。
 	if radius >= ISLAND_R - 0.1:
 		var m: int = 18
@@ -391,21 +413,23 @@ func _build_rainbow(from: Vector3, to: Vector3) -> void:
 
 
 func _build_castle(center: Vector3) -> void:
-	# 天守(中央の高い塔)
-	_lbox(self, Vector3(7.0, 8.0, 7.0), center + Vector3(0, 4.0, 0), IVORY)
-	_lbox(self, Vector3(7.6, 0.6, 7.6), center + Vector3(0, 8.0, 0), IVORY_DK)  # 段
-	_lcone(self, 5.6, 3.2, center + Vector3(0, 9.9, 0), ROOF_BLUE)              # 屋根
-	_lsphere(self, 0.5, center + Vector3(0, 11.8, 0), GOLD)                     # しゃちほこ風 金玉
-	_castle_windows(center + Vector3(0, 4.5, 0), 3.55)
+	# 天守(中央の高い塔)。島の上で 主役になるよう 大きく堂々と。
+	_lbox(self, Vector3(10.0, 12.0, 10.0), center + Vector3(0, 6.0, 0), IVORY)
+	_lbox(self, Vector3(10.8, 0.7, 10.8), center + Vector3(0, 12.1, 0), IVORY_DK)  # 段(屋根のそり)
+	_lcone(self, 8.2, 5.0, center + Vector3(0, 15.0, 0), ROOF_BLUE)               # 青い屋根
+	_lsphere(self, 0.8, center + Vector3(0, 18.0, 0), GOLD)                       # しゃちほこ風 金玉
+	# 中段のそり屋根(二層に見せる)
+	_lbox(self, Vector3(11.4, 0.6, 11.4), center + Vector3(0, 7.4, 0), IVORY_DK)
+	_castle_windows(center + Vector3(0, 8.0, 0), 5.06)
 	# 四隅の塔
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
-			var tp := center + Vector3(sx * 6.0, 0, sz * 6.0)
-			_lcyl(self, 1.5, 7.0, tp + Vector3(0, 3.5, 0), IVORY, 14)
-			_lcone(self, 2.0, 2.4, tp + Vector3(0, 8.2, 0), ROOF_BLUE)
-			_build_flag(tp + Vector3(0, 9.4, 0))
+			var tp := center + Vector3(sx * 7.5, 0, sz * 7.5)
+			_lcyl(self, 2.0, 10.0, tp + Vector3(0, 5.0, 0), IVORY, 16)
+			_lcone(self, 2.7, 3.2, tp + Vector3(0, 11.6, 0), ROOF_BLUE)
+			_build_flag(tp + Vector3(0, 13.2, 0))
 	# 城門(正面 +z)
-	_lbox(self, Vector3(3.2, 4.0, 1.0), center + Vector3(0, 2.0, 5.2), IVORY_DK)
+	_lbox(self, Vector3(4.2, 5.5, 1.2), center + Vector3(0, 2.75, 5.6), IVORY_DK)
 
 
 # 天守の正面(+z)に 光る窓を3つ。
@@ -413,7 +437,7 @@ func _castle_windows(base: Vector3, fz: float) -> void:
 	for sx in [-1.0, 0.0, 1.0]:
 		var mi := MeshInstance3D.new()
 		var b := BoxMesh.new()
-		b.size = Vector3(0.7, 1.1, 0.12)
+		b.size = Vector3(1.0, 1.8, 0.12)
 		mi.mesh = b
 		var m := StandardMaterial3D.new()
 		m.albedo_color = WINDOW_C
@@ -422,7 +446,7 @@ func _castle_windows(base: Vector3, fz: float) -> void:
 		m.emission_energy_multiplier = 0.8
 		m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 		mi.material_override = m
-		mi.position = base + Vector3(sx * 1.6, 0, fz)
+		mi.position = base + Vector3(sx * 2.8, 0, fz)
 		add_child(mi)
 
 
@@ -460,20 +484,21 @@ func _update_decor(delta: float) -> void:
 # === ほし(近づくと ほし+1) ===
 
 func _build_sky_stars() -> void:
-	var spots := [Vector3(0, 13, 0), Vector3(10, 4, 8), Vector3(-10, 4, 8), Vector3(34, 2, 6), Vector3(-30, 6, -10), Vector3(8, 4, -12)]
+	# 先頭(index 0)= 到着して すぐ見える 大きく明るい「めじるし」のほし(城へ向かう道に)。
+	var spots := [Vector3(0, 5, 10), Vector3(0, 15, 0), Vector3(12, 4, 9), Vector3(-12, 4, 9), Vector3(34, 2, 6), Vector3(-30, 6, -10), Vector3(9, 4, -12)]
 	for i in range(spots.size()):
 		var p: Vector3 = SKY_POS + spots[i]
-		var node := _make_star()
+		var node := _make_star(i == 0)
 		node.position = p
 		add_child(node)
 		_stars.append({"node": node, "base_y": p.y, "phase": float(i) * 1.1, "taken": false})
 
 
-func _make_star() -> MeshInstance3D:
+func _make_star(big: bool = false) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var s := SphereMesh.new()
-	s.radius = 0.55
-	s.height = 1.1
+	s.radius = 0.8 if big else 0.55
+	s.height = s.radius * 2.0
 	s.radial_segments = 6
 	s.rings = 4
 	mi.mesh = s
@@ -481,7 +506,7 @@ func _make_star() -> MeshInstance3D:
 	m.albedo_color = Color(1.0, 0.88, 0.4)
 	m.emission_enabled = true
 	m.emission = Color(1.0, 0.88, 0.4)
-	m.emission_energy_multiplier = 2.4
+	m.emission_energy_multiplier = 3.6 if big else 2.4
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mi.material_override = m
 	return mi

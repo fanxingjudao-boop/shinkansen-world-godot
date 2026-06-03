@@ -159,6 +159,15 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
+## 進捗(2026-06-03 続き — 仕上げ調整(v0.40.0)+ 潜水艦で海底(v0.41.0))
+
+ブランチ `feature/driver-mode`。**v0.39.0 までは commit `910de64` 済み。v0.40.0(仕上げ)と v0.41.0(潜水艦)は まだ未コミット**(実機確認後にまとめてコミット/再エクスポート/push 予定)。詳細は changelog 参照。
+
+**仕上げ調整(v0.40.0)— 子供が遊びやすく**: ①導線: タイトル「はじめる」で `signal started`→`mission_manager` が現在ミッションを `show_notice` で案内、達成時は次も通知(パネルは「メニュー」で開く方式を維持)。②やさしい夜: `sky_color.gd` の夜を明るく(`NIGHT_AMBIENT_ENERGY`0.10→0.17・`NIGHT_BG` 明るい青紫・`NIGHT_SUN_ENERGY`0.42)。③空の城: 城を大きく(天守10×12×10・塔も)、**雲を平らに(球 scale0.42 が城を埋めていた→上面=歩く面)**+影色で立体感、到着導線(城正面 spawn・welcome・めじるしほし)。④`AirplaneButton` を下げ Moon と分離。
+
+**潜水艦で海底(v0.41.0)— 新規 `scripts/world/submarine.gd`(Main 直下 `Submarine`)**: 湖(`TerrainHeight.LAKE_POS`)に**半透明の水面(新規・湖に水が無かった)**+黄色い潜水艦。近接で `SubButton`「うみに もぐる」→ フェード →`SEA_POS=(-2000,-600,2000)` の明るい海中。**自動巡航のみ**(`_begin_ride` で潜水艦をプレイヤーに装着・物理OFF・gravity0、`_drive_cruise` が `_cruise` waypoint を一定速度で周回・潜水艦は進行方向へ yaw、既存カメラ追従)。海の世界: 砂床・サンゴの庭・海藻(揺れ)・岩・宝箱・**魚6群れ48匹**(`_update_fish` の sin 周回+尾ゆれ)・くじら/かめ(Tween)・泡(GPUParticles)・**しんじゅ**(近接自動獲得→ほし+1)。「うみから あがる」常時表示でいつでも浮上。`game_state.visited_submarine`+セーブ+ミッション追加。`Main.tscn` load_steps 60。**env 復帰の注意**: 海で `fog_density/enabled` を変えるので、起動時に退避し浮上時に復元(DayNightCycle 再適用では fog密度は戻らない)。
+**潜水艦の次の調整候補(実機後)**: 潜水艦の追従カメラの見え方(巡航中に潜水艦が中心に来るか)、巡航ループの形/速度、魚の数(fps)、湖の水面の波(`water.gdshader` 適用は未/簡易マテリアルで実装)。
+
 ## 進捗(2026-06-03 時点 — 第4ウェーブ: 月の充実 + 飛行機で空の城 + フィードバック反映)
 
 ブランチは引き続き `feature/driver-mode`(**まだ未 push**)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`(第4ウェーブ用に上書き済み)。changelog の v0.37.0〜v0.39.0 が該当。

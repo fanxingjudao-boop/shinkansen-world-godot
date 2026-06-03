@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -59,6 +59,8 @@ func _ready() -> void:
 			await _capture_settings()
 		CaptureMode.AUTO_SKY:
 			await _capture_sky()
+		CaptureMode.AUTO_SEA:
+			await _capture_sea()
 	get_tree().quit()
 
 
@@ -604,13 +606,20 @@ func _capture_sky() -> void:
 	if rigp and rigp.get_script() != null:
 		rigp.set_process(false)
 	var sp: Vector3 = sky.SKY_POS
-	# 全景(城・雲・飛行機・旋回電車)
-	cam.global_position = sp + Vector3(28, 17, 36)
+	# 全景(大きくなった城・雲・飛行機・旋回電車)
+	cam.global_position = sp + Vector3(22, 14, 30)
+	cam.look_at(sp + Vector3(0, 9, 0))
+	cam.fov = 60.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sky_castle.png")
+	# プレイヤー到着位置から見た 城(降りて何が見えるか)
+	cam.global_position = sp + Vector3(0, 4.5, 17)
 	cam.look_at(sp + Vector3(0, 6, 0))
 	cam.fov = 62.0
 	await get_tree().process_frame
 	await get_tree().process_frame
-	await _save_screenshot("user://screenshot_sky_castle.png")
+	await _save_screenshot("user://screenshot_sky_arrival.png")
 	# 飛行機の駐機 + プレイヤー(降りた所)
 	cam.global_position = sky._park_pos + Vector3(8, 4, 11)
 	cam.look_at(sky._park_pos + Vector3(0, 1, 0))
@@ -629,3 +638,62 @@ func _capture_sky() -> void:
 	sky._go_home()
 	await get_tree().create_timer(float(sky.FLIGHT_TIME) + 1.4).timeout
 	print("[AutoCapture] back on_sky=", sky._on_sky, " player_y=%.1f" % player.global_position.y)
+
+
+# 潜水艦 検証: 湖の潜水艦 → 潜航 → 海中(サンゴ・魚)→ 自動巡航が進む → 浮上。
+func _capture_sea() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var sub := get_tree().root.find_child("Submarine", true, false)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if sub == null or player == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# --- ① 湖の潜水艦 + 水面 ---
+	player.global_position = sub._sub_pos + Vector3(0, 0, 9)
+	await get_tree().physics_frame
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = sub._sub_pos + Vector3(9, 5, 11)
+	cam.look_at(sub._sub_pos + Vector3(0, 0.4, 0))
+	cam.fov = 55.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sub_dock.png")
+	# --- ② 潜航 ---
+	sub._dive()
+	await get_tree().create_timer(1.4).timeout
+	var sea: Vector3 = sub.SEA_POS
+	print("[AutoCapture] on_sea=", sub._on_sea, " player_y=%.1f sea_y=%.1f" % [player.global_position.y, sea.y])
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	# 海中の全景(サンゴ・魚・明るい青)
+	cam.global_position = sea + Vector3(30, 20, 38)
+	cam.look_at(sea + Vector3(0, 8, 0))
+	cam.fov = 64.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sea.png")
+	# --- ③ 自動巡航が進むか(数秒で位置が動く) ---
+	var p0: Vector3 = player.global_position
+	await get_tree().create_timer(3.0).timeout
+	var moved: float = p0.distance_to(player.global_position)
+	print("[AutoCapture] cruise moved=%.1f (0 でなければ自動巡航OK)" % moved)
+	# プレイヤー追従カメラで 巡航中(魚の中)を撮る
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(true)
+	await get_tree().create_timer(0.6).timeout
+	await _save_screenshot("user://screenshot_sea_cruise.png")
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	# サンゴの庭 接写
+	cam.global_position = sea + Vector3(9, 6, 11)
+	cam.look_at(sea + Vector3(0, 2.5, 0))
+	cam.fov = 60.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sea_coral.png")
+	# --- ④ 浮上 ---
+	sub._surface()
+	await get_tree().create_timer(1.4).timeout
+	print("[AutoCapture] back on_sea=", sub._on_sea, " player_y=%.1f" % player.global_position.y)

@@ -38,6 +38,7 @@ func _save() -> void:
 		"energy": _gs.energy,
 		"moon": _gs.visited_moon,
 		"sky_castle": _gs.visited_sky_castle,
+		"submarine": _gs.visited_submarine,
 		"drove": _gs.drove_train,
 		"play_count": _gs.play_count,
 	}
@@ -66,6 +67,7 @@ func _load() -> void:
 	_gs.energy = int(d.get("energy", 0))
 	_gs.visited_moon = bool(d.get("moon", false))
 	_gs.visited_sky_castle = bool(d.get("sky_castle", false))
+	_gs.visited_submarine = bool(d.get("submarine", false))
 	_gs.drove_train = bool(d.get("drove", false))
 	_gs.play_count = int(d.get("play_count", 0))
 

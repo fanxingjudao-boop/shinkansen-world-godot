@@ -18,7 +18,8 @@ const DAY_END: float = 0.70
 const SUNSET_END: float = 0.80
 
 # 背景色
-const NIGHT_BG: Color = Color(0.15, 0.18, 0.40)
+# 夜は「やさしい夜」: 真っ暗にしない(怖くない厳守)。月あかりのある すこし明るい青紫。
+const NIGHT_BG: Color = Color(0.22, 0.26, 0.46)
 const DAY_BG: Color = Color(0.72, 0.78, 0.96)
 const SUNSET_BG: Color = Color(0.90, 0.48, 0.46)
 
@@ -26,13 +27,13 @@ const SUNSET_BG: Color = Color(0.90, 0.48, 0.46)
 const NIGHT_SUN: Color = Color(0.70, 0.70, 1.00)
 const DAY_SUN: Color = Color(1.00, 1.00, 0.95)
 const SUNSET_SUN: Color = Color(1.00, 0.65, 0.45)
-const NIGHT_SUN_ENERGY: float = 0.3
+const NIGHT_SUN_ENERGY: float = 0.42   # 月あかり感(0.3→0.42。暗すぎ=怖いを回避)
 const DAY_SUN_ENERGY: float = 0.9
 
 # 環境光
 const NIGHT_AMBIENT: Color = Color(0.50, 0.60, 0.80)
 const DAY_AMBIENT: Color = Color(1.00, 0.97, 0.91)
-const NIGHT_AMBIENT_ENERGY: float = 0.10
+const NIGHT_AMBIENT_ENERGY: float = 0.17   # 夜の最低照度を上げる(0.10→0.17)
 const DAY_AMBIENT_ENERGY: float = 0.25
 
 

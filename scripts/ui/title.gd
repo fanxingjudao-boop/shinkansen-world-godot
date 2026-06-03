@@ -4,6 +4,8 @@ extends CanvasLayer
 # このボタン押下が「最初のユーザー操作」になるので、ブラウザの AudioContext が
 # 有効化され、以降の効果音が鳴るようになる(Web の自動再生制限への対応)。
 
+signal started  # 「はじめる」でプレイ開始(ミッション案内などの合図に使う)
+
 @onready var start_btn: BaseButton = $Root/Center/VBox/StartButton
 @onready var root: Control = $Root
 
@@ -18,4 +20,6 @@ func _on_start() -> void:
 	start_btn.disabled = true
 	var tw := create_tween()
 	tw.tween_property(root, "modulate:a", 0.0, 0.5)
-	tw.tween_callback(func() -> void: visible = false)
+	tw.tween_callback(func() -> void:
+		visible = false
+		started.emit())  # タイトルが消えてから 最初のミッションを案内
