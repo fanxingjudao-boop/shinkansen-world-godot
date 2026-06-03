@@ -1,4 +1,4 @@
-[gd_scene load_steps=60 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=61 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -58,6 +58,7 @@
 [ext_resource type="Script" path="res://scripts/world/sky_castle.gd" id="59_sky"]
 [ext_resource type="Script" path="res://scripts/world/submarine.gd" id="60_sub"]
 [ext_resource type="Script" path="res://scripts/world/candy_land.gd" id="61_candy"]
+[ext_resource type="Script" path="res://scripts/world/dino_land.gd" id="62_dino"]
 [ext_resource type="PackedScene" path="res://scenes/ui/Settings.tscn" id="58_settings"]
 
 [sub_resource type="Environment" id="Environment_main"]
@@ -246,6 +247,9 @@ script = ExtResource("60_sub")
 
 [node name="CandyLand" type="Node3D" parent="."]
 script = ExtResource("61_candy")
+
+[node name="DinoLand" type="Node3D" parent="."]
+script = ExtResource("62_dino")
 
 [node name="Settings" parent="." instance=ExtResource("58_settings")]
 
