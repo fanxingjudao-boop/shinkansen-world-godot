@@ -36,8 +36,15 @@ var _leg_l: Node3D
 var _leg_r: Node3D
 var _walk_phase: float = 0.0
 
-# 重力の倍率。月旅行(moon_trip.gd)で 0.16 にするとふわっと跳べる。
+# 重力の倍率。月旅行(moon_trip.gd)で小さくするとふわっと跳べる。
 var gravity_scale: float = 1.0
+# 移動速度の倍率。月面カー(moon_trip.gd)に のると 1 より大きくして はやく走れる。
+var speed_scale: float = 1.0
+
+# 月の「小さな惑星」モード。重力を planet_center へ向け、up を球面法線に合わせる。
+# これで球の裏側まで ぐるっと歩ける(地上/空は通常の Y 重力のまま=この値が false)。
+var planet_mode: bool = false
+var planet_center: Vector3 = Vector3.ZERO
 
 
 func _ready() -> void:
@@ -47,6 +54,9 @@ func _ready() -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if planet_mode:
+		_planet_process(delta)
+		return
 	var input_dir: Vector2 = Input.get_vector(
 		"move_left", "move_right", "move_forward", "move_back"
 	)
@@ -84,7 +94,7 @@ func _camera_relative_move(input_dir: Vector2) -> Vector3:
 		var d := Vector3(input_dir.x, 0.0, input_dir.y)
 		if d.length() > 1.0:
 			d = d.normalized()
-		return d * SPEED
+		return d * SPEED * speed_scale
 	var b := cam.global_transform.basis
 	var fwd := Vector3(-b.z.x, 0.0, -b.z.z)   # カメラの前を水平化(画面の奥)
 	var right := Vector3(b.x.x, 0.0, b.x.z)   # カメラの右を水平化
@@ -94,7 +104,71 @@ func _camera_relative_move(input_dir: Vector2) -> Vector3:
 	var dir := right * input_dir.x - fwd * input_dir.y
 	if dir.length() > 1.0:
 		dir = dir.normalized()
-	return dir * SPEED
+	return dir * SPEED * speed_scale
+
+
+# === 月の小さな惑星モード(球面を裏側まで歩く) ===
+
+func _planet_process(delta: float) -> void:
+	var input_dir: Vector2 = Input.get_vector(
+		"move_left", "move_right", "move_forward", "move_back"
+	)
+	# up = 球の中心から外向き(= 足元から頭の向き)。接地判定にも使う。
+	var up: Vector3 = (global_position - planet_center).normalized()
+	if up.length() < 0.5:
+		up = Vector3.UP
+	up_direction = up
+	var move: Vector3 = _planet_move(input_dir, up)
+	# 速度を「接線(移動)」と「法線(重力/ジャンプ)」に分けて合成
+	var v_up: float = velocity.dot(up)
+	if not is_on_floor():
+		v_up -= get_gravity().length() * gravity_scale * delta
+	if Input.is_action_just_pressed("jump") and is_on_floor():
+		v_up = JUMP_VELOCITY
+		jumped.emit()
+	velocity = move + up * v_up
+	move_and_slide()
+	_orient_to_surface(up, move, delta)
+	_animate_walk(delta, input_dir.length() > 0.01)
+
+
+# 惑星上の移動: カメラ基準の入力を 足元の接平面へ射影(うえ=画面奥のまま)。
+func _planet_move(input_dir: Vector2, up: Vector3) -> Vector3:
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return Vector3.ZERO
+	var b := cam.global_transform.basis
+	var fwd := -b.z - up * (-b.z).dot(up)   # カメラ前を接平面へ
+	var right := b.x - up * b.x.dot(up)      # カメラ右を接平面へ
+	if fwd.length() < 0.001:
+		fwd = up.cross(Vector3.RIGHT)
+	if right.length() < 0.001:
+		right = up.cross(Vector3.FORWARD)
+	fwd = fwd.normalized()
+	right = right.normalized()
+	var dir := right * input_dir.x - fwd * input_dir.y
+	if dir.length() > 1.0:
+		dir = dir.normalized()
+	return dir * SPEED * speed_scale
+
+
+# 体を 球面に合わせて立たせ(足=法線方向)、進む向きへ向ける。
+func _orient_to_surface(up: Vector3, move: Vector3, delta: float) -> void:
+	var fwd: Vector3
+	if move.length() > 0.05:
+		fwd = move.normalized()
+	else:
+		fwd = -global_transform.basis.z
+		fwd = fwd - up * fwd.dot(up)
+		if fwd.length() < 0.001:
+			fwd = global_transform.basis.x - up * global_transform.basis.x.dot(up)
+		fwd = fwd.normalized()
+	var bz := -fwd
+	var bx := up.cross(bz).normalized()
+	var by := bz.cross(bx).normalized()
+	var target := Basis(bx, by, bz)
+	var t: float = clamp(ROTATION_SPEED * delta, 0.0, 1.0)
+	global_transform.basis = global_transform.basis.slerp(target, t).orthonormalized()
 
 
 # === 歩行アニメ ===
@@ -182,6 +256,14 @@ func _make_limb(pos: Vector3, length: float, radius: float, color: Color, is_leg
 	return pivot
 
 
+# 顔(半径0.42の球、中心 head 原点)の (x,y) における表面の少し内側の点を返す。
+# inset を大きくするほど顔の内側=出っ張らない。目・ほっぺを顔に貼り付けるのに使う。
+func _face_pt(x: float, y: float, inset: float) -> Vector3:
+	var r2: float = 0.42 * 0.42 - x * x - y * y
+	var sz: float = -sqrt(r2) if r2 > 0.0 else 0.0
+	return Vector3(x, y, sz + inset)
+
+
 func _build_head() -> void:
 	var head := Node3D.new()
 	head.position = Vector3(0, 1.5, 0)  # 頭の中心
@@ -199,38 +281,41 @@ func _build_head() -> void:
 	hair.height = 0.8
 	_add_part(hair, Vector3(0, 0.06, 0.14), HAIR, head).scale = Vector3(1.02, 0.9, 0.85)
 
-	# 目(白目+大きいうるうる黒目+キラキラ2つ)。-Z が顔の正面
+	# 目(白目+大きいうるうる黒目+キラキラ2つ)。-Z が顔の正面。
+	# 顔は球なので、各パーツを「その(x,y)での顔表面」に沿って置き、出っ張らせない
+	# (奥行きスケールも薄くして 平らな目のように顔に貼り付く)。
 	for sx in [-1.0, 1.0]:
-		# 白目(下地・たてに大きめ)
+		var ex: float = sx * 0.16
+		# 白目(下地・たてに大きめ。いちばん奥)
 		var w := SphereMesh.new()
 		w.radius = 0.14
 		w.height = 0.28
-		var wmi := _add_unshaded(w, Vector3(sx * 0.17, 0.04, -0.34), EYE_W, head)
-		wmi.scale = Vector3(0.85, 1.2, 0.6)
+		var wmi := _add_unshaded(w, _face_pt(ex, 0.05, 0.10), EYE_W, head)
+		wmi.scale = Vector3(0.85, 1.2, 0.32)
 		# 黒目(大きい瞳=うるうる)
 		var b := SphereMesh.new()
 		b.radius = 0.105
 		b.height = 0.21
-		var bmi := _add_unshaded(b, Vector3(sx * 0.17, 0.03, -0.42), EYE_B, head)
-		bmi.scale = Vector3(0.92, 1.05, 0.6)
-		# キラキラ(大・上)
+		var bmi := _add_unshaded(b, _face_pt(ex, 0.04, 0.07), EYE_B, head)
+		bmi.scale = Vector3(0.92, 1.05, 0.32)
+		# キラキラ(大・上。いちばん手前だが顔表面は越えない)
 		var hi1 := SphereMesh.new()
 		hi1.radius = 0.045
 		hi1.height = 0.09
-		_add_unshaded(hi1, Vector3(sx * 0.21, 0.09, -0.47), EYE_W, head)
+		_add_unshaded(hi1, _face_pt(ex + sx * 0.04, 0.09, 0.05), EYE_W, head)
 		# キラキラ(小・下)
 		var hi2 := SphereMesh.new()
 		hi2.radius = 0.022
 		hi2.height = 0.044
-		_add_unshaded(hi2, Vector3(sx * 0.13, -0.03, -0.47), EYE_W, head)
+		_add_unshaded(hi2, _face_pt(ex - sx * 0.03, -0.02, 0.05), EYE_W, head)
 
-	# ほっぺ(ピンク)
+	# ほっぺ(ピンク。顔表面に沿わせて 出っ張らせない)
 	for sx in [-1.0, 1.0]:
 		var c := SphereMesh.new()
 		c.radius = 0.09
 		c.height = 0.18
-		var cmi := _add_unshaded(c, Vector3(sx * 0.28, -0.08, -0.30), CHEEK, head)
-		cmi.scale = Vector3(1.1, 0.8, 0.5)
+		var cmi := _add_unshaded(c, _face_pt(sx * 0.26, -0.08, 0.06), CHEEK, head)
+		cmi.scale = Vector3(1.1, 0.8, 0.3)
 
 	# 鼻(ちょこん)
 	var nose := SphereMesh.new()

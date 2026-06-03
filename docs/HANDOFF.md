@@ -159,6 +159,31 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
+## 進捗(2026-06-03 時点 — 第4ウェーブ: 月の充実 + 飛行機で空の城 + フィードバック反映)
+
+ブランチは引き続き `feature/driver-mode`(**まだ未 push**)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`(第4ウェーブ用に上書き済み)。changelog の v0.37.0〜v0.39.0 が該当。
+
+**月の作り直し(v0.37.0):** 薄い円盤をやめ 大きな球体ドーム + もちつきうさぎ(うす/きね/もち/つき手・返し手) + 帰りのロケット(近接で「おうちへ かえる」) + ピンク旗の削除。`moon_trip.gd`。
+
+**第4ウェーブ — 月の充実(v0.38.0、`moon_trip.gd`):** ①もちだんご(三色だんご、近接で `add_energy(1)`、`stars.gd` 方式) ②宇宙の演出(回る地球 `_earth_node`/ふわふわ UFO/星) ③月面カー(バギーを `_mount_buggy` で**プレイヤーの子に reparent**、`player.speed_scale=1.8`、エンジン音ループ。MoonButton を文脈で のる/おりる/かえる に出し分け)。
+
+**第4ウェーブ — 飛行機で「そらの おしろ」(v0.38.0、新規 `scripts/world/sky_castle.gd` = Main 直下 `SkyCastle`):**
+- moon_trip と同じワープ骨格。**飛行機は1機**(`_plane`)で、着陸した所に駐機(`_park_pos` で近接判定)、飛行中はプレイヤーの子に装着。
+- **自動遊覧飛行**(改善さん選択): `_begin_flight` で `player.set_physics_process(false)`+`gravity_scale=0`、`_climb_then` が上昇アークを Tween(**既存 CameraRig がプレイヤー追従するので飛ぶ絵になる**=追加カメラ不要)→ `_transition` フェード中点で空の城へ。
+- **空の城ワールド**(`SKY_POS=(-2000,400,-2000)`、初回のみ `_build_sky`): 歩ける雲の島(円柱コリジョン)+ お城 + 飛び石の雲(`SKY_GRAVITY=0.4`)+ レインボーの橋 + 城の上空を旋回する新幹線(`_decor`)+ ほし(`add_star`)。**落下防止**=ふちの見えない壁 + `_process` 安全網。**明るい夢空**(env 退避/復帰)。
+- HUD: `TouchHUD.tscn` に `AirplaneButton`(押下/表示は sky_castle.gd が直接管理、`touch_hud.gd` はバウンスのみ)。記録: `game_state.visited_sky_castle`+`set_sky_castle_visited()`、`save_system` に `"sky_castle"`、`mission_manager` に「ひこうきで そらの おしろへ いこう」+「ほし9こ」。`Main.tscn` load_steps 58→59。
+
+**フィードバック反映(v0.39.0):**
+- **月を「小さな惑星」に(裏側まで歩ける)** — 最重要。`player.gd` に **`planet_mode`/`planet_center`** を追加し `_planet_process`(重力を球中心へ・`up_direction`=球面法線・接平面へ射影した移動・ジャンプは法線方向・`_orient_to_surface` で体を法線に傾ける)。`camera_rig.gd` に **`set_surface_up()`**(惑星では「上」を法線に合わせる。`_surface_offset` は平行移送で安定化、`UP` のとき従来と**完全一致**=地上/空に回帰なし)。`moon_trip.gd` は **半径22mの1球+`SphereShape3D`**(`PLANET_R`)、ふち壁撤去、装飾は `_place_on_planet`/`_surface_basis` で**法線に合わせて配置**(ロケット=てっぺん、もちつきは傾いた root の下に local 再構成、もちだんご/月面カー/クレーターも)。`_go_moon` で `planet_mode=true`+`gravity_scale=0.42`、`_go_home` で `planet_mode=false`+`rotation=ZERO`+`up_direction=UP`+rig を UP に戻す。`_process(月)` で毎フレーム rig の surface_up を更新。**検証**: `AUTO_MOON` 歩行テストで中心からの距離が R=22 一定(落ちない)・updot 1.0→0.08(連続歩行)・カメラ上向き法線追従。
+- **さくらふぶき停止**: `CherryPetals`(Player 子で常時追従)を 月/空で `emitting=false`、地球帰還で `true`(moon_trip/sky_castle の env 切替で)。
+- **空の視認性**: `sky_castle._apply_sky_env` の `ambient_light_energy` 0.95→0.5、`SKY_BG` を濃いめ(0.45,0.68,0.95)でコントラスト確保。
+- **眼の出っ張り解消**: `player._build_head` の目/ほっぺを `_face_pt()`(顔球の (x,y) 表面に沿わせる)で配置し奥行きスケールも薄く。
+
+**次にやること(この第4ウェーブ・フィードバック分):**
+- **改善さんの iPad 確認待ち**: ①月の球面歩行が酔わないか・楽しいか(`MOON_GRAVITY=0.42`/カメラ法線追従)②空の城で落ちて怖くないか・視認性 ③月面カー・もちだんご・ほし ④飛行が酔わないか ⑤眼の見た目 ⑥月/空で桜が消えるのが自然か ⑦Web export 後に「そらへ いく」が出るか。
+- **未 push**: 実機 OK 後に main マージ → **Web 再エクスポート** → push(`export/web` は CLI 実行で毎回汚れるので、コミット前に `git checkout -- export/web`、`git add` は明示パスで)。`sky_castle.gd.uid` も忘れず add。
+- 調整候補: 空の城のお城をもっと大きく(存在感)/ 惑星の半径や重力の体感 / 飛行アークの時間 を実機フィードバックで。
+
 ## 進捗(2026-06-02 時点 — 作りこみ本格化 Phase 6 / 第3ウェーブ + プロダクト評価対応)
 
 改善さんが「もっと本格的に作りこみ」と指示。方向は「電車を深く + 駅まわりを楽しく」を選び、「1テーマを深く磨く」方針で中心の目玉に **うんてんしゅモード** を実装(v0.27.0、ブランチ `feature/driver-mode`)。計画は `C:\Users\papa\.claude\plans\radiant-hopping-anchor.md`。

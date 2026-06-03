@@ -29,7 +29,8 @@ func _ready() -> void:
 		{"text": "「うんてん」ボタンで うんてんしゅに なろう", "done": func() -> bool: return _gs.drove_train},
 		{"text": "おしろの でんしゃに のろう", "done": func() -> bool: return "oshiro" in _gs.boarded_trains},
 		{"text": "ロケットで つきへ いこう", "done": func() -> bool: return _gs.visited_moon},
-		{"text": "ほしを 6こ あつめよう", "done": func() -> bool: return _gs.star_count >= 6},
+		{"text": "ひこうきで そらの おしろへ いこう", "done": func() -> bool: return _gs.visited_sky_castle},
+		{"text": "ほしを 9こ あつめよう", "done": func() -> bool: return _gs.star_count >= 9},
 	]
 	# ロード済みで達成済みのミッションは通知なしでスキップ
 	if _gs:

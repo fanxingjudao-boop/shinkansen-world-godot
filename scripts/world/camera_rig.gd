@@ -21,6 +21,9 @@ var _target: Node3D
 var _camera: Camera3D
 var _yaw: float = START_YAW             # 現在のカメラ方位角
 var _yaw_target: float = START_YAW      # 目標方位角(ボタンで増減)
+# 月の惑星モードで「上」を球面法線に合わせる(地上/空では UP のまま=従来と完全一致)。
+var _surface_up: Vector3 = Vector3.UP
+var _surface_fwd: Vector3 = Vector3(0.0, 0.0, 1.0)  # 接平面上の安定した前方(平行移送)
 
 
 func _ready() -> void:
@@ -38,11 +41,11 @@ func _process(delta: float) -> void:
 	# 目標方位へなめらかに回す(段階回転)
 	_yaw = lerp_angle(_yaw, _yaw_target, clamp(YAW_SMOOTH * delta, 0.0, 1.0))
 	var target_pos: Vector3 = _target.global_position
-	var desired: Vector3 = target_pos + _offset(distance) + Vector3(0, height, 0)
+	var desired: Vector3 = target_pos + _surface_offset(distance) + _surface_up * height
 	var t: float = clamp(smoothness * delta, 0.0, 1.0)
 	global_position = global_position.lerp(desired, t)
 	if _camera:
-		_camera.look_at(target_pos + look_offset, Vector3.UP)
+		_camera.look_at(target_pos + _surface_up * look_offset.y, _surface_up)
 
 
 # === 公開 API(TouchHUD のカメラボタンから呼ばれる) ===
@@ -58,16 +61,30 @@ func snap_to_target() -> void:
 	if _target == null:
 		return
 	_yaw = _yaw_target
-	global_position = _target.global_position + _offset(distance) + Vector3(0, height, 0)
+	global_position = _target.global_position + _surface_offset(distance) + _surface_up * height
 	if _camera:
-		_camera.look_at(_target.global_position + look_offset, Vector3.UP)
+		_camera.look_at(_target.global_position + _surface_up * look_offset.y, _surface_up)
+
+
+# 月の惑星モードから「上」を設定(UP に戻すと従来の見下ろしに復帰)。
+func set_surface_up(up: Vector3) -> void:
+	if up.length() < 0.01:
+		_surface_up = Vector3.UP
+	else:
+		_surface_up = up.normalized()
 
 
 # === ロジック層 ===
 
-func _offset(dist: float) -> Vector3:
-	return Vector3(
-		sin(_yaw) * cos(FIXED_PITCH),
-		sin(FIXED_PITCH),
-		cos(_yaw) * cos(FIXED_PITCH)
-	) * dist
+# 「上」が UP のときは従来の _offset と完全一致。惑星モードでは up を球面法線に合わせ、
+# 接平面上の前方(平行移送で安定化)+ ボタン方位角で カメラ位置を決める。
+func _surface_offset(dist: float) -> Vector3:
+	var up := _surface_up
+	# 前方を接平面へ射影して保持(向きが飛ばないよう平行移送)
+	var f := _surface_fwd - up * _surface_fwd.dot(up)
+	if f.length() < 0.001:
+		f = Vector3.FORWARD - up * Vector3.FORWARD.dot(up)
+	f = f.normalized()
+	_surface_fwd = f
+	var yawed := f.rotated(up, _yaw)
+	return (yawed * cos(FIXED_PITCH) + up * sin(FIXED_PITCH)) * dist

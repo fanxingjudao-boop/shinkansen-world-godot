@@ -14,6 +14,7 @@ var visited_stations: Array[String] = []
 var star_count: int = 0
 var energy: int = 0  # おだんごを食べて増える「げんき」(駅のお団子で +1)
 var visited_moon: bool = false  # ロケットで月へ行ったことがある(ミッション/記念用)
+var visited_sky_castle: bool = false  # ひこうきで そらの おしろへ行ったことがある(ミッション用)
 var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
 var play_count: int = 0         # あそんだ かいすう(起動ごとに +1。親モードで表示)
 
@@ -56,6 +57,13 @@ func set_moon_visited() -> void:
 	if visited_moon:
 		return
 	visited_moon = true
+	changed.emit()
+
+
+func set_sky_castle_visited() -> void:
+	if visited_sky_castle:
+		return
+	visited_sky_castle = true
 	changed.emit()
 
 

@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -57,6 +57,8 @@ func _ready() -> void:
 			await _fixcheck()
 		CaptureMode.AUTO_SETTINGS:
 			await _capture_settings()
+		CaptureMode.AUTO_SKY:
+			await _capture_sky()
 	get_tree().quit()
 
 
@@ -207,18 +209,64 @@ func _capture_moon() -> void:
 		await get_tree().process_frame
 		await _save_screenshot("user://screenshot_rocket.png")
 
-	# --- ④ 月へ行って撮影 ---
+	# --- ④ 月(小さな惑星)へ行って撮影 ---
 	if mt:
 		mt._go_moon()
 		await get_tree().create_timer(1.2).timeout  # フェード+ワープ+環境切替の完了待ち
-		rigp.set_process(false)  # snap で再開していないが念のため
 		var moon: Vector3 = mt.MOON_POS
-		cam.global_position = moon + Vector3(0, 12, 40)
-		cam.look_at(moon + Vector3(0, 2, -10))
-		cam.fov = 62.0
+		var pcenter: Vector3 = moon + Vector3(0, -mt.PLANET_R, 0)
+		# --- 惑星歩行の機能チェック: 前進し続けて 球面に居続ける&裏側へ回れるか ---
+		rigp.set_process(true)  # 本物の追従カメラ(カメラの up が法線に合うか)
+		await get_tree().create_timer(0.4).timeout
+		Input.action_press("move_forward")
+		var around := false
+		for s in range(16):
+			await get_tree().create_timer(0.4).timeout
+			var r: float = player.global_position.distance_to(pcenter)
+			var updot: float = (player.global_position - pcenter).normalized().dot(Vector3.UP)
+			if updot < 0.0:
+				around = true  # 球の下半分=裏側に回れた
+			if s == 6:
+				# 横っ腹あたりで プレイヤーカメラから撮影(頭が上=酔わないか)
+				await _save_screenshot("user://screenshot_moon_walk.png")
+			print("[AutoCapture] walk s=%d r=%.1f(=R %.0f?) updot=%.2f" % [s, r, mt.PLANET_R, updot])
+		Input.action_release("move_forward")
+		print("[AutoCapture] reached_backside=", around)
+		# 以降は debug カメラで装飾を撮影
+		rigp.set_process(false)
+		# 全景(小さな惑星まるごと)
+		cam.global_position = pcenter + Vector3(40, 30, 48)
+		cam.look_at(pcenter)
+		cam.fov = 60.0
 		await get_tree().process_frame
 		await get_tree().process_frame
 		await _save_screenshot("user://screenshot_moon.png")
+		# てっぺん(ロケット・もちつき・もちだんご)を寄りで
+		cam.global_position = moon + Vector3(10, 8, 12)
+		cam.look_at(moon + Vector3(0, 1.0, 0))
+		cam.fov = 58.0
+		await get_tree().create_timer(0.5).timeout
+		await _save_screenshot("user://screenshot_moon_top.png")
+		# 月面カー接写(惑星上の駐機位置)
+		if mt._buggy:
+			var bp: Vector3 = mt._buggy_pos
+			var bn: Vector3 = (bp - pcenter).normalized()
+			cam.global_position = bp + bn * 4.0 + Vector3(0, 2.5, 0)
+			cam.look_at(bp)
+			cam.fov = 50.0
+			await get_tree().process_frame
+			await get_tree().process_frame
+			await _save_screenshot("user://screenshot_moon_buggy.png")
+			# のる/おりる(reparent)が壊れないか機能チェック
+			player.global_position = bp + bn * 1.5
+			await get_tree().physics_frame
+			mt._mount_buggy()
+			await get_tree().physics_frame
+			await get_tree().physics_frame
+			print("[AutoCapture] buggy mounted=", mt._buggy_mounted, " speed=", player.get("speed_scale"))
+			mt._dismount_buggy()
+			await get_tree().physics_frame
+			print("[AutoCapture] buggy dismounted_ok=", not mt._buggy_mounted, " speed=", player.get("speed_scale"))
 
 
 # お城検証: おしろでんしゃをアーチ(ratio0.25)に置き、全景/アーチ通過/上空の高架を撮る。
@@ -525,3 +573,59 @@ func _apply_debug_camera() -> void:
 		cam.look_at(Vector3(-188, 8, -135))
 		cam.fov = 55.0
 	print("[AutoCapture] debug camera applied: ", VIEW, " pos=", cam.global_position)
+
+
+# 空の城 検証: 地上の飛行機 → 自動飛行 → 空の城(城・雲足場・旋回電車・ほし・落ちない)→ 帰り。
+func _capture_sky() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var sky := get_tree().root.find_child("SkyCastle", true, false)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if sky == null or player == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# --- ① 地上の飛行機 ---
+	player.global_position = sky._park_pos + Vector3(0, 0, 8)
+	await get_tree().physics_frame
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = sky._park_pos + Vector3(7, 4, 11)
+	cam.look_at(sky._park_pos + Vector3(0, 0.8, 0))
+	cam.fov = 55.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_airplane.png")
+	# --- ② 空の城へ自動飛行(カメラ追従を一旦戻して 離陸の絵を見る) ---
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(true)
+	sky._go_sky()
+	await get_tree().create_timer(float(sky.FLIGHT_TIME) + 1.4).timeout
+	print("[AutoCapture] on_sky=", sky._on_sky, " player_y=%.1f sky_y=%.1f" % [player.global_position.y, sky.SKY_POS.y])
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	var sp: Vector3 = sky.SKY_POS
+	# 全景(城・雲・飛行機・旋回電車)
+	cam.global_position = sp + Vector3(28, 17, 36)
+	cam.look_at(sp + Vector3(0, 6, 0))
+	cam.fov = 62.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sky_castle.png")
+	# 飛行機の駐機 + プレイヤー(降りた所)
+	cam.global_position = sky._park_pos + Vector3(8, 4, 11)
+	cam.look_at(sky._park_pos + Vector3(0, 1, 0))
+	cam.fov = 54.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sky_airplane.png")
+	# 雲の島を 上から(足場・落ちない範囲)
+	cam.global_position = sp + Vector3(0, 42, 0.1)
+	cam.look_at(sp)
+	cam.fov = 70.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_sky_island.png")
+	# --- ③ 帰り ---
+	sky._go_home()
+	await get_tree().create_timer(float(sky.FLIGHT_TIME) + 1.4).timeout
+	print("[AutoCapture] back on_sky=", sky._on_sky, " player_y=%.1f" % player.global_position.y)
