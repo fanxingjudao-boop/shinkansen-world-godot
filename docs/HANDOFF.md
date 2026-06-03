@@ -159,9 +159,19 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-03 続き — v0.40.0〜v0.43.0)
+## 進捗(2026-06-03 続き — v0.40.0〜v0.48.1)
 
-**✅ 2026-06-03 デプロイ済み(本番反映)**: `feature/driver-mode` を `main` に fast-forward マージ → **`origin/main` = `47a3be1` に push 済み**。Vercel が本番URL(https://shinkansen-world-godot.vercel.app/)を自動再デプロイ。Web は CLI(`--export-release "Web"`)で再エクスポート(`for_mobile=false`・テンプレ/noindex/`robots.txt`・日本語化なしを検証)。v0.40.0〜v0.43.0 が全て本番に入った。**残るは改善さんの iPad 実機確認のみ**(① fps:駅/複数編成/草一面・列車最適化と草増量の影響、② 酔い:自動飛行/潜水艦巡航/月の惑星カメラ、③ 音、④ 各ワールド導線)。詳細は changelog 参照。
+### ▶ 現在地(次セッションはここから)
+
+- **ブランチ**: `main`(作業は main 直接。`feature/driver-mode` は過去の作業ブランチでマージ済)。
+- **コミット状況**: ローカル `main` = `a34afaa`。**本番 `origin/main` = `8a05359`(= v0.48.0 まで反映済・Vercel デプロイ済)**。
+  - **⚠️ 未 push が 3 コミット**: `467fc2c`(reward_manager.gd.uid)/ `61c1840`(v0.48.1 雪まぶしさ・丘すり抜け修正)/ `a34afaa`(その Web 再エクスポート)。
+  - **push は この環境ではブロックされる**ので、改善さんに `! git push origin main` を依頼する運用(プロンプトに `!` 付きで入力 → このセッション内で実行)。push 後 Vercel が自動デプロイ。
+- **デプロイ手順**: Web は CLI `Godot --headless --export-release "Web" export/web/index.html` で再エクスポート → 検証(`for_mobile=false`・presets 差分なし・`index.*` で日本語化なし・noindex)→ `export/web/index.html`+`index.pck` を明示 add でコミット → push。`export/web` は CLI 実行で毎回汚れるので、ソースのコミット前は必ず `git checkout -- export/web`。
+- **実装済みの全体像**: 電車(乗る/運転/分岐)・6つの別世界(つき/そら/うみ/おかし/きょうりゅう/ゆき、いずれも乗り物→ワープ)・**おでかけメニュー「どこへ いく?」**(1タップで各世界)・**集めるとごほうび**(げんき=速度UP/ほし=お祝い+ほしのき/なかよし=動物がほしをくれる)・なかよし/星/図鑑/ミッション/親モード/昼夜。
+- **残る最重要タスク = 改善さんの iPad 実機確認**(push 後): ①各ワールドの fps(草4200・魚48・雪粒・列車最適化済)②酔い(自動巡航/惑星カメラ)③音量 ④速度UPが速すぎないか ⑤ごほうび(ほしのき/プレゼント)の頻度・嬉しさ ⑥ゆきの明るさ。
+- **検証の流儀**: 各 .gd は `--check-only --script` で構文 → `--quit-after` で Main 起動 → `AutoCapture`(`scripts/dev/auto_capture.gd` の `MODE` を該当 `AUTO_*` にして起動→スクショ、終了後 **必ず SINGLE に戻す**)。`AUTO_*` 実行は `user://save.json` を汚すことがある(`add_star` 等)→ 確認後 **ローカル save.json を削除**(配信版の子のセーブは別ストレージなので無関係)。
+- **調整したくなったら**: 速度上限=`reward_manager.gd ENERGY_MAX_BONUS`/係数 `ENERGY_STEP`。ほしのき位置=`STAR_TREE_POS`。ギフト間隔=`animal_manager.gd GIFT_INTERVAL_*`。各ワールドの巡航=各 `*_land.gd`/`submarine.gd` の `CRUISE_R/CRUISE_Y/CRUISE_SPEED`、丘は巡航リング外(内縁>CRUISE_R+α)に置くこと(v0.48.1 で yuki/dino を是正済)。
 
 **集めると ごほうび(v0.48.0)**: ほし/なかよし/げんき に payoff(改善さん選択)。新規 `scripts/world/reward_manager.gd`(Main 直下 `RewardManager`)。①**げんき→スピードアップ**: `player.gd` に `energy_speed_scale`(移動を `SPEED*speed_scale*energy_speed_scale`、地上+月の両方)、reward_manager が `min(1+energy*0.03, 1.5)` を設定(上限+50%=怖くない・永続=energy はセーブ済)。②**ほし→お祝い+ほしのき**: 5の倍数毎に お祝い通知+キラキラ+音(`_last_milestone` を読込値で初期化=起動時は祝わない)、スポーン前方(6,-14)の「ほしのき」の実が star_count 分 金色点灯。③**なかよし→プレゼント**: `animal_manager.gd` に `_try_gift`(12〜20s毎・近くの なかよしが ほしをくれる→add_star)。全て energy/star_count から派生=**セーブ項目を増やさない**。`Main.tscn` load_steps 64。`AUTO_REWARD` で検証(speed 1.30/1.50・ほしのき点灯・ギフト+1)。**注意**: 速度上限/木の位置/ギフト間隔は実機で調整可。`reward_manager.gd.uid`/`world_select.gd.uid` はエディタ起動で自動生成。
 
