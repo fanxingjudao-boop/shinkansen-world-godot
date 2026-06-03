@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -65,6 +65,8 @@ func _ready() -> void:
 			await _capture_candy()
 		CaptureMode.AUTO_DINO:
 			await _capture_dino()
+		CaptureMode.AUTO_YUKI:
+			await _capture_yuki()
 	get_tree().quit()
 
 
@@ -786,3 +788,44 @@ func _capture_dino() -> void:
 	dino._return_home()
 	await get_tree().create_timer(1.4).timeout
 	print("[AutoCapture] back on_dino=", dino._on_dino, " player_y=%.1f" % player.global_position.y)
+
+
+func _capture_yuki() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var yuki := get_tree().root.find_child("YukiLand", true, false)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if yuki == null or player == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	yuki._depart()
+	await get_tree().create_timer(1.4).timeout
+	var c: Vector3 = yuki.YUKI_POS
+	print("[AutoCapture] on_yuki=", yuki._on_yuki, " player_y=%.1f ground_y=%.1f" % [player.global_position.y, c.y])
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = c + Vector3(34, 24, 40)
+	cam.look_at(c + Vector3(0, 6, 0))
+	cam.fov = 64.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_yuki.png")
+	var p0: Vector3 = player.global_position
+	await get_tree().create_timer(3.0).timeout
+	var moved: float = p0.distance_to(player.global_position)
+	print("[AutoCapture] cruise moved=%.1f (0 でなければ自動巡航OK)" % moved)
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(true)
+	await get_tree().create_timer(0.6).timeout
+	await _save_screenshot("user://screenshot_yuki_ride.png")
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = c + Vector3(-10, 6, 18)
+	cam.look_at(c + Vector3(-6, 2, 0))
+	cam.fov = 56.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_yuki_close.png")
+	yuki._return_home()
+	await get_tree().create_timer(1.4).timeout
+	print("[AutoCapture] back on_yuki=", yuki._on_yuki, " player_y=%.1f" % player.global_position.y)

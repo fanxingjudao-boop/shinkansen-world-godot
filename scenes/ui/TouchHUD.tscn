@@ -502,6 +502,24 @@ theme_override_styles/hover = SubResource("Style_jump_normal")
 theme_override_styles/normal = SubResource("Style_jump_normal")
 theme_override_styles/pressed = SubResource("Style_jump_pressed")
 
+[node name="YukiButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -120.0
+offset_top = 278.0
+offset_right = 130.0
+offset_bottom = 358.0
+grow_horizontal = 2
+text = "ゆきの くにへ いこう"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_jump_normal")
+theme_override_styles/hover = SubResource("Style_jump_normal")
+theme_override_styles/normal = SubResource("Style_jump_normal")
+theme_override_styles/pressed = SubResource("Style_jump_pressed")
+
 [node name="CameraButtons" type="Control" parent="."]
 layout_mode = 1
 anchor_left = 0.5

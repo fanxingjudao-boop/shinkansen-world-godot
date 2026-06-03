@@ -41,6 +41,7 @@ func _save() -> void:
 		"submarine": _gs.visited_submarine,
 		"candy": _gs.visited_candy,
 		"dino": _gs.visited_dino,
+		"yuki": _gs.visited_yuki,
 		"drove": _gs.drove_train,
 		"play_count": _gs.play_count,
 	}
@@ -72,6 +73,7 @@ func _load() -> void:
 	_gs.visited_submarine = bool(d.get("submarine", false))
 	_gs.visited_candy = bool(d.get("candy", false))
 	_gs.visited_dino = bool(d.get("dino", false))
+	_gs.visited_yuki = bool(d.get("yuki", false))
 	_gs.drove_train = bool(d.get("drove", false))
 	_gs.play_count = int(d.get("play_count", 0))
 

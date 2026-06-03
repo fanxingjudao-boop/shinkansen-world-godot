@@ -33,6 +33,7 @@ func _ready() -> void:
 		{"text": "せんすいかんで うみの そこへ いこう", "done": func() -> bool: return _gs.visited_submarine},
 		{"text": "おかしの きしゃで おかしの くにへ いこう", "done": func() -> bool: return _gs.visited_candy},
 		{"text": "サファリカーで きょうりゅうランドへ いこう", "done": func() -> bool: return _gs.visited_dino},
+		{"text": "そりで ゆきの くにへ いこう", "done": func() -> bool: return _gs.visited_yuki},
 		{"text": "ほしを 9こ あつめよう", "done": func() -> bool: return _gs.star_count >= 9},
 	]
 	# ロード済みで達成済みのミッションは通知なしでスキップ
