@@ -24,10 +24,11 @@ extends Control
 @onready var btn_book: BaseButton = $BookButton
 @onready var btn_menu: BaseButton = $MenuButton
 @onready var btn_adult: BaseButton = $AdultButton
-# 月ボタン/飛行機ボタン/潜水艦ボタンは moon_trip.gd / sky_castle.gd / submarine.gd が
+# 月/飛行機/潜水艦/おかしボタンは moon_trip.gd / sky_castle.gd / submarine.gd / candy_land.gd が
 # find_child で直接掴んで 押下処理・表示を管理する。ここでは押した時のバウンス演出だけ足す。
 @onready var btn_airplane: BaseButton = $AirplaneButton
 @onready var btn_submarine: BaseButton = $SubButton
+@onready var btn_candy: BaseButton = $CandyButton
 @onready var info_menu: Panel = $InfoMenu
 @onready var mission_label: Label = $InfoMenu/Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
@@ -100,7 +101,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine, btn_candy]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:

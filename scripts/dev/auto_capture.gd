@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -61,6 +61,8 @@ func _ready() -> void:
 			await _capture_sky()
 		CaptureMode.AUTO_SEA:
 			await _capture_sea()
+		CaptureMode.AUTO_CANDY:
+			await _capture_candy()
 	get_tree().quit()
 
 
@@ -697,3 +699,41 @@ func _capture_sea() -> void:
 	sub._surface()
 	await get_tree().create_timer(1.4).timeout
 	print("[AutoCapture] back on_sea=", sub._on_sea, " player_y=%.1f" % player.global_position.y)
+
+
+func _capture_candy() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var candy := get_tree().root.find_child("CandyLand", true, false)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if candy == null or player == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# 即時に おかしの くにへ(フェードを介さず)
+	candy.call("_build_candy_world")
+	candy.set("_world_built", true)
+	candy.call("_arrive_candy_mid")
+	await get_tree().physics_frame
+	var c: Vector3 = candy.CANDY_POS
+	print("[AutoCapture] on_candy=", candy._on_candy, " player_y=%.1f floor_y=%.1f" % [player.global_position.y, c.y])
+	# 全景(引いて見下ろし)
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = c + Vector3(0, 26, 52)
+	cam.look_at(c + Vector3(0, 3, 0))
+	cam.fov = 64.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_candy.png")
+	# 床の上・近景(ロリポップ/クッキーの家/お菓子)
+	cam.global_position = c + Vector3(10, 6, 20)
+	cam.look_at(c + Vector3(0, 2, 0))
+	cam.fov = 60.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_candy_ground.png")
+	# プレイヤー追従カメラ(実プレイの見え方)
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(true)
+	await get_tree().create_timer(0.6).timeout
+	await _save_screenshot("user://screenshot_candy_player.png")
