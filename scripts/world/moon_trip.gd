@@ -146,6 +146,17 @@ func _on_pressed() -> void:
 
 # === 月へ / 地球へ ===
 
+# おでかけメニューから 直接ワープ(ロケットの近くにいなくても)。
+func warp_in() -> void:
+	if _busy or _on_moon:
+		return
+	_go_moon()
+
+
+func is_active() -> bool:
+	return _on_moon
+
+
 func _go_moon() -> void:
 	_busy = true
 	_btn.visible = false

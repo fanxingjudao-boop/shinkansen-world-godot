@@ -377,6 +377,21 @@ theme_override_styles/hover = SubResource("Style_dpad_normal")
 theme_override_styles/normal = SubResource("Style_dpad_normal")
 theme_override_styles/pressed = SubResource("Style_dpad_pressed")
 
+[node name="WorldButton" type="Button" parent="."]
+visible = false
+layout_mode = 1
+offset_left = 140.0
+offset_top = 16.0
+offset_right = 392.0
+offset_bottom = 80.0
+text = "どこへ いく?"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_jump_normal")
+theme_override_styles/hover = SubResource("Style_jump_normal")
+theme_override_styles/normal = SubResource("Style_jump_normal")
+theme_override_styles/pressed = SubResource("Style_jump_pressed")
+
 [node name="MenuButton" type="Button" parent="."]
 layout_mode = 1
 anchor_left = 1.0

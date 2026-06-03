@@ -142,6 +142,17 @@ func _on_pressed() -> void:
 
 # === 潜航 / 浮上 ===
 
+# おでかけメニューから 直接ワープ(潜水艦の近くにいなくても)。
+func warp_in() -> void:
+	if _busy or _on_sea:
+		return
+	_dive()
+
+
+func is_active() -> bool:
+	return _on_sea
+
+
 func _dive() -> void:
 	_busy = true
 	_hide_btn()

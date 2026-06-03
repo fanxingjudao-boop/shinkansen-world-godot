@@ -31,6 +31,8 @@ extends Control
 @onready var btn_candy: BaseButton = $CandyButton
 @onready var btn_dino: BaseButton = $DinoButton
 @onready var btn_yuki: BaseButton = $YukiButton
+# 「どこへ いく?」(おでかけメニュー)。押下/表示は world_select.gd が直接管理。
+@onready var btn_world: BaseButton = $WorldButton
 @onready var info_menu: Panel = $InfoMenu
 @onready var mission_label: Label = $InfoMenu/Mission
 @onready var btn_cam_left: BaseButton = $CameraButtons/CamLeft
@@ -103,7 +105,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine, btn_candy, btn_dino, btn_yuki]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine, btn_candy, btn_dino, btn_yuki, btn_world]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:

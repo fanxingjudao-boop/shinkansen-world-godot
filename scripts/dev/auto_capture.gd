@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -67,6 +67,8 @@ func _ready() -> void:
 			await _capture_dino()
 		CaptureMode.AUTO_YUKI:
 			await _capture_yuki()
+		CaptureMode.AUTO_WORLDSEL:
+			await _capture_worldsel()
 	get_tree().quit()
 
 
@@ -829,3 +831,32 @@ func _capture_yuki() -> void:
 	yuki._return_home()
 	await get_tree().create_timer(1.4).timeout
 	print("[AutoCapture] back on_yuki=", yuki._on_yuki, " player_y=%.1f" % player.global_position.y)
+
+
+func _capture_worldsel() -> void:
+	var ws := get_tree().root.find_child("WorldSelect", true, false)
+	var moon := get_tree().root.find_child("MoonTrip", true, false)
+	var wbtn := get_tree().root.find_child("WorldButton", true, false) as Control
+	if ws == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# ① 地上で「どこへ いく?」ボタンが出るか(world_select の _process が制御)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("[AutoCapture] WorldButton visible(地上)=", (wbtn.visible if wbtn else "null"))
+	# ② メニューを開いて 6カードを撮る
+	ws.open()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_worldsel.png")
+	# ③ つき を選んだ相当: close → warp_in。どこからでも飛べるか
+	ws.close()
+	await get_tree().process_frame
+	if moon and moon.has_method("warp_in"):
+		moon.warp_in()
+	await get_tree().create_timer(1.2).timeout
+	var active = moon.is_active() if (moon and moon.has_method("is_active")) else "?"
+	print("[AutoCapture] warp_in → moon on_moon=", active, " (true なら どこからでもワープOK)")
+	# ④ ボタンは 世界の中では 隠れるか
+	await get_tree().process_frame
+	print("[AutoCapture] WorldButton visible(世界の中)=", (wbtn.visible if wbtn else "null"))

@@ -140,6 +140,17 @@ func _on_pressed() -> void:
 
 # === 行く / 帰る ===
 
+# おでかけメニューから 直接ワープ(サファリカーの近くにいなくても)。
+func warp_in() -> void:
+	if _busy or _on_dino:
+		return
+	_depart()
+
+
+func is_active() -> bool:
+	return _on_dino
+
+
 func _depart() -> void:
 	_busy = true
 	_hide_btn()

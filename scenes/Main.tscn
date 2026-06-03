@@ -1,4 +1,4 @@
-[gd_scene load_steps=62 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=63 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -40,6 +40,7 @@
 [ext_resource type="Script" path="res://scripts/world/game_state.gd" id="40_gamestate"]
 [ext_resource type="Script" path="res://scripts/world/station_manager.gd" id="41_statmgr"]
 [ext_resource type="PackedScene" path="res://scenes/ui/BookOverlay.tscn" id="42_book"]
+[ext_resource type="PackedScene" path="res://scenes/ui/WorldSelect.tscn" id="64_wsel"]
 [ext_resource type="PackedScene" path="res://scenes/fx/Fireflies.tscn" id="43_fireflies"]
 [ext_resource type="PackedScene" path="res://scenes/world/Rainbow.tscn" id="44_rainbow"]
 [ext_resource type="Script" path="res://scripts/world/mission_manager.gd" id="45_mission"]
@@ -304,6 +305,8 @@ book_path = NodePath("../../BookOverlay")
 
 [node name="BookOverlay" parent="." instance=ExtResource("42_book")]
 game_state_path = NodePath("../GameState")
+
+[node name="WorldSelect" parent="." instance=ExtResource("64_wsel")]
 
 [node name="ShootingStar" type="Node3D" parent="."]
 script = ExtResource("52_shootstar")

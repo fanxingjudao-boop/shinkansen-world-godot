@@ -142,6 +142,17 @@ func _on_pressed() -> void:
 
 # === 飛行(自動上昇 → フェード → 別世界) ===
 
+# おでかけメニューから 直接ワープ(飛行機の近くにいなくても)。
+func warp_in() -> void:
+	if _busy or _on_sky:
+		return
+	_go_sky()
+
+
+func is_active() -> bool:
+	return _on_sky
+
+
 func _go_sky() -> void:
 	_busy = true
 	_hide_btn()
