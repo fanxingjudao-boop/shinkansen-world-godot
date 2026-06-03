@@ -352,7 +352,8 @@ func _build_dino_world() -> void:
 	floor_mi.name = "DinoGround"
 	for i in range(10):
 		var a: float = float(i) / 10.0 * TAU
-		var rr: float = 36.0 + float(i % 3) * 14.0
+		# 巡航ループ(半径 CRUISE_R=28)の外に置く(サファリカーが丘を すり抜けない)
+		var rr: float = 52.0 + float(i % 3) * 12.0
 		var hill := _lsphere(self, 8.0 + float(i % 4) * 3.0, c + Vector3(cos(a) * rr, -1.0, sin(a) * rr), GROUND_DK)
 		hill.scale = Vector3(1.0, 0.35, 1.0)
 	# ジャングルの木・しだ・岩

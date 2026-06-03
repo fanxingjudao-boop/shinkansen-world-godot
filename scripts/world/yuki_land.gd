@@ -25,8 +25,8 @@ const CRUISE_R := 28.0
 const GET_RANGE := 4.0
 
 const YUKI_SKY := Color(0.5, 0.6, 0.78)             # 夕暮れ寄りの明るい空(オーロラが映える)
-const SNOW := Color(0.96, 0.97, 1.0)
-const SNOW_DK := Color(0.84, 0.88, 0.96)
+const SNOW := Color(0.84, 0.87, 0.94)      # 白すぎない雪(まぶしさ/ブルームを抑える)
+const SNOW_DK := Color(0.72, 0.78, 0.88)
 const ICE := Color(0.7, 0.86, 0.95)
 const PINE := Color(0.32, 0.5, 0.42)
 const TRUNK := Color(0.5, 0.36, 0.24)
@@ -252,15 +252,15 @@ func _apply_yuki_env() -> void:
 	if _env and _env.environment:
 		var e := _env.environment
 		e.background_color = YUKI_SKY
-		e.ambient_light_color = Color(0.78, 0.84, 0.95)
-		e.ambient_light_energy = 0.75            # 雪あかりで明るい(暗くしない=怖くない)
+		e.ambient_light_color = Color(0.72, 0.78, 0.9)
+		e.ambient_light_energy = 0.55            # 雪あかり(まぶしくない・でも暗くしない)
 		e.fog_enabled = true
 		e.fog_density = 0.0016
-		e.fog_light_color = Color(0.78, 0.86, 0.96)
+		e.fog_light_color = Color(0.74, 0.82, 0.92)
 	if _sun:
 		_sun.rotation_degrees = Vector3(-32.0, 30.0, 0.0)   # 低い夕日
 		_sun.light_color = Color(1.0, 0.92, 0.86)
-		_sun.light_energy = 0.95
+		_sun.light_energy = 0.78
 
 
 func _restore_earth_env() -> void:
@@ -330,12 +330,13 @@ func _build_yuki_world() -> void:
 	floor_mi.name = "SnowGround"
 	for i in range(10):
 		var a: float = float(i) / 10.0 * TAU
-		var rr: float = 34.0 + float(i % 3) * 14.0
+		# 巡航ループ(半径 CRUISE_R=28)の外に置く(乗り物が丘を すり抜けない)
+		var rr: float = 52.0 + float(i % 3) * 12.0
 		var hill := _lsphere(self, 9.0 + float(i % 4) * 3.0, c + Vector3(cos(a) * rr, -1.5, sin(a) * rr), SNOW_DK)
 		hill.scale = Vector3(1.0, 0.4, 1.0)
 	_build_pines(c)
 	_build_snowmen(c)
-	_build_igloo(c + Vector3(-22, 0, 14))
+	_build_igloo(c + Vector3(-16, 0, 11))   # 巡航リングの内側(すり抜け回避)
 	_build_penguins(c)
 	_build_bunnies(c)
 	_build_hot_spring(c + Vector3(16, 0, -16))
