@@ -179,6 +179,7 @@ func _arrive_home_mid() -> void:
 	_end_ride()
 	var gy: float = TerrainHeight.compute_height(SAFARI_DOCK.x + 3.0, SAFARI_DOCK.y)
 	_player.global_position = Vector3(SAFARI_DOCK.x + 3.0, gy + 1.0, SAFARI_DOCK.y)
+	_player.rotation = Vector3.ZERO
 	_player.velocity = Vector3.ZERO
 	_snap_cam()
 	_restore_earth_env()
@@ -230,10 +231,12 @@ func _drive_cruise(delta: float) -> void:
 		return
 	var dir: Vector3 = to / d
 	_player.global_position += dir * min(CRUISE_SPEED * delta, d)
+	# プレイヤー本体ごと 進行方向へ向ける(子の サファリカーと 主人公が そろって前を向く)。
+	# カメラは位置だけ追従し 向きには影響されないので 酔わない。
 	var flat := Vector2(dir.x, dir.z)
-	if _car and flat.length() > 0.05:
+	if flat.length() > 0.05:
 		var target_yaw: float = atan2(-dir.x, -dir.z)
-		_car.rotation.y = lerp_angle(_car.rotation.y, target_yaw, clamp(4.0 * delta, 0.0, 1.0))
+		_player.rotation.y = lerp_angle(_player.rotation.y, target_yaw, clamp(4.0 * delta, 0.0, 1.0))
 
 
 func _snap_cam() -> void:

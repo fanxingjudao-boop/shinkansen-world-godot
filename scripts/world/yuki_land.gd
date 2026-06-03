@@ -169,6 +169,7 @@ func _arrive_home_mid() -> void:
 	_end_ride()
 	var gy: float = TerrainHeight.compute_height(SLED_DOCK.x + 3.0, SLED_DOCK.y)
 	_player.global_position = Vector3(SLED_DOCK.x + 3.0, gy + 1.0, SLED_DOCK.y)
+	_player.rotation = Vector3.ZERO
 	_player.velocity = Vector3.ZERO
 	_snap_cam()
 	_restore_earth_env()
@@ -218,10 +219,12 @@ func _drive_cruise(delta: float) -> void:
 		return
 	var dir: Vector3 = to / d
 	_player.global_position += dir * min(CRUISE_SPEED * delta, d)
+	# プレイヤー本体ごと 進行方向へ向ける(子の そりと 主人公が そろって前を向く)。
+	# カメラは位置だけ追従し 向きには影響されないので 酔わない。
 	var flat := Vector2(dir.x, dir.z)
-	if _sled and flat.length() > 0.05:
+	if flat.length() > 0.05:
 		var target_yaw: float = atan2(-dir.x, -dir.z)
-		_sled.rotation.y = lerp_angle(_sled.rotation.y, target_yaw, clamp(4.0 * delta, 0.0, 1.0))
+		_player.rotation.y = lerp_angle(_player.rotation.y, target_yaw, clamp(4.0 * delta, 0.0, 1.0))
 
 
 func _snap_cam() -> void:
