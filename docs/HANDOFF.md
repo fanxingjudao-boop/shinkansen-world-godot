@@ -161,7 +161,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ## 進捗(2026-06-03 続き — v0.40.0〜v0.43.0)
 
-ブランチ `feature/driver-mode`。**コミット済み: `dc37cd8`(v0.40.0+v0.41.0)/ `7118324`(v0.42.0)/ v0.43.0(列車最適化)も本トピックでコミット**。実機確認後に main マージ/再エクスポート/push 予定。詳細は changelog 参照。
+**✅ 2026-06-03 デプロイ済み(本番反映)**: `feature/driver-mode` を `main` に fast-forward マージ → **`origin/main` = `47a3be1` に push 済み**。Vercel が本番URL(https://shinkansen-world-godot.vercel.app/)を自動再デプロイ。Web は CLI(`--export-release "Web"`)で再エクスポート(`for_mobile=false`・テンプレ/noindex/`robots.txt`・日本語化なしを検証)。v0.40.0〜v0.43.0 が全て本番に入った。**残るは改善さんの iPad 実機確認のみ**(① fps:駅/複数編成/草一面・列車最適化と草増量の影響、② 酔い:自動飛行/潜水艦巡航/月の惑星カメラ、③ 音、④ 各ワールド導線)。詳細は changelog 参照。
 
 **性能の予防策(v0.43.0)— 列車描画の最適化**: 過去評価で唯一残していた積み残し③。`train.gd` の `_make_material` 系を**色キーの static 共有キャッシュ**に(定数色のパーツが1000個超→十数個に集約)+ **窓を車両ごとに MultiMesh 化**(窓 draw call 約600→約55)。**見た目は不変**。車輪は回転するため据え置き(近接ゲート済み・iPad でなお重ければ台車/車輪 MultiMesh が次候補)。`AUTO_RIDE`/`TRAIN_CLOSE` で見た目不変を確認。
 
