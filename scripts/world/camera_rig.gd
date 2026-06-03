@@ -50,9 +50,10 @@ func _process(delta: float) -> void:
 
 # === 公開 API(TouchHUD のカメラボタンから呼ばれる) ===
 
-# dir = +1 で右回り、-1 で左回りに ROTATE_STEP だけ回す(なめらかに追従)
+# dir = +1(右ボタン)/-1(左ボタン)。改善さんの要望で左右ボタンの回る向きを反転
+# (右ボタンで左側が見える=見える範囲が反対)。
 func rotate_view(dir: int) -> void:
-	_yaw_target += float(dir) * ROTATE_STEP
+	_yaw_target -= float(dir) * ROTATE_STEP
 
 
 # ターゲット位置へカメラを即座にスナップ(月へのワープなど、遠距離テレポート後に

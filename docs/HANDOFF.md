@@ -159,9 +159,11 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-03 続き — 仕上げ調整(v0.40.0)+ 潜水艦で海底(v0.41.0))
+## 進捗(2026-06-03 続き — 仕上げ調整(v0.40.0)+ 潜水艦で海底(v0.41.0)+ さくら削除/草/カメラ(v0.42.0))
 
-ブランチ `feature/driver-mode`。**v0.39.0 までは commit `910de64` 済み。v0.40.0(仕上げ)と v0.41.0(潜水艦)は まだ未コミット**(実機確認後にまとめてコミット/再エクスポート/push 予定)。詳細は changelog 参照。
+ブランチ `feature/driver-mode`。**v0.41.0 までは commit `dc37cd8` 済み(v0.40.0+v0.41.0)。v0.42.0 は本トピックでコミット**。実機確認後に main マージ/再エクスポート/push 予定。詳細は changelog 参照。
+
+**フィードバック反映(v0.42.0)**: ①**さくらふぶき削除**(`Main.tscn` の Player 子 `CherryPetals` ノード+ext_resource を撤去、load_steps 60→59。各 `_set_petals` は `if _petals:` ガードで無害)。②**草をリアル&まんべんなく**(`grass.gd`/`grass.gdshader`: 1枚ペラ→**X字クロス**(SurfaceTool ArrayMesh・cull_disabled・1 draw call 維持)、`FIELD_RADIUS` 95→170・`BLADE_COUNT` 1400→4200、根元濃い/先端明るい+株ごと濃淡ゆらぎ)。③**カメラ左右ボタン反転**(`camera_rig.rotate_view` の符号反転)。**実機後の調整候補**: 草の fps(重ければ `BLADE_COUNT`/`FIELD_RADIUS` を下げる)。
 
 **仕上げ調整(v0.40.0)— 子供が遊びやすく**: ①導線: タイトル「はじめる」で `signal started`→`mission_manager` が現在ミッションを `show_notice` で案内、達成時は次も通知(パネルは「メニュー」で開く方式を維持)。②やさしい夜: `sky_color.gd` の夜を明るく(`NIGHT_AMBIENT_ENERGY`0.10→0.17・`NIGHT_BG` 明るい青紫・`NIGHT_SUN_ENERGY`0.42)。③空の城: 城を大きく(天守10×12×10・塔も)、**雲を平らに(球 scale0.42 が城を埋めていた→上面=歩く面)**+影色で立体感、到着導線(城正面 spawn・welcome・めじるしほし)。④`AirplaneButton` を下げ Moon と分離。
 

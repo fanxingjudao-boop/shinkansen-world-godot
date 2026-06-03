@@ -1,4 +1,4 @@
-[gd_scene load_steps=60 format=3 uid="uid://bmainsc000001"]
+[gd_scene load_steps=59 format=3 uid="uid://bmainsc000001"]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/world/Terrain.tscn" id="2_terrain"]
@@ -9,7 +9,6 @@
 [ext_resource type="Script" path="res://scripts/world/day_night_cycle.gd" id="7_dncyc"]
 [ext_resource type="PackedScene" path="res://scenes/world/Clouds.tscn" id="8_clouds"]
 [ext_resource type="PackedScene" path="res://scenes/world/Stars.tscn" id="9_stars"]
-[ext_resource type="PackedScene" path="res://scenes/fx/CherryPetals.tscn" id="10_petals"]
 [ext_resource type="PackedScene" path="res://scenes/entities/Train.tscn" id="11_train"]
 [ext_resource type="Resource" path="res://resources/train_data/hayabusa.tres" id="12_hayabusa"]
 [ext_resource type="Resource" path="res://resources/train_data/komachi.tres" id="13_komachi"]
@@ -258,9 +257,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, -185)
 
 [node name="Player" parent="." instance=ExtResource("3_player")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5, 0)
-
-[node name="CherryPetals" parent="Player" instance=ExtResource("10_petals")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
 
 [node name="Fireflies" parent="Player" instance=ExtResource("43_fireflies")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
