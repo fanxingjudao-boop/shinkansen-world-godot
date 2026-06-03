@@ -40,6 +40,9 @@ var _walk_phase: float = 0.0
 var gravity_scale: float = 1.0
 # 移動速度の倍率。月面カー(moon_trip.gd)に のると 1 より大きくして はやく走れる。
 var speed_scale: float = 1.0
+# げんき(おだんご等)で 永続的に少しずつ速くなる倍率。reward_manager.gd が設定。
+# 上限つきなので 怖いほど速くならない(地上も月の惑星歩きも効く)。
+var energy_speed_scale: float = 1.0
 
 # 月の「小さな惑星」モード。重力を planet_center へ向け、up を球面法線に合わせる。
 # これで球の裏側まで ぐるっと歩ける(地上/空は通常の Y 重力のまま=この値が false)。
@@ -94,7 +97,7 @@ func _camera_relative_move(input_dir: Vector2) -> Vector3:
 		var d := Vector3(input_dir.x, 0.0, input_dir.y)
 		if d.length() > 1.0:
 			d = d.normalized()
-		return d * SPEED * speed_scale
+		return d * SPEED * speed_scale * energy_speed_scale
 	var b := cam.global_transform.basis
 	var fwd := Vector3(-b.z.x, 0.0, -b.z.z)   # カメラの前を水平化(画面の奥)
 	var right := Vector3(b.x.x, 0.0, b.x.z)   # カメラの右を水平化
@@ -104,7 +107,7 @@ func _camera_relative_move(input_dir: Vector2) -> Vector3:
 	var dir := right * input_dir.x - fwd * input_dir.y
 	if dir.length() > 1.0:
 		dir = dir.normalized()
-	return dir * SPEED * speed_scale
+	return dir * SPEED * speed_scale * energy_speed_scale
 
 
 # === 月の小さな惑星モード(球面を裏側まで歩く) ===
@@ -149,7 +152,7 @@ func _planet_move(input_dir: Vector2, up: Vector3) -> Vector3:
 	var dir := right * input_dir.x - fwd * input_dir.y
 	if dir.length() > 1.0:
 		dir = dir.normalized()
-	return dir * SPEED * speed_scale
+	return dir * SPEED * speed_scale * energy_speed_scale
 
 
 # 体を 球面に合わせて立たせ(足=法線方向)、進む向きへ向ける。

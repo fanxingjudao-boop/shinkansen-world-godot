@@ -17,6 +17,11 @@ const SING_RANGE: float = 18.0        # プレイヤーからこの距離以内�
 const SING_INTERVAL_MIN: float = 7.0
 const SING_INTERVAL_MAX: float = 15.0
 
+# === なかよしの子が ときどき「ほし」を くれる(プレゼント) ===
+const GIFT_RANGE: float = 16.0
+const GIFT_INTERVAL_MIN: float = 12.0
+const GIFT_INTERVAL_MAX: float = 20.0
+
 @export var player_path: NodePath
 @export var hud_path: NodePath
 @export var game_state_path: NodePath
@@ -32,6 +37,10 @@ var _song_player: AudioStreamPlayer
 var _songs: Array = []          # AudioStreamWAV のバリエーション
 var _sing_timer: float = 6.0
 
+var _gift_player: AudioStreamPlayer
+var _gift_song: AudioStreamWAV
+var _gift_timer: float = 10.0
+
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
@@ -44,6 +53,11 @@ func _ready() -> void:
 	add_child(_song_player)
 	_build_songs()
 	_sing_timer = randf_range(SING_INTERVAL_MIN, SING_INTERVAL_MAX)
+	_gift_player = AudioStreamPlayer.new()
+	_gift_player.volume_db = -8.0
+	add_child(_gift_player)
+	_gift_song = _make_song([880.0, 1318.5], 0.14)   # やさしい「ピロン」
+	_gift_timer = randf_range(GIFT_INTERVAL_MIN, GIFT_INTERVAL_MAX)
 
 
 func _process(delta: float) -> void:
@@ -69,6 +83,12 @@ func _process(delta: float) -> void:
 		_sing_timer = randf_range(SING_INTERVAL_MIN, SING_INTERVAL_MAX)
 		_try_sing(pp)
 
+	# プレゼントのタイマー(なかよしの子が ときどき ほしを くれる)
+	_gift_timer -= delta
+	if _gift_timer <= 0.0:
+		_gift_timer = randf_range(GIFT_INTERVAL_MIN, GIFT_INTERVAL_MAX)
+		_try_gift(pp)
+
 
 # === 歌 ===
 
@@ -90,6 +110,67 @@ func _try_sing(pp: Vector3) -> void:
 		var idx: int = abs(a.get_slug().hash()) % _songs.size()
 		_song_player.stream = _songs[idx]
 		_song_player.play()
+
+
+# === プレゼント(ほし) ===
+
+# プレイヤーの近くにいる なかよし済みの子を 1 匹選び、ほしを プレゼントさせる。
+# なかよしが 多い/近い ほど もらえる(公平に 良い結果へ)。
+func _try_gift(pp: Vector3) -> void:
+	if _game_state == null:
+		return
+	var givers: Array = []
+	for child in get_children():
+		var a := child as Animal
+		if a == null or not a.is_befriended():
+			continue
+		if a.global_position.distance_to(pp) < GIFT_RANGE:
+			givers.append(a)
+	if givers.is_empty():
+		return
+	var a: Animal = givers[randi() % givers.size()]
+	a.sing()   # ぴょこっと よろこぶ
+	_spawn_gift_fx(a.global_position + Vector3(0, 1.4, 0))
+	if _hud:
+		_hud.show_notice("%s が ほしを くれた!" % a.get_display_name())
+	_game_state.add_star()
+	if _gift_player and _gift_song:
+		_gift_player.stream = _gift_song
+		_gift_player.play()
+
+
+# 金色の キラキラ(プレゼントの演出)。
+func _spawn_gift_fx(pos: Vector3) -> void:
+	var p := GPUParticles3D.new()
+	p.amount = 14
+	p.lifetime = 0.7
+	p.one_shot = true
+	p.explosiveness = 1.0
+	var pm := ParticleProcessMaterial.new()
+	pm.direction = Vector3(0, 1, 0)
+	pm.spread = 180.0
+	pm.initial_velocity_min = 1.4
+	pm.initial_velocity_max = 3.0
+	pm.gravity = Vector3(0, -2.0, 0)
+	pm.scale_min = 0.14
+	pm.scale_max = 0.36
+	p.process_material = pm
+	var qm := QuadMesh.new()
+	qm.size = Vector2(0.34, 0.34)
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(1.0, 0.85, 0.3)
+	mat.emission_enabled = true
+	mat.emission = Color(1.0, 0.85, 0.3)
+	mat.emission_energy_multiplier = 3.0
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
+	qm.material = mat
+	p.draw_pass_1 = qm
+	add_child(p)
+	p.global_position = pos
+	p.emitting = true
+	p.finished.connect(p.queue_free)
 
 
 func _build_songs() -> void:

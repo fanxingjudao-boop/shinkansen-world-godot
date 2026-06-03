@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -69,6 +69,8 @@ func _ready() -> void:
 			await _capture_yuki()
 		CaptureMode.AUTO_WORLDSEL:
 			await _capture_worldsel()
+		CaptureMode.AUTO_REWARD:
+			await _capture_reward()
 	get_tree().quit()
 
 
@@ -860,3 +862,46 @@ func _capture_worldsel() -> void:
 	# ④ ボタンは 世界の中では 隠れるか
 	await get_tree().process_frame
 	print("[AutoCapture] WorldButton visible(世界の中)=", (wbtn.visible if wbtn else "null"))
+
+
+func _capture_reward() -> void:
+	var gs := get_tree().root.find_child("GameState", true, false)
+	var player := get_tree().root.find_child("Player", true, false) as Node3D
+	var animals := get_tree().root.find_child("Animals", true, false)
+	var usagi := get_tree().root.find_child("Usagi", true, false) as Node3D
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if gs == null or player == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	# ① げんき → スピードアップ(上限つき)
+	gs.add_energy(10)
+	await get_tree().process_frame
+	print("[AutoCapture] energy=%d → energy_speed_scale=%.2f (≈1.30)" % [gs.energy, player.get("energy_speed_scale")])
+	gs.add_energy(100)
+	await get_tree().process_frame
+	print("[AutoCapture] energy=%d → energy_speed_scale=%.2f (上限1.50)" % [gs.energy, player.get("energy_speed_scale")])
+	# ② ほし → ほしのき + お祝い(7こで 5の倍数を越える)
+	for i in range(7):
+		gs.add_star()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	print("[AutoCapture] star_count=", gs.star_count, " (5こ越えで お祝い済みのはず)")
+	# ほしのき(STAR_TREE_POS=(6,-14))を斜め前から撮る
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.global_position = Vector3(9.5, 6.0, -8.5)
+	cam.look_at(Vector3(6.0, 4.4, -14.0))
+	cam.fov = 48.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_rewardtree.png")
+	# ③ なかよしギフト: うさぎを なかよしにして プレイヤー近くへ → _try_gift
+	if animals and usagi and usagi.has_method("befriend"):
+		usagi.befriend()
+		usagi.global_position = player.global_position + Vector3(2, 0, 0)
+		await get_tree().physics_frame
+		var before: int = gs.star_count
+		animals._try_gift(player.global_position)
+		await get_tree().process_frame
+		print("[AutoCapture] gift: star %d → %d (+1 なら なかよしギフトOK)" % [before, gs.star_count])
