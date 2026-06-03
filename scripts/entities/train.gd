@@ -463,20 +463,32 @@ func _build_car(car_len: float, role: String) -> Node3D:
 	return car
 
 
+# 窓は数が多く(編成全体で数百個)、同一メッシュ・同一マテリアル・静止なので
+# 車両ごとに MultiMesh で 1 draw call に集約する(性能対策・見た目は不変)。
 func _attach_windows(car: Node3D, car_len: float, count: int) -> void:
 	var window_zone: float = car_len - 1.4  # 両端を残して窓を配置する範囲
 	var window_width: float = (window_zone - WINDOW_GAP * (count - 1)) / float(count)
 	var start_z: float = -window_zone * 0.5
+
+	var w := BoxMesh.new()
+	w.size = Vector3(0.04, WINDOW_HEIGHT, window_width)
+	w.material = _make_unshaded_material(WINDOW_COLOR)  # 共有マテリアル
+
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = w
+	mm.instance_count = count * 2
+	var idx: int = 0
 	for i in range(count):
 		var center_z: float = start_z + window_width * 0.5 + i * (window_width + WINDOW_GAP)
 		for side in [1.0, -1.0]:
-			var w := BoxMesh.new()
-			w.size = Vector3(0.04, WINDOW_HEIGHT, window_width)
-			var mi := MeshInstance3D.new()
-			mi.mesh = w
-			mi.material_override = _make_unshaded_material(WINDOW_COLOR)
-			mi.position = Vector3(side * (CAR_WIDTH * 0.5 + 0.01), 0.18, center_z)
-			car.add_child(mi)
+			var origin := Vector3(side * (CAR_WIDTH * 0.5 + 0.01), 0.18, center_z)
+			mm.set_instance_transform(idx, Transform3D(Basis(), origin))
+			idx += 1
+
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	car.add_child(mmi)
 
 
 func _attach_bogie(car: Node3D, car_len: float, side_z: float) -> void:
@@ -691,28 +703,49 @@ func _attach_pantograph(car: Node3D) -> void:
 	_panto.append({ "node": contact_mi, "base_y": contact_mi.position.y })
 
 
-# === マテリアル生成 ===
+# === マテリアル生成(色キーで共有・性能対策) ===
+# 旧実装は呼ぶたびに新しい StandardMaterial3D を作っていた(窓・車輪・台車など色が
+# 定数のパーツでも 1000 個超のマテリアルが生成されていた)。色+粗さ+種別をキーに
+# 共有キャッシュ化して、VRAM とレンダラーの状態切替を大幅に削減する。見た目は不変。
+# static なので全編成・全シーンで 1 つのキャッシュを共有(定数色は全部 1 個に集約)。
+static var _mat_cache: Dictionary = {}
+
 
 func _make_material(color: Color, roughness: float) -> StandardMaterial3D:
+	var key: String = "s|%s|%.2f" % [color.to_html(true), roughness]
+	var cached = _mat_cache.get(key)
+	if cached:
+		return cached
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.roughness = roughness
 	mat.metallic = 0.1
+	_mat_cache[key] = mat
 	return mat
 
 
 func _make_unshaded_material(color: Color) -> StandardMaterial3D:
+	var key: String = "u|%s" % color.to_html(true)
+	var cached = _mat_cache.get(key)
+	if cached:
+		return cached
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_mat_cache[key] = mat
 	return mat
 
 
 func _make_emission_material(color: Color) -> StandardMaterial3D:
+	var key: String = "e|%s" % color.to_html(true)
+	var cached = _mat_cache.get(key)
+	if cached:
+		return cached
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
 	mat.emission_enabled = true
 	mat.emission = color
 	mat.emission_energy_multiplier = 1.5
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	_mat_cache[key] = mat
 	return mat

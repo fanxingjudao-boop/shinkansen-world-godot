@@ -159,9 +159,11 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-03 続き — 仕上げ調整(v0.40.0)+ 潜水艦で海底(v0.41.0)+ さくら削除/草/カメラ(v0.42.0))
+## 進捗(2026-06-03 続き — v0.40.0〜v0.43.0)
 
-ブランチ `feature/driver-mode`。**v0.41.0 までは commit `dc37cd8` 済み(v0.40.0+v0.41.0)。v0.42.0 は本トピックでコミット**。実機確認後に main マージ/再エクスポート/push 予定。詳細は changelog 参照。
+ブランチ `feature/driver-mode`。**コミット済み: `dc37cd8`(v0.40.0+v0.41.0)/ `7118324`(v0.42.0)/ v0.43.0(列車最適化)も本トピックでコミット**。実機確認後に main マージ/再エクスポート/push 予定。詳細は changelog 参照。
+
+**性能の予防策(v0.43.0)— 列車描画の最適化**: 過去評価で唯一残していた積み残し③。`train.gd` の `_make_material` 系を**色キーの static 共有キャッシュ**に(定数色のパーツが1000個超→十数個に集約)+ **窓を車両ごとに MultiMesh 化**(窓 draw call 約600→約55)。**見た目は不変**。車輪は回転するため据え置き(近接ゲート済み・iPad でなお重ければ台車/車輪 MultiMesh が次候補)。`AUTO_RIDE`/`TRAIN_CLOSE` で見た目不変を確認。
 
 **フィードバック反映(v0.42.0)**: ①**さくらふぶき削除**(`Main.tscn` の Player 子 `CherryPetals` ノード+ext_resource を撤去、load_steps 60→59。各 `_set_petals` は `if _petals:` ガードで無害)。②**草をリアル&まんべんなく**(`grass.gd`/`grass.gdshader`: 1枚ペラ→**X字クロス**(SurfaceTool ArrayMesh・cull_disabled・1 draw call 維持)、`FIELD_RADIUS` 95→170・`BLADE_COUNT` 1400→4200、根元濃い/先端明るい+株ごと濃淡ゆらぎ)。③**カメラ左右ボタン反転**(`camera_rig.rotate_view` の符号反転)。**実機後の調整候補**: 草の fps(重ければ `BLADE_COUNT`/`FIELD_RADIUS` を下げる)。
 
