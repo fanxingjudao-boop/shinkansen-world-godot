@@ -50,8 +50,9 @@ const HEADLIGHT_COLOR: Color = Color(1.0, 1.0, 0.8)
 
 # === 乗客(A-5 遊び心: 窓から手を振る)===
 # 窓の内側に乗客シルエットを置く。大半は静止(車両ごと MultiMesh=1 draw call・距離カリング)で
-# 「乗っている」感を出し、各車両に 1 人だけ「手を振る乗客」を実ノードで作って、
-# すれ違いざまに腕を振る(player.wave と同じバネ感)。怖くないよう顔は作らず真っ黒も使わない。
+# 「乗っている」感を出し、各車両に 1 人だけ「挨拶する乗客」を実ノードで作って、
+# すれ違いざまに ぴょこっと喜ぶ(上下バウンス+♥)。腕は出さない(細い棒が動くと幼児には怖い)。
+# 怖くないよう顔は作らず真っ黒も使わない。
 const PASSENGER_INSET: float = 0.06        # 窓より内側へ引っ込める量(X)
 const PASSENGER_Y: float = 0.06            # 窓中心(0.18)よりやや下=座っている高さ
 const PASSENGER_RADIUS: float = 0.16       # シルエットの頭+肩の大きさ
@@ -76,7 +77,7 @@ var _path_follow: PathFollow3D     # 編成中央(乗車カメラ/アンカー�
 var _parts: Array = []             # 各車両・連結部 {follow: PathFollow3D, offset: float(弧長)}
 var _wheels: Array = []            # 全車輪の MeshInstance3D(走行に応じて回す。近接時のみ)
 var _passenger_mmis: Array = []    # 静止乗客の MultiMeshInstance3D(距離カリング対象)
-var _wavers: Array = []            # 手を振る乗客 [{root: Node3D, arm: Node3D(肩支点)}]
+var _wavers: Array = []            # 挨拶でぴょこっと喜ぶ乗客 [{root: Node3D, base_y: float}]
 var _passengers_visible: bool = true
 var _passengers_waving: bool = false
 var _wave_cooldown: float = 0.0
@@ -567,8 +568,8 @@ func _attach_passengers(car: Node3D, car_len: float, count: int, role: String) -
 		_build_waver(car, Vector3(wside * inset_x, PASSENGER_Y, wcz), sit_color)
 
 
-# 手を振る乗客 1 人を組み立てる。胴体+頭(やわらかい色・顔なし)と、肩を支点にした腕。
-# 腕は player.wave と同様に z 回転で上げ・x 回転で振る。
+# すれ違いざまに「ぴょこっ」と喜ぶ乗客 1 人を組み立てる。胴体+頭(やわらかい色・顔なし)のみ。
+# 腕は出さない(細い棒が動くと幼児には怖い=改善さんフィードバック v0.51.1)。挨拶は上下バウンスで表す。
 func _build_waver(car: Node3D, window_pos: Vector3, color: Color) -> void:
 	var root := Node3D.new()
 	root.position = window_pos
@@ -583,20 +584,8 @@ func _build_waver(car: Node3D, window_pos: Vector3, color: Color) -> void:
 	body.material_override = _make_unshaded_material(color)
 	root.add_child(body)
 
-	# 腕(肩支点 Node3D の下に細い腕)。支点で回すと腕が振れる。
-	var arm_pivot := Node3D.new()
-	arm_pivot.position = Vector3(0, PASSENGER_RADIUS * 0.4, 0)
-	var arm := MeshInstance3D.new()
-	var amesh := BoxMesh.new()
-	amesh.size = Vector3(0.05, PASSENGER_RADIUS * 1.3, 0.05)
-	arm.mesh = amesh
-	arm.material_override = _make_unshaded_material(color)
-	arm.position = Vector3(0, -PASSENGER_RADIUS * 0.6, 0)  # 支点から下へ伸びる
-	arm_pivot.add_child(arm)
-	root.add_child(arm_pivot)
-
 	car.add_child(root)
-	_wavers.append({ "root": root, "arm": arm_pivot })
+	_wavers.append({ "root": root, "base_y": window_pos.y })
 
 
 # すれ違いざまに乗客が手を振る(TrainGreeters から呼ばれる public API)。
@@ -611,22 +600,19 @@ func wave_passengers() -> void:
 	_passengers_waving = true
 	_wave_cooldown = WAVE_COOLDOWN
 	for w in _wavers:
-		var arm := w["arm"] as Node3D
-		if arm == null:
+		var root := w["root"] as Node3D
+		if root == null:
 			continue
+		var base_y: float = float(w["base_y"])
 		var tw := create_tween()
-		# 腕を ぴょこっと 上げる(player.wave と同じバネ感)
-		tw.tween_property(arm, "rotation:z", -2.3, 0.18) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		for i in range(2):  # ふりふり(2 往復)
-			tw.tween_property(arm, "rotation:x", 0.5, 0.18).set_trans(Tween.TRANS_SINE)
-			tw.tween_property(arm, "rotation:x", -0.3, 0.18).set_trans(Tween.TRANS_SINE)
-		tw.tween_property(arm, "rotation:x", 0.0, 0.12)
-		tw.tween_property(arm, "rotation:z", 0.0, 0.18) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		# ぴょこっと 喜ぶ(animal.wave_back と同じやさしいバウンス。腕は出さない=怖くない)
+		tw.tween_property(root, "position:y", base_y + 0.18, 0.16) \
+			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		tw.tween_property(root, "position:y", base_y, 0.28) \
+			.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	_pop_wave_heart()
 	var done := create_tween()
-	done.tween_interval(1.4)
+	done.tween_interval(0.5)
 	done.tween_callback(func() -> void: _passengers_waving = false)
 
 
