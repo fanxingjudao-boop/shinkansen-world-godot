@@ -134,8 +134,7 @@ func _on_pressed() -> void:
 		if _buggy and _player.global_position.distance_to(_buggy_pos) < BUGGY_RANGE:
 			_mount_buggy()
 			return
-		if _player.global_position.distance_to(_moon_rocket_pos) < ENTER_RANGE:
-			_go_home()
+		_go_home()  # カー以外なら 月のどこからでも おうちへ かえる(迷っても帰れる)
 		return
 	# 乗車中は月へ行かない(状態崩壊の防止)
 	if _ride != null and _ride.has_method("is_riding") and _ride.is_riding():
@@ -661,8 +660,8 @@ func _update_moon_button() -> void:
 		want = "カーから おりる"
 	elif _buggy and pp.distance_to(_buggy_pos) < BUGGY_RANGE:
 		want = "カーに のる"
-	elif pp.distance_to(_moon_rocket_pos) < ENTER_RANGE:
-		want = "おうちへ かえる"
+	else:
+		want = "おうちへ かえる"  # 月のどこにいても いつでも帰れる(他ワールドと同じ常時表示)
 	if want == _moon_btn_text:
 		return
 	_moon_btn_text = want

@@ -101,8 +101,8 @@ func _process(delta: float) -> void:
 		_update_decor(delta)
 		# ほしの 浮遊・回転・獲得
 		_update_stars(delta)
-		var near_home: bool = _player.global_position.distance_to(_park_pos) < ENTER_RANGE
-		_set_btn_state("おうちへ かえる" if near_home else "")
+		# 空のどこにいても いつでも帰れる(雲の島で迷っても戻れる・他ワールドと同じ常時表示)
+		_set_btn_state("おうちへ かえる")
 	else:
 		var riding: bool = _ride != null and _ride.has_method("is_riding") and _ride.is_riding()
 		var near: bool = (not riding) and _player.global_position.distance_to(_park_pos) < ENTER_RANGE
@@ -130,8 +130,7 @@ func _on_pressed() -> void:
 	if _busy:
 		return
 	if _on_sky:
-		if _player.global_position.distance_to(_park_pos) < ENTER_RANGE:
-			_go_home()
+		_go_home()  # 空のどこからでも おうちへ かえる(迷っても帰れる)
 		return
 	# 乗車中は飛行機に乗らない(状態崩壊の防止)
 	if _ride != null and _ride.has_method("is_riding") and _ride.is_riding():
