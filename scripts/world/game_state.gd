@@ -21,6 +21,10 @@ var visited_dino: bool = false        # サファリカーで きょうりゅう
 var visited_yuki: bool = false        # そりで ゆきの くにへ行ったことがある(ミッション用)
 var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
 var play_count: int = 0         # あそんだ かいすう(起動ごとに +1。親モードで表示)
+# かくれんぼで みつけた子の id(重複なし)。図鑑の「かくれんぼ はかせ」スタンプ用にセーブする。
+var hidden_found: Array[String] = []
+# かくれんぼの子の ぜんぶの数(hide_and_seek.gd が起動時にセット。図鑑の「○/△」表示用。セーブ不要)。
+var hidden_total: int = 0
 
 
 func add_boarded(slug: String) -> void:
@@ -104,6 +108,18 @@ func set_drove_train() -> void:
 		return
 	drove_train = true
 	changed.emit()
+
+
+# かくれんぼの子を みつけたら 記録(同じ子は 一度だけ)。
+func add_hidden(id: String) -> void:
+	if id == "" or id in hidden_found:
+		return
+	hidden_found.append(id)
+	changed.emit()
+
+
+func has_hidden(id: String) -> bool:
+	return id in hidden_found
 
 
 # === getter(HUD / 図鑑用) ===

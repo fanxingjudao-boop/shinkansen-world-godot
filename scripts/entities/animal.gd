@@ -120,6 +120,22 @@ func sing() -> void:
 	tw.tween_callback(func() -> void: _celebrating = false)
 
 
+# プレイヤーが手を振ったとき、こちらも気づいて ぴょこっと喜び ハートを出す。
+# AnimalManager.request_wave から、近くの子に呼ばれる。なかよし前でも応えてくれる(あいさつ)。
+func wave_back() -> void:
+	if _celebrating:
+		return
+	_celebrating = true
+	_state = St.IDLE
+	_pop_heart()
+	var tw := create_tween()
+	tw.tween_property(_visual, "position:y", _base_visual_y + 0.5, 0.16) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_visual, "position:y", _base_visual_y, 0.28) \
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _celebrating = false)
+
+
 # 頭上に音符をふわっと出して斜め上に上昇フェード
 func _pop_note() -> void:
 	var note := Label3D.new()

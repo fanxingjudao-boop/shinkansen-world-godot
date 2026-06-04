@@ -19,6 +19,9 @@ const TAB_DIRS: Dictionary = {
 var _game_state: Node
 var _current_tab: String = "train"
 
+# どうぶつタブの上に出す「かくれんぼ」進捗ラベル(B-1)。一度だけ作って使い回す。
+var _hide_label: Label
+
 # でんしゃの詳細パネル(セルをタップで表示)。コードで一度だけ組み立てて使い回す。
 var _detail: Panel
 var _detail_swatch: ColorRect
@@ -56,10 +59,42 @@ func close() -> void:
 func _show_tab(tab: String) -> void:
 	_current_tab = tab
 	_hide_detail()
+	_update_hide_label(tab)
 	for c in grid.get_children():
 		c.queue_free()
 	for e in _load_master(tab):
 		grid.add_child(_make_cell(e))
+
+
+# どうぶつタブのときだけ「かくれんぼ」の みつけた数を出す(ぜんぶで はかせ)。
+func _update_hide_label(tab: String) -> void:
+	_ensure_hide_label()
+	if _hide_label == null:
+		return
+	if tab == "animal" and _game_state != null and _game_state.hidden_total > 0:
+		var n: int = _game_state.hidden_found.size()
+		var total: int = _game_state.hidden_total
+		if n >= total:
+			_hide_label.text = "★ かくれんぼ はかせ! ぜんぶ みつけた (%d/%d)" % [n, total]
+		else:
+			_hide_label.text = "かくれんぼ: %d/%d みつけた" % [n, total]
+		_hide_label.visible = true
+	else:
+		_hide_label.visible = false
+
+
+func _ensure_hide_label() -> void:
+	if _hide_label:
+		return
+	var vbox := grid.get_parent()
+	if vbox == null:
+		return
+	_hide_label = Label.new()
+	_hide_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hide_label.add_theme_font_size_override("font_size", 26)
+	_hide_label.add_theme_color_override("font_color", Color(0.85, 0.55, 0.2))
+	vbox.add_child(_hide_label)
+	vbox.move_child(_hide_label, grid.get_index())   # グリッドの すぐ上に置く
 
 
 # === マスターデータ読込 ===

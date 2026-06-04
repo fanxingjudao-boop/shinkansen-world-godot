@@ -35,6 +35,8 @@ var _arm_r: Node3D
 var _leg_l: Node3D
 var _leg_r: Node3D
 var _walk_phase: float = 0.0
+# 手を振っている間は true。歩行アニメが右腕を触らないようにして競合を避ける。
+var _waving: bool = false
 
 # 重力の倍率。月旅行(moon_trip.gd)で小さくするとふわっと跳べる。
 var gravity_scale: float = 1.0
@@ -183,17 +185,41 @@ func _animate_walk(delta: float, moving: bool) -> void:
 		_walk_phase += delta * WALK_FREQ
 		var s: float = sin(_walk_phase) * WALK_SWING
 		_arm_l.rotation.x = s
-		_arm_r.rotation.x = -s
+		if not _waving:
+			_arm_r.rotation.x = -s
 		_leg_l.rotation.x = -s
 		_leg_r.rotation.x = s
 		_visual.position.y = abs(sin(_walk_phase * 2.0)) * 0.06
 	else:
 		var t: float = clamp(10.0 * delta, 0.0, 1.0)
 		_arm_l.rotation.x = lerp_angle(_arm_l.rotation.x, 0.0, t)
-		_arm_r.rotation.x = lerp_angle(_arm_r.rotation.x, 0.0, t)
+		if not _waving:
+			_arm_r.rotation.x = lerp_angle(_arm_r.rotation.x, 0.0, t)
 		_leg_l.rotation.x = lerp_angle(_leg_l.rotation.x, 0.0, t)
 		_leg_r.rotation.x = lerp_angle(_leg_r.rotation.x, 0.0, t)
 		_visual.position.y = lerp(_visual.position.y, 0.0, t)
+
+
+# 「てをふる」: 右腕を上げて ふりふり する(AnimalManager.request_wave から呼ばれる)。
+# 振っている間は _waving で歩行アニメの右腕を止め、tween と競合させない。
+# 支点(肩)で z 回転=腕を横に上げる / x 回転=前後に振る。腕は下向き(-Y)に伸びている。
+func wave() -> void:
+	if _waving or _arm_r == null:
+		return
+	_waving = true
+	var tw := create_tween()
+	# 腕を ぴょこっと 上げる
+	tw.tween_property(_arm_r, "rotation:z", -2.3, 0.18) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	# ふりふり(2 往復)
+	for i in range(2):
+		tw.tween_property(_arm_r, "rotation:x", 0.5, 0.15).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(_arm_r, "rotation:x", -0.3, 0.15).set_trans(Tween.TRANS_SINE)
+	# 腕を 下ろす
+	tw.tween_property(_arm_r, "rotation:x", 0.0, 0.12)
+	tw.tween_property(_arm_r, "rotation:z", 0.0, 0.18) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _waving = false)
 
 
 # おだんごを食べたとき等の「やったね!」のぴょこっと喜び(scale バウンス)。

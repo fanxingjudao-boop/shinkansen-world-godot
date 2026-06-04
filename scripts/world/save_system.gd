@@ -44,6 +44,7 @@ func _save() -> void:
 		"yuki": _gs.visited_yuki,
 		"drove": _gs.drove_train,
 		"play_count": _gs.play_count,
+		"hidden": _gs.hidden_found,
 	}
 	var f := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if f:
@@ -76,6 +77,7 @@ func _load() -> void:
 	_gs.visited_yuki = bool(d.get("yuki", false))
 	_gs.drove_train = bool(d.get("drove", false))
 	_gs.play_count = int(d.get("play_count", 0))
+	_gs.hidden_found = _to_str_array(d.get("hidden", []))
 
 
 func _to_str_array(a: Variant) -> Array[String]:

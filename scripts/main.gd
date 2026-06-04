@@ -8,7 +8,21 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_settle_player_on_terrain()
+	_spawn_hide_and_seek()
 	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
+
+# かくれんぼ動物(PLAYFUL_DETAILS B-1)を Main 直下に生成。
+# Main.tscn を編集せず、起動時に load + add_child で足す(load_steps を増やさない)。
+# この時点で Player / GameState / TouchHUD は すでに居るので、本体が自分で参照を探す。
+func _spawn_hide_and_seek() -> void:
+	if has_node("HideAndSeek"):
+		return
+	var hs_script := load("res://scripts/world/hide_and_seek.gd")
+	if hs_script == null:
+		return
+	var hs: Node3D = hs_script.new()
+	hs.name = "HideAndSeek"
+	add_child(hs)
 
 # Player の初期 Y 座標を地形高さに合わせる。
 # .tscn 上の Y は適当(空中)で良く、ここで確実に地形に着地させる。

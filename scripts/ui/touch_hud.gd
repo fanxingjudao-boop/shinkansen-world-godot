@@ -15,6 +15,7 @@ extends Control
 @onready var btn_jump: BaseButton = $ActionButtons/Jump
 @onready var btn_touch: BaseButton = $ActionButtons/Touch
 @onready var btn_nagame: BaseButton = $ActionButtons/Nagame
+@onready var btn_wave: BaseButton = $ActionButtons/Wave
 @onready var prompt: Label = $Prompt
 @onready var notice: Label = $Notice
 @onready var fade: ColorRect = $Fade
@@ -85,6 +86,9 @@ func _ready() -> void:
 	# 「ながめ」ボタン: 乗車中だけ表示し、押すと車内視点を巡回
 	if btn_nagame:
 		btn_nagame.pressed.connect(_on_nagame_pressed)
+	# 「てをふる」ボタン: 主人公が手を振り、近くの動物が応える(地上を歩いている時に表示)
+	if btn_wave:
+		btn_wave.pressed.connect(_on_wave_pressed)
 
 	# うんてんしゅモードのボタン群を RideController へ橋渡し(btn_nagame と同方式)
 	if btn_unten:
@@ -105,7 +109,7 @@ func _ready() -> void:
 	if btn_cam_right:
 		btn_cam_right.pressed.connect(func() -> void: _rotate_camera(1))
 
-	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine, btn_candy, btn_dino, btn_yuki, btn_world]:
+	for b in [btn_up, btn_down, btn_left, btn_right, btn_jump, btn_touch, btn_book, btn_menu, btn_adult, btn_cam_left, btn_cam_right, btn_nagame, btn_wave, btn_unten, btn_go, btn_stop, btn_branch_left, btn_branch_right, btn_airplane, btn_submarine, btn_candy, btn_dino, btn_yuki, btn_world]:
 		_add_press_bounce(b)
 
 func _bind(btn: BaseButton, action: StringName) -> void:
@@ -134,6 +138,8 @@ func set_riding(is_riding: bool) -> void:
 		btn_touch.text = "おりる" if is_riding else "タッチ"
 	if btn_nagame:
 		btn_nagame.visible = is_riding  # 乗車中だけ「ながめ」ボタンを出す
+	if btn_wave:
+		btn_wave.visible = not is_riding  # 「てをふる」は 歩いている時だけ(ながめ と同じ位置で入れ替わる)
 	if btn_unten:
 		btn_unten.visible = is_riding   # 乗車中だけ「うんてん」ボタンを出す
 	if not is_riding:
@@ -237,6 +243,13 @@ func _on_touch_pressed() -> void:
 func _on_nagame_pressed() -> void:
 	if _ride_controller and _ride_controller.has_method("cycle_ride_view"):
 		_ride_controller.cycle_ride_view()
+
+# 「てをふる」ボタン: AnimalManager(Animals ノード)に手振りを依頼。
+# 主人公が手を振り、近くの動物が応える。AnimalManager がプレイヤー参照を持つので一任する。
+func _on_wave_pressed() -> void:
+	var animals := get_tree().root.find_child("Animals", true, false)
+	if animals and animals.has_method("request_wave"):
+		animals.request_wave()
 
 # 「うんてん」ボタン: 運転手モードのトグルを RideController に依頼。
 func _on_unten_pressed() -> void:

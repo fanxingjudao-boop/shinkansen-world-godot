@@ -250,6 +250,19 @@ theme_override_styles/hover = SubResource("Style_touch_normal")
 theme_override_styles/normal = SubResource("Style_touch_normal")
 theme_override_styles/pressed = SubResource("Style_touch_pressed")
 
+[node name="Wave" type="Button" parent="ActionButtons"]
+layout_mode = 0
+offset_top = -104.0
+offset_right = 200.0
+offset_bottom = -8.0
+text = "てをふる"
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/focus = SubResource("Style_jump_normal")
+theme_override_styles/hover = SubResource("Style_jump_normal")
+theme_override_styles/normal = SubResource("Style_jump_normal")
+theme_override_styles/pressed = SubResource("Style_jump_pressed")
+
 [node name="Prompt" type="Label" parent="."]
 visible = false
 layout_mode = 1

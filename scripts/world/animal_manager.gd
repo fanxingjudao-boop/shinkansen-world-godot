@@ -22,6 +22,10 @@ const GIFT_RANGE: float = 16.0
 const GIFT_INTERVAL_MIN: float = 12.0
 const GIFT_INTERVAL_MAX: float = 20.0
 
+# === 手を振ると みんなが 応える ===
+const WAVE_RANGE: float = 15.0     # この距離以内の子が みんな 応える
+const WAVE_FALLBACK_RANGE: float = 60.0   # 近くに 誰も いなくても いちばん近い子(この範囲内)が必ず 1 匹 応える
+
 @export var player_path: NodePath
 @export var hud_path: NodePath
 @export var game_state_path: NodePath
@@ -41,6 +45,9 @@ var _gift_player: AudioStreamPlayer
 var _gift_song: AudioStreamWAV
 var _gift_timer: float = 10.0
 
+var _wave_player: AudioStreamPlayer
+var _wave_song: AudioStreamWAV
+
 
 func _ready() -> void:
 	_player = get_node_or_null(player_path) as Node3D
@@ -58,6 +65,10 @@ func _ready() -> void:
 	add_child(_gift_player)
 	_gift_song = _make_song([880.0, 1318.5], 0.14)   # やさしい「ピロン」
 	_gift_timer = randf_range(GIFT_INTERVAL_MIN, GIFT_INTERVAL_MAX)
+	_wave_player = AudioStreamPlayer.new()
+	_wave_player.volume_db = -9.0
+	add_child(_wave_player)
+	_wave_song = _make_song([659.25, 880.0], 0.12)    # やさしい「ピョン」(手を振る音)
 
 
 func _process(delta: float) -> void:
@@ -137,6 +148,41 @@ func _try_gift(pp: Vector3) -> void:
 	if _gift_player and _gift_song:
 		_gift_player.stream = _gift_song
 		_gift_player.play()
+
+
+# === 手を振る(HUD の「てをふる」ボタン → touch_hud.gd から呼ばれる) ===
+
+# 主人公が手を振り、近くの動物が みんな 応える。届かなくても いちばん近い子が 必ず 1 匹 応える
+# (子供配慮: 呼びかけが むなしく ならないよう 公平に 良い結果へ)。
+func request_wave() -> void:
+	if _player and _player.has_method("wave"):
+		_player.wave()
+	if _player == null:
+		return
+	var pp: Vector3 = _player.global_position
+	var responders: Array = []
+	var nearest: Animal = null
+	var nearest_d: float = INF
+	for child in get_children():
+		var a := child as Animal
+		if a == null:
+			continue
+		var d: float = a.global_position.distance_to(pp)
+		if d < nearest_d:
+			nearest_d = d
+			nearest = a
+		if d < WAVE_RANGE:
+			responders.append(a)
+	# 近くに 誰も いなくても、そこそこ近い子が 1 匹だけ 必ず 応える(遠い別世界では誰も応えない)。
+	if responders.is_empty() and nearest != null and nearest_d < WAVE_FALLBACK_RANGE:
+		responders.append(nearest)
+	if responders.is_empty():
+		return
+	for a in responders:
+		a.wave_back()
+	if _wave_player and _wave_song:
+		_wave_player.stream = _wave_song
+		_wave_player.play()
 
 
 # 金色の キラキラ(プレゼントの演出)。
