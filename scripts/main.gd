@@ -15,6 +15,7 @@ func _ready() -> void:
 	_spawn_extra("MagicSteps", "res://scripts/fx/magic_steps.gd")         # B-6 きらきらふみいし
 	_spawn_extra("Interactables", "res://scripts/world/interactables.gd") # B-2 たたくと反応するもの
 	_spawn_extra("TrainGreeters", "res://scripts/world/train_greeters.gd") # A-5 乗客が手を振る
+	_spawn_extra("Instruments", "res://scripts/world/instruments.gd")      # B-5 楽器(押すと音)
 	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
 
 # 指定スクリプトの Node3D を Main 直下に 1 つだけ 足す(同名が居れば 何もしない)。

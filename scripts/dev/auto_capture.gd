@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -73,6 +73,8 @@ func _ready() -> void:
 			await _capture_reward()
 		CaptureMode.AUTO_GREET:
 			await _capture_greet()
+		CaptureMode.AUTO_MUSIC:
+			await _capture_music()
 	get_tree().quit()
 
 
@@ -496,6 +498,39 @@ func _capture_ride() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _save_screenshot("user://screenshot_alight.png")
+
+
+# B-5 検証: 楽器(もっきん/ラッパ)を デバッグカメラで写す。_ready で組み立て済なので
+# 表示と 配置を確認する(タップ反応は B-2 と同じ仕組み)。
+func _capture_music() -> void:
+	var inst := get_tree().root.find_child("Instruments", true, false)
+	if inst == null:
+		print("[AutoCapture] Instruments not found")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var roots: Array = []
+	for c in inst.get_children():
+		if c is Node3D:
+			roots.append(c)  # [0]=もっきん [1]=ラッパ(AudioStreamPlayer は Node3D でない)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.fov = 55.0
+	if roots.size() >= 1:
+		var t: Vector3 = (roots[0] as Node3D).global_position
+		cam.global_position = t + Vector3(0.0, 2.6, 4.8)
+		cam.look_at(t + Vector3(0, 0.5, 0))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_music_xylophone.png")
+	if roots.size() >= 2:
+		var t2: Vector3 = (roots[1] as Node3D).global_position
+		cam.global_position = t2 + Vector3(0.0, 2.2, 4.0)
+		cam.look_at(t2 + Vector3(0, 0.6, 0))
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_music_trumpet.png")
 
 
 # A-5 検証: 乗客の手振り。乗車→窓辺視点で他編成に手を振らせて撮影、降車後にも撮影。
