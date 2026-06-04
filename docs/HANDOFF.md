@@ -159,14 +159,21 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-03 続き — v0.40.0〜v0.48.1)
+## 進捗(2026-06-04 — 遊び心 第1弾 v0.49.0 / 第2弾 v0.50.0)
 
 ### ▶ 現在地(次セッションはここから)
 
-- **ブランチ**: `main`(作業は main 直接。`feature/driver-mode` は過去の作業ブランチでマージ済)。
-- **コミット状況**: ローカル `main` = `a34afaa`。**本番 `origin/main` = `8a05359`(= v0.48.0 まで反映済・Vercel デプロイ済)**。
-  - **⚠️ 未 push が 3 コミット**: `467fc2c`(reward_manager.gd.uid)/ `61c1840`(v0.48.1 雪まぶしさ・丘すり抜け修正)/ `a34afaa`(その Web 再エクスポート)。
+- **ブランチ**: `main`(作業は main 直接)。
+- **コミット状況**: ローカル `main` と **本番 `origin/main` は v0.49.0(`0086f29`)まで push 済・Vercel デプロイ済**。その上に **v0.50.0(遊び心 第2弾)をコミット**(下記)。**v0.50.0 はまだ未 push**。
   - **push は この環境ではブロックされる**ので、改善さんに `! git push origin main` を依頼する運用(プロンプトに `!` 付きで入力 → このセッション内で実行)。push 後 Vercel が自動デプロイ。
+  - **⚠️ Web 再エクスポートはまだ。** v0.50.0 を実機/ブラウザで遊ぶには `export/web` の再エクスポートが必要(下記デプロイ手順)。改善さんがソース実行(F5)で先に体感確認してもよい。
+- **遊び心の追加分(第1弾 v0.49.0 + 第2弾 v0.50.0)の要点**:
+  - 仕様は `docs/PLAYFUL_DETAILS.md`。実装方式は **`main.gd` の `_spawn_extra(name, script)` で Main 直下に小ノードを起動時生成**(`Main.tscn` 不変・`load_steps` 据え置き・セーブ項目を増やさない)。各本体が `find_child("Player")` 等で自分の参照を探す。
+  - 第1弾(v0.49.0): **A-1 手をふるとみんなが応える** / **B-1 かくれんぼ動物**(`scripts/world/hide_and_seek.gd`)。
+  - 第2弾(v0.50.0): **B-6 きらきらふみいし**(`scripts/fx/magic_steps.gd`)/ **C-1 くしゃみ・あくび・うとうと**(`scripts/entities/animal.gd` に追記)/ **B-2 たたくと反応するもの**(`scripts/world/interactables.gd`)。
+  - **A-3 足元の鳥・蝶は改善さんの判断で見送り**(2026-06-04)。一度 `scripts/fx/critters.gd` を実装したが削除済。`PLAYFUL_DETAILS.md` に〔見送り〕明記、再着手しない。
+  - **B-2 は唯一 物理ピッキング方式**: `interactables.gd` が `get_viewport().physics_object_picking = true` にして `Area3D.input_event` でタップを拾う(他の小ネタは近接式)。**Web/iPad でタップが確実に効くか・HUD ボタンと干渉しないかは実機未確認**(最優先の確認項目)。
+- **次セッションの最重要タスク = 改善さんの実機/ブラウザ体感確認**(v0.50.0): ①B-2 のタップが効くか(物理ピッキングの実機挙動)②ふみいしの位置(`magic_steps.gd SPOTS`)・頻度・かわいさ ③動物の小しぐさ(`animal.gd` の `QUIRK_MIN/MAX`・音量 `_voice.volume_db`)の可愛さ・うるささ。OK なら Web 再エクスポート→push。
 - **デプロイ手順**: Web は CLI `Godot --headless --export-release "Web" export/web/index.html` で再エクスポート → 検証(`for_mobile=false`・presets 差分なし・`index.*` で日本語化なし・noindex)→ `export/web/index.html`+`index.pck` を明示 add でコミット → push。`export/web` は CLI 実行で毎回汚れるので、ソースのコミット前は必ず `git checkout -- export/web`。
 - **実装済みの全体像**: 電車(乗る/運転/分岐)・6つの別世界(つき/そら/うみ/おかし/きょうりゅう/ゆき、いずれも乗り物→ワープ)・**おでかけメニュー「どこへ いく?」**(1タップで各世界)・**集めるとごほうび**(げんき=速度UP/ほし=お祝い+ほしのき/なかよし=動物がほしをくれる)・なかよし/星/図鑑/ミッション/親モード/昼夜。
 - **残る最重要タスク = 改善さんの iPad 実機確認**(push 後): ①各ワールドの fps(草4200・魚48・雪粒・列車最適化済)②酔い(自動巡航/惑星カメラ)③音量 ④速度UPが速すぎないか ⑤ごほうび(ほしのき/プレゼント)の頻度・嬉しさ ⑥ゆきの明るさ。

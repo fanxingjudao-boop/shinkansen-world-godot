@@ -20,6 +20,11 @@ const TURN_SPEED: float = 5.0
 const BOUNCE_AMP: float = 0.12
 const BOUNCE_FREQ: float = 8.0
 
+# ときどき する 小しぐさ(あくび/くしゃみ/うとうと)。生活感・愛嬌(PLAYFUL_DETAILS C-1)。
+const QUIRK_MIN: float = 9.0
+const QUIRK_MAX: float = 18.0
+const MIX_RATE: int = 22050
+
 enum St { IDLE, WALK }
 
 var _state: int = St.IDLE
@@ -31,6 +36,10 @@ var _bounce_phase: float = 0.0
 var _base_visual_y: float = 0.0
 var _befriended: bool = false
 var _celebrating: bool = false
+var _quirk_timer: float = 0.0
+var _voice: AudioStreamPlayer3D
+var _sneeze_wav: AudioStreamWAV
+var _yawn_wav: AudioStreamWAV
 
 
 func _ready() -> void:
@@ -45,6 +54,14 @@ func _ready() -> void:
 	_base_visual_y = 0.0
 	_settle_y()
 	_pick_new_state()
+	# 小しぐさ用の やさしい声(近くだけ 聞こえるよう 3D・小音量)。
+	_voice = AudioStreamPlayer3D.new()
+	_voice.volume_db = -12.0
+	_voice.max_distance = 22.0
+	add_child(_voice)
+	_sneeze_wav = _make_tone([520.0, 300.0], 0.1)    # ちいさく「くしゅん」
+	_yawn_wav = _make_tone([300.0, 360.0, 300.0], 0.22)  # ねむそうな「ふぁ〜」
+	_quirk_timer = randf_range(QUIRK_MIN, QUIRK_MAX)
 
 
 func _process(delta: float) -> void:
@@ -52,6 +69,13 @@ func _process(delta: float) -> void:
 		return
 	if _celebrating:
 		return  # なかよしの喜びジャンプ中は移動・バウンスを止める
+	# ときどき 小しぐさ(立ち止まっている時だけ・移動と競合させない)
+	_quirk_timer -= delta
+	if _quirk_timer <= 0.0:
+		_quirk_timer = randf_range(QUIRK_MIN, QUIRK_MAX)
+		if _state == St.IDLE:
+			_do_quirk()
+			return
 	_state_timer -= delta
 	if _state_timer <= 0.0:
 		_pick_new_state()
@@ -175,6 +199,108 @@ func _pop_heart() -> void:
 	tw.tween_property(heart, "position:y", 2.8, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tw.tween_property(heart, "modulate:a", 0.0, 0.9)
 	tw.chain().tween_callback(heart.queue_free)
+
+
+# === 小しぐさ(あくび / くしゃみ / うとうと) ===
+
+# 3 つから ランダムに ひとつ。どれも やさしく・ゆっくり(怖くない・愛嬌)。
+func _do_quirk() -> void:
+	if _celebrating:
+		return
+	var pick: int = randi() % 3
+	match pick:
+		0: _yawn()
+		1: _sneeze()
+		_: _doze()
+
+
+# あくび: ぐーんと 縦に のびて もどる + ねむそうな「ふぁ〜」
+func _yawn() -> void:
+	_celebrating = true
+	_pop_text("ふぁ〜", Color(0.55, 0.7, 0.95))
+	if _voice and _yawn_wav:
+		_voice.stream = _yawn_wav
+		_voice.play()
+	var tw := create_tween()
+	tw.tween_property(_visual, "scale:y", animal_data.scale_factor * 1.22, 0.4) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_visual, "scale:y", animal_data.scale_factor, 0.5) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_callback(func() -> void: _celebrating = false)
+
+
+# くしゃみ: ちょこっと 縮んで ぴくっと はずむ + ちいさく「くしゅん」
+func _sneeze() -> void:
+	_celebrating = true
+	_pop_text("くしゅん", Color(0.95, 0.6, 0.7))
+	if _voice and _sneeze_wav:
+		_voice.stream = _sneeze_wav
+		_voice.play()
+	var s: float = animal_data.scale_factor
+	var tw := create_tween()
+	tw.tween_property(_visual, "scale", Vector3.ONE * s * 0.82, 0.12) \
+		.set_trans(Tween.TRANS_SINE)
+	tw.tween_property(_visual, "scale", Vector3.ONE * s * 1.12, 0.1) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_visual, "scale", Vector3.ONE * s, 0.22) \
+		.set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(func() -> void: _celebrating = false)
+
+
+# うとうと: その場で ゆっくり 上下して「Zzz」(音なし=しずか)
+func _doze() -> void:
+	_celebrating = true
+	_pop_text("Zzz", Color(0.6, 0.6, 0.75))
+	var tw := create_tween()
+	for i in range(2):
+		tw.tween_property(_visual, "position:y", _base_visual_y + 0.06, 0.7) \
+			.set_trans(Tween.TRANS_SINE)
+		tw.tween_property(_visual, "position:y", _base_visual_y, 0.7) \
+			.set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func() -> void: _celebrating = false)
+
+
+# 頭上に ちいさな 文字を ふわっと 出して 上昇フェード(♥/♪ と同じ作り)。
+func _pop_text(txt: String, color: Color) -> void:
+	var lbl := Label3D.new()
+	lbl.text = txt
+	lbl.font = FONT_BODY
+	lbl.font_size = 80
+	lbl.pixel_size = 0.01
+	lbl.modulate = color
+	lbl.outline_size = 12
+	lbl.outline_modulate = Color(1, 1, 1, 1)
+	lbl.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	lbl.position = Vector3(0.15, 1.5, 0)
+	add_child(lbl)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(lbl, "position:y", 2.5, 1.1).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(lbl, "modulate:a", 0.0, 1.1)
+	tw.chain().tween_callback(lbl.queue_free)
+
+
+# 正弦波で 音列を 1 つの WAV に(各音は sin 包絡線で角を取る)。
+func _make_tone(freqs: Array, note_dur: float) -> AudioStreamWAV:
+	var per: int = int(MIX_RATE * note_dur)
+	var n: int = per * freqs.size()
+	var data := PackedByteArray()
+	data.resize(n * 2)
+	for k in range(freqs.size()):
+		var freq: float = float(freqs[k])
+		for i in range(per):
+			var t: float = float(i) / float(MIX_RATE)
+			var prog: float = float(i) / float(per)
+			var env: float = sin(prog * PI)
+			var sv: float = sin(TAU * freq * t) * env * 0.5
+			var v: int = int(clamp(sv, -1.0, 1.0) * 32767.0)
+			data.encode_s16((k * per + i) * 2, v)
+	var wav := AudioStreamWAV.new()
+	wav.format = AudioStreamWAV.FORMAT_16_BITS
+	wav.mix_rate = MIX_RATE
+	wav.stereo = false
+	wav.data = data
+	return wav
 
 
 # === AI(ロジック層に近い簡易ステートマシン) ===

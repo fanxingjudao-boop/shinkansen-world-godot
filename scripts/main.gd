@@ -8,21 +8,24 @@ func _enter_tree() -> void:
 
 func _ready() -> void:
 	_settle_player_on_terrain()
-	_spawn_hide_and_seek()
+	# 遊び心の小ネタ(PLAYFUL_DETAILS)を Main 直下に生成。
+	# Main.tscn を編集せず、起動時に load + add_child で足す(load_steps を増やさない)。
+	# この時点で Player / GameState / TouchHUD は すでに居るので、各本体が自分で参照を探す。
+	_spawn_extra("HideAndSeek", "res://scripts/world/hide_and_seek.gd")    # B-1 かくれんぼ動物
+	_spawn_extra("MagicSteps", "res://scripts/fx/magic_steps.gd")         # B-6 きらきらふみいし
+	_spawn_extra("Interactables", "res://scripts/world/interactables.gd") # B-2 たたくと反応するもの
 	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
 
-# かくれんぼ動物(PLAYFUL_DETAILS B-1)を Main 直下に生成。
-# Main.tscn を編集せず、起動時に load + add_child で足す(load_steps を増やさない)。
-# この時点で Player / GameState / TouchHUD は すでに居るので、本体が自分で参照を探す。
-func _spawn_hide_and_seek() -> void:
-	if has_node("HideAndSeek"):
+# 指定スクリプトの Node3D を Main 直下に 1 つだけ 足す(同名が居れば 何もしない)。
+func _spawn_extra(node_name: String, script_path: String) -> void:
+	if has_node(node_name):
 		return
-	var hs_script := load("res://scripts/world/hide_and_seek.gd")
-	if hs_script == null:
+	var scr := load(script_path)
+	if scr == null:
 		return
-	var hs: Node3D = hs_script.new()
-	hs.name = "HideAndSeek"
-	add_child(hs)
+	var node: Node3D = scr.new()
+	node.name = node_name
+	add_child(node)
 
 # Player の初期 Y 座標を地形高さに合わせる。
 # .tscn 上の Y は適当(空中)で良く、ここで確実に地形に着地させる。
