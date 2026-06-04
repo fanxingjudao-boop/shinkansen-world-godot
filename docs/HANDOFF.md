@@ -159,14 +159,20 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-04 — 遊び心 第1弾 v0.49.0 / 第2弾 v0.50.0)
+## 進捗(2026-06-05 — 遊び心 第3弾 v0.51.0: 乗客が手を振る(A-5))
 
 ### ▶ 現在地(次セッションはここから)
 
 - **ブランチ**: `main`(作業は main 直接)。
-- **コミット状況**: ローカル `main` と **本番 `origin/main` は v0.49.0(`0086f29`)まで push 済・Vercel デプロイ済**。その上に **v0.50.0(遊び心 第2弾)をコミット**(下記)。**v0.50.0 はまだ未 push**。
+- **コミット状況**: 本番 `origin/main` は **v0.49.0(`0086f29`)まで push 済・Vercel デプロイ済**。その上に **v0.50.0(遊び心 第2弾)`3e0d50b` をコミット済(未 push)**、さらに **v0.51.0(A-5 乗客が手を振る)を実装(下記)— コミット予定**。
   - **push は この環境ではブロックされる**ので、改善さんに `! git push origin main` を依頼する運用(プロンプトに `!` 付きで入力 → このセッション内で実行)。push 後 Vercel が自動デプロイ。
-  - **⚠️ Web 再エクスポートはまだ。** v0.50.0 を実機/ブラウザで遊ぶには `export/web` の再エクスポートが必要(下記デプロイ手順)。改善さんがソース実行(F5)で先に体感確認してもよい。
+  - **⚠️ Web 再エクスポートはまだ。** v0.50.0 / v0.51.0 を実機/ブラウザで遊ぶには `export/web` の再エクスポートが必要(下記デプロイ手順)。改善さんがソース実行(F5)で先に体感確認してもよい。
+
+- **v0.51.0 = A-5 電車の窓から乗客が手を振る**(`docs/PLAYFUL_DETAILS.md` 第3弾):
+  - `scripts/entities/train.gd` に乗客を追加。**静止乗客=車両ごと MultiMesh**(1つおきの窓×両側・110m 距離カリング `_update_passenger_cull`)、**手を振る乗客=各車両 1 人の実ノード**(胴体+肩支点の腕、`_wavers`)。公開 `wave_passengers()` が腕を振り(`player.wave` のバネ感)+ ♥(`animal._pop_heart` 流用)。`_wave_cooldown=3.5s`・遠景(>110m)はスキップ。顔なし・真っ黒なし・**音なし**(やさしい音厳守)。
+  - 新規 `scripts/world/train_greeters.gd`(`main.gd` が `_spawn_extra` で生成): 0.2秒毎に観測者(乗車中=乗る編成アンカー/歩行中=Player)の **45m 以内(`GREET_RANGE`)** を通る編成へ `wave_passengers()`。乗る編成自身は除外=自分が振られる側。`ride_controller.gd` に `get_current_train()` 追加。
+  - **コミット対象ファイル**: `scripts/entities/train.gd` / `scripts/world/train_greeters.gd`(新規)/ `scripts/world/ride_controller.gd` / `scripts/main.gd` / `scripts/dev/auto_capture.gd` / `changelog.md` / `docs/HANDOFF.md` / `docs/PLAYFUL_DETAILS.md`。`Main.tscn` は不変(load_steps 64 据え置き)。**`export/web` はコミットしない**(再エクスポートは別途)。
+  - **次の最重要 = 改善さんの体感確認(v0.50.0 + v0.51.0)**。v0.51.0 の確認点: 乗客シルエットの可愛さ・怖くなさ、手振りの速さ・頻度、すれ違い距離(`GREET_RANGE` 45m が適切か)、まどぎわ/うんてんせき視点での見え方、fps。**調整候補**: `GREET_RANGE`・`WAVE_COOLDOWN`・乗客の色/大きさ(`PASSENGER_RADIUS`)/間引き密度・距離カリング距離(現在 `WHEEL_ANIM_RANGE=110` を流用)。
 - **遊び心の追加分(第1弾 v0.49.0 + 第2弾 v0.50.0)の要点**:
   - 仕様は `docs/PLAYFUL_DETAILS.md`。実装方式は **`main.gd` の `_spawn_extra(name, script)` で Main 直下に小ノードを起動時生成**(`Main.tscn` 不変・`load_steps` 据え置き・セーブ項目を増やさない)。各本体が `find_child("Player")` 等で自分の参照を探す。
   - 第1弾(v0.49.0): **A-1 手をふるとみんなが応える** / **B-1 かくれんぼ動物**(`scripts/world/hide_and_seek.gd`)。

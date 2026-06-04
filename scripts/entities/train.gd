@@ -3,6 +3,7 @@ extends Node3D
 # class_name は Godot エディタが project をスキャンするまで CLI で
 # 認識されないため preload 両対応
 const TrainData = preload("res://scripts/entities/train_data.gd")
+const FONT_BODY = preload("res://assets/fonts/MPLUSRounded1c-Medium.ttf")  # ♥ エフェクト用
 
 # 列車本体スクリプト。
 # - _ready で railway の Path3D を取得し、PathFollow3D を動的に add_child
@@ -47,6 +48,23 @@ const BOGIE_COLOR: Color = Color(0.25, 0.25, 0.28)     # 台車の濃灰
 const COUPLER_COLOR: Color = Color(0.18, 0.18, 0.20)   # 連結部の暗灰
 const HEADLIGHT_COLOR: Color = Color(1.0, 1.0, 0.8)
 
+# === 乗客(A-5 遊び心: 窓から手を振る)===
+# 窓の内側に乗客シルエットを置く。大半は静止(車両ごと MultiMesh=1 draw call・距離カリング)で
+# 「乗っている」感を出し、各車両に 1 人だけ「手を振る乗客」を実ノードで作って、
+# すれ違いざまに腕を振る(player.wave と同じバネ感)。怖くないよう顔は作らず真っ黒も使わない。
+const PASSENGER_INSET: float = 0.06        # 窓より内側へ引っ込める量(X)
+const PASSENGER_Y: float = 0.06            # 窓中心(0.18)よりやや下=座っている高さ
+const PASSENGER_RADIUS: float = 0.16       # シルエットの頭+肩の大きさ
+const WAVE_COOLDOWN: float = 3.5           # 手振りの最短間隔(連発防止)
+# やわらかい乗客カラー(真っ黒にしない=不気味さ回避)。編成ごとに開始位置を変えて彩りを出す。
+const PASSENGER_COLORS: Array = [
+	Color(0.96, 0.78, 0.62),  # はだ色
+	Color(0.62, 0.74, 0.95),  # みずいろ
+	Color(0.98, 0.74, 0.82),  # ももいろ
+	Color(0.78, 0.90, 0.66),  # わかくさ
+	Color(1.0, 0.86, 0.55),   # きいろ
+]
+
 # 停車: 停車点(dwell/park)の手前で減速し、点を跨いだら停止する。
 const STOP_SLOW_RANGE_M: float = 26.0    # 停車点の手前この距離(m)で減速
 const STOP_MIN_FACTOR: float = 0.18      # 停車点直前の速度係数
@@ -57,6 +75,12 @@ enum State { RUNNING, DWELLING, PARKED }
 var _path_follow: PathFollow3D     # 編成中央(乗車カメラ/アンカー用。見た目は持たない)
 var _parts: Array = []             # 各車両・連結部 {follow: PathFollow3D, offset: float(弧長)}
 var _wheels: Array = []            # 全車輪の MeshInstance3D(走行に応じて回す。近接時のみ)
+var _passenger_mmis: Array = []    # 静止乗客の MultiMeshInstance3D(距離カリング対象)
+var _wavers: Array = []            # 手を振る乗客 [{root: Node3D, arm: Node3D(肩支点)}]
+var _passengers_visible: bool = true
+var _passengers_waving: bool = false
+var _wave_cooldown: float = 0.0
+var _color_seed: int = 0           # 乗客色のローテーション開始(編成ごとに変える)
 var _progress: float = 0.0          # 線路上の現在位置(弧長, メートル)
 var _length: float = 0.0            # 線路一周の弧長
 var _linear_speed: float = 0.0      # 実速度(m/s)。旧角速度から周回時間を保つよう換算
@@ -124,6 +148,7 @@ func _try_init() -> bool:
 	_progress = railway.get_route_start_offset(train_data.slug)
 	_stops = railway.get_route_stops(train_data.slug)
 	_active_slug = train_data.slug  # 起動時は自分の専用ルート上にいる
+	_color_seed = absi(hash(train_data.slug))  # 乗客の色を編成ごとに変える
 	if not _stops.is_empty() and String(_stops[0]["kind"]) == "park":
 		# park 編成は最初から車庫位置で停止しておく
 		_progress = float(_stops[0]["offset"])
@@ -158,6 +183,8 @@ func _physics_process(delta: float) -> void:
 			if _init_tries == 120:
 				push_warning("[Train] 初期化が未完のまま(ルート未取得): %s" % (train_data.slug if train_data else "?"))
 			return
+	if _wave_cooldown > 0.0:
+		_wave_cooldown -= delta
 	# 運転手モード中のみスロットルを目標へ ease(非運転時は触らない=自動走行不変)。
 	if _driver_mode:
 		_driver_throttle = move_toward(_driver_throttle, _driver_target, THROTTLE_EASE * delta)
@@ -189,6 +216,7 @@ func _physics_process(delta: float) -> void:
 			pass
 	_apply_progress()
 	_spin_wheels()
+	_update_passenger_cull()
 	if _just_arrived:
 		_just_arrived = false
 		arrived.emit(_path_follow.global_position)  # 位置確定後に発火(駅メロ用)
@@ -450,6 +478,9 @@ func _build_car(car_len: float, role: String) -> Node3D:
 	var window_count: int = WINDOW_PER_MID if role == "mid" else WINDOW_PER_LEAD
 	_attach_windows(car, car_len, window_count)
 
+	# 窓の内側に乗客(A-5)。窓と同じ座標式で配置する。
+	_attach_passengers(car, car_len, window_count, role)
+
 	# 台車(各車両 2 台、前後)
 	_attach_bogie(car, car_len, +1.0)
 	_attach_bogie(car, car_len, -1.0)
@@ -489,6 +520,154 @@ func _attach_windows(car: Node3D, car_len: float, count: int) -> void:
 	var mmi := MultiMeshInstance3D.new()
 	mmi.multimesh = mm
 	car.add_child(mmi)
+
+
+# 乗客(A-5)。窓と同じ座標式で、窓の内側に乗客シルエットを置く。
+# 大半は静止(車両ごと MultiMesh=1 draw call・遠景は距離カリングで非表示)、
+# 各車両に 1 人だけ「手を振る乗客」を実ノードで作る(_wavers に保持)。
+func _attach_passengers(car: Node3D, car_len: float, count: int, role: String) -> void:
+	var window_zone: float = car_len - 1.4
+	var window_width: float = (window_zone - WINDOW_GAP * (count - 1)) / float(count)
+	var start_z: float = -window_zone * 0.5
+	var inset_x: float = CAR_WIDTH * 0.5 - PASSENGER_INSET
+	var sit_color: Color = PASSENGER_COLORS[_color_seed % PASSENGER_COLORS.size()]
+
+	# --- 静止乗客: 1つおきの窓×両側に丸いシルエット(MultiMesh)---
+	var seats: Array = []
+	for i in range(count):
+		if i % 2 == 1:
+			continue  # 1つおき(自然なまばら感。奇数窓は手振り乗客用に空ける)
+		var cz: float = start_z + window_width * 0.5 + i * (window_width + WINDOW_GAP)
+		for side in [1.0, -1.0]:
+			seats.append(Vector3(side * inset_x, PASSENGER_Y, cz))
+	if seats.size() > 0:
+		var head := SphereMesh.new()
+		head.radius = PASSENGER_RADIUS
+		head.height = PASSENGER_RADIUS * 2.0
+		head.radial_segments = 8
+		head.rings = 4
+		head.material = _make_unshaded_material(sit_color.darkened(0.08))
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = head
+		mm.instance_count = seats.size()
+		for s in range(seats.size()):
+			mm.set_instance_transform(s, Transform3D(Basis(), seats[s]))
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		car.add_child(mmi)
+		_passenger_mmis.append(mmi)
+
+	# --- 手を振る乗客: 奇数窓のひとつ(static が空けた席)に 1 人 ---
+	if count >= 2:
+		var wi: int = 1
+		var wcz: float = start_z + window_width * 0.5 + wi * (window_width + WINDOW_GAP)
+		# 車両ごとに左右を交互にして、両側に乗客が見えるようにする。
+		var wside: float = 1.0 if (_color_seed + (1 if role == "tail" else 0)) % 2 == 0 else -1.0
+		_build_waver(car, Vector3(wside * inset_x, PASSENGER_Y, wcz), sit_color)
+
+
+# 手を振る乗客 1 人を組み立てる。胴体+頭(やわらかい色・顔なし)と、肩を支点にした腕。
+# 腕は player.wave と同様に z 回転で上げ・x 回転で振る。
+func _build_waver(car: Node3D, window_pos: Vector3, color: Color) -> void:
+	var root := Node3D.new()
+	root.position = window_pos
+
+	var body := MeshInstance3D.new()
+	var bmesh := SphereMesh.new()
+	bmesh.radius = PASSENGER_RADIUS
+	bmesh.height = PASSENGER_RADIUS * 2.2
+	bmesh.radial_segments = 8
+	bmesh.rings = 4
+	body.mesh = bmesh
+	body.material_override = _make_unshaded_material(color)
+	root.add_child(body)
+
+	# 腕(肩支点 Node3D の下に細い腕)。支点で回すと腕が振れる。
+	var arm_pivot := Node3D.new()
+	arm_pivot.position = Vector3(0, PASSENGER_RADIUS * 0.4, 0)
+	var arm := MeshInstance3D.new()
+	var amesh := BoxMesh.new()
+	amesh.size = Vector3(0.05, PASSENGER_RADIUS * 1.3, 0.05)
+	arm.mesh = amesh
+	arm.material_override = _make_unshaded_material(color)
+	arm.position = Vector3(0, -PASSENGER_RADIUS * 0.6, 0)  # 支点から下へ伸びる
+	arm_pivot.add_child(arm)
+	root.add_child(arm_pivot)
+
+	car.add_child(root)
+	_wavers.append({ "root": root, "arm": arm_pivot })
+
+
+# すれ違いざまに乗客が手を振る(TrainGreeters から呼ばれる public API)。
+# 連発はクールダウンで防ぎ、遠い編成(振っても見えない)は処理しない。
+func wave_passengers() -> void:
+	if _passengers_waving or _wave_cooldown > 0.0 or _wavers.is_empty():
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam != null and _path_follow != null \
+			and _path_follow.global_position.distance_to(cam.global_position) > WHEEL_ANIM_RANGE:
+		return
+	_passengers_waving = true
+	_wave_cooldown = WAVE_COOLDOWN
+	for w in _wavers:
+		var arm := w["arm"] as Node3D
+		if arm == null:
+			continue
+		var tw := create_tween()
+		# 腕を ぴょこっと 上げる(player.wave と同じバネ感)
+		tw.tween_property(arm, "rotation:z", -2.3, 0.18) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		for i in range(2):  # ふりふり(2 往復)
+			tw.tween_property(arm, "rotation:x", 0.5, 0.18).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(arm, "rotation:x", -0.3, 0.18).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(arm, "rotation:x", 0.0, 0.12)
+		tw.tween_property(arm, "rotation:z", 0.0, 0.18) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_pop_wave_heart()
+	var done := create_tween()
+	done.tween_interval(1.4)
+	done.tween_callback(func() -> void: _passengers_waving = false)
+
+
+# 手振り乗客の窓から ♥ をひとつ ふわっと(温かさ。animal._pop_heart 流用)。
+func _pop_wave_heart() -> void:
+	if _wavers.is_empty():
+		return
+	var anchor := _wavers[0]["root"] as Node3D
+	if anchor == null:
+		return
+	var heart := Label3D.new()
+	heart.text = "♥"
+	heart.font = FONT_BODY
+	heart.font_size = 80
+	heart.pixel_size = 0.006
+	heart.modulate = Color(1.0, 0.5, 0.65)
+	heart.outline_size = 10
+	heart.outline_modulate = Color(1, 1, 1, 1)
+	heart.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	heart.position = Vector3(0, 0.5, 0)
+	anchor.add_child(heart)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(heart, "position:y", 1.2, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_property(heart, "modulate:a", 0.0, 0.9)
+	tw.chain().tween_callback(heart.queue_free)
+
+
+# 静止乗客 MultiMesh の距離カリング(遠景では非表示=負荷ゼロ)。車輪と同じ近接基準。
+func _update_passenger_cull() -> void:
+	if _passenger_mmis.is_empty() or _path_follow == null:
+		return
+	var cam := get_viewport().get_camera_3d()
+	if cam == null:
+		return
+	var near: bool = _path_follow.global_position.distance_to(cam.global_position) <= WHEEL_ANIM_RANGE
+	if near == _passengers_visible:
+		return
+	_passengers_visible = near
+	for m in _passenger_mmis:
+		(m as Node3D).visible = near
 
 
 func _attach_bogie(car: Node3D, car_len: float, side_z: float) -> void:

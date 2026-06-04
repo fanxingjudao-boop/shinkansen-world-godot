@@ -132,6 +132,11 @@ func _process(delta: float) -> void:
 func is_riding() -> bool:
 	return _state == State.RIDING
 
+# いま乗っている編成(乗車していなければ null)。A-5: 乗車中に「自分が乗る編成」を
+# すれ違い手振りの対象から除くために TrainGreeters が使う。
+func get_current_train() -> Train:
+	return _current_train if _state == State.RIDING else null
+
 
 # 乗降トグル(タッチボタンの pressed / キーボード interact の共通入口)。
 # 歩行中なら最寄りの電車に乗り、乗車中なら降りる。直後の誤連打はクールダウンで防ぐ。

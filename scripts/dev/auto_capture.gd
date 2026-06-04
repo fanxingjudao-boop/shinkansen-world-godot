@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -71,6 +71,8 @@ func _ready() -> void:
 			await _capture_worldsel()
 		CaptureMode.AUTO_REWARD:
 			await _capture_reward()
+		CaptureMode.AUTO_GREET:
+			await _capture_greet()
 	get_tree().quit()
 
 
@@ -494,6 +496,36 @@ func _capture_ride() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _save_screenshot("user://screenshot_alight.png")
+
+
+# A-5 検証: 乗客の手振り。乗車→窓辺視点で他編成に手を振らせて撮影、降車後にも撮影。
+func _capture_greet() -> void:
+	var rc := get_tree().root.find_child("RideController", true, false)
+	var trains := get_tree().root.find_child("Trains", true, false)
+	if rc == null or trains == null or trains.get_child_count() == 0:
+		print("[AutoCapture] RideController/Trains not found, falling back to single")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var train := trains.get_child(0)  # Hayabusa
+	rc._do_board(train)
+	# 窓辺(まどぎわ)視点へ:[やね, うんてんせき, まどぎわ] を 2 回送る
+	if rc.has_method("cycle_ride_view"):
+		rc.cycle_ride_view()
+		rc.cycle_ride_view()
+	# 全編成に手を振らせる(自分が振られる側の見え方を確認)
+	for t in trains.get_children():
+		if t.has_method("wave_passengers"):
+			t.wave_passengers()
+	await get_tree().create_timer(0.45).timeout  # 腕が上がるのを待つ
+	await _save_screenshot("user://screenshot_greet_ride.png")
+	rc._do_alight()
+	# 降車後、近くの編成に再度手を振らせて地上からの見え方を撮影
+	await get_tree().process_frame
+	for t in trains.get_children():
+		if t.has_method("wave_passengers"):
+			t.wave_passengers()
+	await get_tree().create_timer(0.45).timeout
+	await _save_screenshot("user://screenshot_greet_ground.png")
 
 
 func _capture_four_times() -> void:
