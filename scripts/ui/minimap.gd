@@ -78,13 +78,16 @@ func _process(delta: float) -> void:
 	if not _resolve():
 		_map.visible = false
 		return
-	# 地上にいて 電車に乗っていない時だけ 出す(別世界は 遠く/高い位置なので 隠す)。
+	# 乗車中は プレイヤー位置が 更新されない(物理OFF)ので、座標を見る前に 隠す。
+	var riding: bool = _ride != null and _ride.has_method("is_riding") and _ride.is_riding()
+	if riding:
+		_map.visible = false
+		return
+	# 地上にいる時だけ 出す(別世界は 遠く/高い位置なので 隠す)。
 	var p: Vector3 = _player.global_position
 	var in_world: bool = absf(p.x) > 360.0 or absf(p.z) > 360.0 or p.y > 80.0
-	var riding: bool = _ride != null and _ride.has_method("is_riding") and _ride.is_riding()
-	var show: bool = (not in_world) and (not riding)
-	_map.visible = show
-	if show:
+	_map.visible = not in_world
+	if not in_world:
 		_map.queue_redraw()
 
 
