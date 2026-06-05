@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>しんかんせんワールド — 機能とフローのガイド</title>
+<style>
+  :root{
+    --sora:#7ec8f5; --kusa:#7ec850; --sakura:#ff9ec0; --ki:#ffe066; --orange:#ffa94d;
+    --ink:#2b3a4a; --muted:#6b7c8c; --line:#e4eef6; --card:#ffffff; --bg:#f3f9ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:"Hiragino Maru Gothic ProN","M PLUS Rounded 1c","Segoe UI",sans-serif;
+    color:var(--ink); background:linear-gradient(180deg,#eaf6ff,#f3f9ff 240px); line-height:1.8;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:24px 18px 80px}
+  header.hero{
+    background:linear-gradient(135deg,var(--sora),#a7e0ff); color:#fff; border-radius:28px;
+    padding:34px 28px; box-shadow:0 10px 30px rgba(120,200,245,.35); margin-bottom:8px;
+  }
+  header.hero h1{margin:0 0 6px; font-size:30px; letter-spacing:.02em}
+  header.hero p{margin:0; font-size:15px; opacity:.95}
+  .ver{display:inline-block; background:rgba(255,255,255,.28); border-radius:999px; padding:3px 14px; font-size:13px; margin-top:12px}
+  nav.toc{
+    background:var(--card); border:2px solid var(--line); border-radius:20px; padding:14px 18px; margin:18px 0 26px;
+    display:flex; flex-wrap:wrap; gap:8px 18px;
+  }
+  nav.toc a{color:#2a78c2; text-decoration:none; font-weight:600; font-size:14px}
+  nav.toc a:hover{text-decoration:underline}
+  h2{
+    font-size:23px; margin:38px 0 14px; padding-left:14px; border-left:8px solid var(--sakura);
+  }
+  h3{font-size:18px; margin:22px 0 8px; color:#1f5f9e}
+  p.lead{font-size:16px; color:var(--muted)}
+  .card{background:var(--card); border:2px solid var(--line); border-radius:18px; padding:16px 18px; margin:12px 0; box-shadow:0 4px 14px rgba(126,200,245,.10)}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px}
+  .feat{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:14px 16px}
+  .feat .emoji{font-size:26px}
+  .feat h4{margin:6px 0 4px; font-size:16px}
+  .feat p{margin:0; font-size:13.5px; color:var(--muted)}
+  .tag{display:inline-block; font-size:11px; background:var(--ki); color:#7a5b00; border-radius:999px; padding:1px 9px; margin-left:6px; vertical-align:middle}
+  .tag.new{background:var(--sakura); color:#7a2d4d}
+  /* フロー図 */
+  .flow{display:flex; flex-direction:column; gap:0}
+  .step{display:flex; align-items:flex-start; gap:14px; position:relative}
+  .step .num{
+    flex:0 0 auto; width:42px; height:42px; border-radius:50%; background:var(--sora); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:18px; box-shadow:0 3px 8px rgba(126,200,245,.4)
+  }
+  .step .body{flex:1; background:var(--card); border:2px solid var(--line); border-radius:14px; padding:10px 14px; margin-bottom:8px}
+  .step .body b{color:#1f5f9e}
+  .arrow{margin:0 0 8px 20px; color:var(--sora); font-size:20px; line-height:1}
+  /* 用語 */
+  dl.terms{margin:0}
+  dl.terms dt{font-weight:700; color:#1f5f9e; margin-top:14px; font-size:15px}
+  dl.terms dt .raw{color:var(--muted); font-weight:400; font-size:13px; margin-left:6px}
+  dl.terms dd{margin:4px 0 0; color:#3a4a5a; font-size:14px}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; margin-top:8px}
+  th,td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--line)}
+  th{color:#1f5f9e}
+  .pill{display:inline-block; background:#eaf6ff; border-radius:8px; padding:1px 7px; font-family:monospace; font-size:12px; color:#2a78c2}
+  .note{background:#fff8e6; border:2px solid #ffe9a8; border-radius:14px; padding:12px 16px; font-size:13.5px}
+  .safe{background:#eafaef; border:2px solid #c4eccf; border-radius:14px; padding:12px 16px; font-size:13.5px}
+  footer{margin-top:40px; text-align:center; color:var(--muted); font-size:12px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:6px}
+  .chip{background:#eaf6ff; border-radius:999px; padding:4px 12px; font-size:13px; color:#2a78c2}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>🚄 しんかんせんワールド</h1>
+  <p>いまある「きのう(機能)」と「あそびの ながれ(フロー)」を、むずかしい言葉をかみ砕いて まとめたガイドです。</p>
+  <div class="ver">バージョン v0.55.0 / 2026-06-06 時点</div>
+</header>
+
+<nav class="toc">
+  <a href="#what">① これは どんなゲーム?</a>
+  <a href="#flow">② あそびの ながれ</a>
+  <a href="#features">③ 機能ぜんぶ</a>
+  <a href="#worlds">④ 7つの 別世界</a>
+  <a href="#playful">⑤ 遊び心(小ネタ)</a>
+  <a href="#terms">⑥ 専門用語じてん</a>
+  <a href="#files">⑦ ファイルの地図</a>
+  <a href="#safe">⑧ 安全と配信</a>
+</nav>
+
+<!-- ① -->
+<section id="what">
+<h2>① これは どんなゲーム?</h2>
+<div class="card">
+<p class="lead" style="margin-top:0">
+3〜7さいの お子さん・お孫さんが iPad で あそぶ、<b>3D の オープンワールド(広い世界を じゆうに 歩ける)</b> 電車ゲームです。
+こわい敵・失敗・ゲームオーバー・制限時間は <b>いっさい ありません</b>。
+「あつめる・出会う・のる・さがす・行ってみる」を じぶんのペースで たのしみます。
+</p>
+<div class="chips">
+  <span class="chip">こわくない</span>
+  <span class="chip">ひらがな・カタカナだけ</span>
+  <span class="chip">失敗なし</span>
+  <span class="chip">大きなボタン</span>
+  <span class="chip">いつでも「やったね!」</span>
+</div>
+</div>
+</section>
+
+<!-- ② フロー -->
+<section id="flow">
+<h2>② あそびの ながれ(フロー)</h2>
+<p class="lead">タイトルから あそぶまでの 大きな流れです。どこから やっても OK。順番に やる必要はありません。</p>
+<div class="flow">
+
+  <div class="step"><div class="num">1</div><div class="body">
+    <b>タイトルで「はじめる」をタップ</b><br>
+    音が鳴る準備が ここで ととのいます(iPad は「画面を さわってから」でないと音が出せないため)。最初の ミッションも やさしく お知らせ。
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">2</div><div class="body">
+    <b>歩いて 世界を たんけん</b><br>
+    画面左の <span class="pill">十字ボタン</span>(または キーボード)で 移動。<span class="pill">カメラ ◀▶</span> で 見る向きを かえられます。山・湖・川・草原・街・お城が あります。
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">3</div><div class="body">
+    <b>あつめる・出会う</b><br>
+    <b>ほし</b>を ひろう、<b>どうぶつ</b>と なかよしに なる(8しゅるい)、<b>駅</b>を 見つける(6つ)。集めると「<b>ずかん(図鑑)</b>」が うまっていきます。
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">4</div><div class="body">
+    <b>電車に のる → うんてん → 各地へ</b><br>
+    電車に ちかづいて「<b>のる</b>」。「<b>ながめ</b>」で 見る場所を かえ(やね/うんてんせき/まどぎわ)、「<b>うんてん</b>」で じぶんで ゴー/とまれ。
+    分かれ道で「<b>みずうみ・やま・まち・おしろ</b>」を えらぶと、その場所へ 走っていきます。<span class="tag new">v0.55.0</span>
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">5</div><div class="body">
+    <b>「どこへ いく?」で 別世界へ</b><br>
+    地上の メニューから、<b>つき・そら・うみ・おかし・きょうりゅう・ゆき・ぎんが</b> の 7つの世界へ ひとタップで 行けます(乗り物が 自動で 案内)。
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">6</div><div class="body">
+    <b>遊び心(小ネタ)で あそぶ</b><br>
+    「てをふる」と みんなが 応える、かくれんぼ動物を さがす、楽器を ならす、たたくと 反応… 世界の あちこちに しかけが あります。
+  </div></div>
+  <div class="arrow">▼</div>
+
+  <div class="step"><div class="num">7</div><div class="body">
+    <b>ごほうび・ミッションで 達成感</b><br>
+    ほしが たまると お祝い、なかよし動物が プレゼント、げんきが たまると 少し はやく 歩ける。ミッションは やさしく、達成すると「やったね!」。
+  </div></div>
+
+</div>
+<div class="note" style="margin-top:14px">
+  💾 進み具合は <b>自動で セーブ</b>されます。次に ひらいたとき 続きから あそべます(数字だけを 保存。名前や 個人情報は いっさい 保存しません)。
+</div>
+</section>
+
+<!-- ③ 機能 -->
+<section id="features">
+<h2>③ 機能ぜんぶ(カテゴリ別)</h2>
+
+<h3>🚶 きほんの 動き</h3>
+<div class="grid">
+  <div class="feat"><div class="emoji">🕹️</div><h4>歩く・ジャンプ</h4><p>十字ボタン/キーボード。3頭身の かわいい 運転士キャラ。</p></div>
+  <div class="feat"><div class="emoji">🎥</div><h4>追従カメラ</h4><p>キャラを 後ろから うつす。◀▶で 45度ずつ なめらかに 回せる(酔いにくい)。</p></div>
+  <div class="feat"><div class="emoji">🌗</div><h4>昼と夜</h4><p>ゆっくり 時間が 進む(1日 約14分)。夜は ホタル・流れ星・レア電車。</p></div>
+  <div class="feat"><div class="emoji">📱</div><h4>タッチ操作</h4><p>iPad の指でも、PC の キーボードでも あそべる。</p></div>
+</div>
+
+<h3>🚆 電車</h3>
+<div class="grid">
+  <div class="feat"><div class="emoji">🚄</div><h4>11+1編成</h4><p>はやぶさ/こまち/かがやき/N700/ドクターイエロー/つばさ/つばめ/SL/やまのて/おしろ/そら + 夜だけの<b>ゆめ</b>。</p></div>
+  <div class="feat"><div class="emoji">🛤️</div><h4>本格的な線路</h4><p>砂利の道床・たくさんの 枕木・鋼レール。<span class="tag new">v0.55.0</span></p></div>
+  <div class="feat"><div class="emoji">🎫</div><h4>のる・視点3種</h4><p>のる/おりる、やね・うんてんせき・まどぎわ を きりかえ。</p></div>
+  <div class="feat"><div class="emoji">🚦</div><h4>うんてんしゅモード</h4><p>じぶんで ゴー/とまれ。駅に ぴたっと 止めると ごほうび。</p></div>
+  <div class="feat"><div class="emoji">🔀</div><h4>分岐で各地へ</h4><p>分かれ道で みずうみ/やま/まち/おしろ などを えらんで 走る。<span class="tag new">v0.55.0</span></p></div>
+  <div class="feat"><div class="emoji">🚏</div><h4>駅・駅メロ・アナウンス</h4><p>6駅で 自動停車・到着メロディ・車内アナウンス。</p></div>
+  <div class="feat"><div class="emoji">🚧</div><h4>本格的な踏切 ×8</h4><p>遮断機・点滅灯・やさしい警報音・電車の 接近で 開閉。<span class="tag new">v0.55.0</span></p></div>
+  <div class="feat"><div class="emoji">👋</div><h4>窓の乗客</h4><p>窓の中に 乗客の すがた。すれ違うと ぴょこっと 応える + ♥。</p></div>
+</div>
+
+<h3>🌳 世界</h3>
+<div class="grid">
+  <div class="feat"><div class="emoji">🏘️</div><h4>街 ×4 + 道路</h4><p>家・お店・噴水・街灯。街と街を <b>道路</b>で つないだ。<span class="tag new">v0.55.0</span></p></div>
+  <div class="feat"><div class="emoji">🐰</div><h4>動物 ×8</h4><p>なかよしに なる・歌う・くしゃみ/あくび など しぐさ。</p></div>
+  <div class="feat"><div class="emoji">⭐</div><h4>ほし・ずかん</h4><p>ほしを あつめる。図鑑で でんしゃ/どうぶつ/えき の 発見ぐあいを 見られる。</p></div>
+  <div class="feat"><div class="emoji">🎯</div><h4>ミッション</h4><p>やさしい もくひょうを 順に。失敗・時間制限なし。</p></div>
+  <div class="feat"><div class="emoji">🎁</div><h4>ごほうび</h4><p>げんき=少し速く / ほし=お祝い+ほしのき / なかよし=プレゼント。</p></div>
+  <div class="feat"><div class="emoji">🏰</div><h4>お城・トンネル・鉄橋</h4><p>名所も いろいろ。湖には 鉄橋、山には トンネル。</p></div>
+</div>
+
+<h3>✨ 見た目と音</h3>
+<div class="grid">
+  <div class="feat"><div class="emoji">🌈</div><h4>やさしい演出</h4><p>光る(Glow)・ふちが光る・草が ゆれる・虹・桜/雪。</p></div>
+  <div class="feat"><div class="emoji">🎵</div><h4>音</h4><p>やさしい 効果音・BGM(すべて プログラムで 合成)。「おと」で OFF も可。</p></div>
+  <div class="feat"><div class="emoji">👨‍👩‍👧</div><h4>親モード</h4><p>「おとな」→ 数字で ロック解除 → 音ON/OFF・あそんだ回数・データけし。</p></div>
+</div>
+</section>
+
+<!-- ④ 別世界 -->
+<section id="worlds">
+<h2>④ 7つの 別世界</h2>
+<p class="lead">地上の「どこへ いく?」メニュー、または 各地の 乗り物から 行けます。どの世界も <b>いつでも「おうちへ かえる」</b>。落ちたり こわい目に あったりは しません。</p>
+<table>
+  <tr><th>世界</th><th>のりもの</th><th>あそび</th></tr>
+  <tr><td>🌙 つき</td><td>ロケット</td><td>歩ける まるい惑星(裏まで歩ける)・もちつきうさぎ・月面カー</td></tr>
+  <tr><td>🏯 そらの おしろ</td><td>ひこうき</td><td>雲の島・お城・虹の橋・飛び石</td></tr>
+  <tr><td>🐟 うみ</td><td>せんすいかん</td><td>海底を 自動巡航・魚の群れ・くじら・しんじゅ</td></tr>
+  <tr><td>🍬 おかしの くに</td><td>おかしの きしゃ</td><td>チョコの丘・ロリポップ・クッキーの家(歩ける)</td></tr>
+  <tr><td>🦕 きょうりゅうランド</td><td>サファリカー</td><td>やさしい草食恐竜・たまごが かえる</td></tr>
+  <tr><td>❄️ ゆきの くに</td><td>そり</td><td>雪原・ゆきだるま・ペンギン・オーロラ・温泉</td></tr>
+  <tr><td>🌌 ぎんが(銀河鉄道)</td><td>ぎんがてつどう</td><td>星空を 走り、そら/ゆき/おかし/つき/きょうりゅう/うみ の ミニチュアを めぐる <span class="tag new">v0.54</span></td></tr>
+</table>
+</section>
+
+<!-- ⑤ 遊び心 -->
+<section id="playful">
+<h2>⑤ 遊び心(小ネタ)</h2>
+<p class="lead">「自分のしたことで 世界が 応えた」「自分だけが 見つけた」を ふやす しかけ。世界の あちこちに かくれています。</p>
+<div class="grid">
+  <div class="feat"><div class="emoji">👋</div><h4>てをふると みんな応える</h4><p>近くの 動物が 手を振り返す + ♥。</p></div>
+  <div class="feat"><div class="emoji">🙈</div><h4>かくれんぼ動物</h4><p>かくれた子を 見つけると 飛び出す。図鑑に スタンプ。</p></div>
+  <div class="feat"><div class="emoji">✨</div><h4>きらきら ふみいし</h4><p>踏むと 光って 花や星が 舞う。</p></div>
+  <div class="feat"><div class="emoji">🤧</div><h4>動物の しぐさ</h4><p>くしゃみ・あくび・うとうと。</p></div>
+  <div class="feat"><div class="emoji">🥁</div><h4>たたくと 反応</h4><p>きのこ・たいこ・ベルを タップで ぽよん/ぽん/ちりん。</p></div>
+  <div class="feat"><div class="emoji">🎹</div><h4>楽器</h4><p>もっきん(ドレミ)・ラッパ。自分で メロディが 弾ける。<span class="tag new">v0.52</span></p></div>
+  <div class="feat"><div class="emoji">🌠</div><h4>かくれた でんしゃ</h4><p>夜だけ にじいろの「ゆめ」しんかんせんが 現れる。<span class="tag new">v0.53</span></p></div>
+</div>
+</section>
+
+<!-- ⑥ 用語 -->
+<section id="terms">
+<h2>⑥ 専門用語じてん(かみ砕いて)</h2>
+<p class="lead">コードや 引き継ぎ資料に 出てくる むずかしい言葉を、ふだんの 言葉で 説明します。</p>
+<div class="card">
+<dl class="terms">
+  <dt>Godot(ゴドー)<span class="raw">ゲームエンジン</span></dt>
+  <dd>ゲームを 作るための 無料ソフト。このゲームの 土台です。</dd>
+
+  <dt>GDScript<span class="raw">プログラム言語</span></dt>
+  <dd>Godot 用の プログラム言語。Python に 似ていて 読みやすい。コードの中身は これで 書かれています。</dd>
+
+  <dt>ノード / シーン<span class="raw">Node / Scene</span></dt>
+  <dd><b>ノード</b>=ゲームの 部品 ひとつ(キャラ・カメラ・電車など)。<b>シーン</b>=部品を 組み合わせた かたまり(=設計図)。世界は ノードの 木(ツリー)で できています。</dd>
+
+  <dt>Main.tscn<span class="raw">メインシーン</span></dt>
+  <dd>世界ぜんぶが のっている いちばん上の 設計図ファイル。最近の 追加機能は、この ファイルを <b>書きかえずに</b>(壊さないように)プログラムから 後づけしています。</dd>
+
+  <dt>_spawn_extra / 寄生方式<span class="raw">parasitic spawn</span></dt>
+  <dd>設計図(Main.tscn)を いじらずに、ゲーム起動時に プログラムで 小さな機能を <b>後から くっつける</b>やり方。遊び心や 銀河鉄道は これで 足しています(設計図を 壊すリスクが 小さい)。</dd>
+
+  <dt>Path3D / PathFollow / Curve3D<span class="raw">線路のしくみ</span></dt>
+  <dd><b>Curve3D</b>=曲がった 一本の 線(線路の 中心線)。<b>Path3D</b>=その線を 世界に 置いたもの。<b>PathFollow</b>=その線の上を 進む 台車。電車は この上を すべって 走ります。</dd>
+
+  <dt>分岐スワップ / フェード遷移<span class="raw">branch swap / fade</span></dt>
+  <dd>運転中に 別の線路へ 乗り換えるとき、画面を 一瞬 ふわっと 暗くして(=フェード)、その間に 電車を 別の線路へ <b>こっそり 移します</b>。だから 離れた場所どうしでも 瞬間移動が 見えません。乗り換え先に いた電車とは <b>入れ替え</b>るので、線路が 二重に なりません。</dd>
+
+  <dt>MultiMesh / ArrayMesh<span class="raw">えがく しくみ</span></dt>
+  <dd><b>MultiMesh</b>=同じ形を たくさん(草・枕木・星)<b>まとめて 一度に えがく</b>しくみ。<b>ArrayMesh</b>=点をつないで 自分で 形を作るメッシュ(レール・道路・バラストなど)。どちらも「重くならない ように まとめる」ための 工夫です。</dd>
+
+  <dt>draw call(ドローコール)<span class="raw">えがく回数</span></dt>
+  <dd>画面に 1つ えがくよう 命令する 回数。多いほど 重くなる。だから 上の MultiMesh などで <b>回数を 減らして</b>、iPad でも なめらかに 動くようにしています。</dd>
+
+  <dt>距離カリング<span class="raw">distance culling</span></dt>
+  <dd>遠くて 見えない/気づかれない ものは <b>えがくのを やめる</b>こと(例:遠い電車の 車輪は 回さない)。軽くするための 工夫です。</dd>
+
+  <dt>パーティクル / Tween<span class="raw">GPUParticles / Tween</span></dt>
+  <dd><b>パーティクル</b>=雪・泡・キラキラ など 小さな粒の 演出。<b>Tween(トゥイーン)</b>=「だんだん 大きく」「ぴょこっと」など <b>なめらかな 動き</b>を つけるしくみ。</dd>
+
+  <dt>Compatibility レンダラー<span class="raw">えがく方式</span></dt>
+  <dd>Web(ブラウザ)で 動かすための えがき方。最新の 重い効果は 使えない代わりに、iPad の Safari でも 動きます。だから「写実」より「光って はじけて ふわふわ」で かわいく 作っています。</dd>
+
+  <dt>PWA / Web Export<span class="raw">配信のかたち</span></dt>
+  <dd><b>Web Export</b>=ゲームを ブラウザで 動く形に 書き出すこと。<b>PWA</b>=その Web を アプリのように ホーム画面に 置いて 全画面で 遊べる しくみ。インストール不要・URL を 送るだけ。</dd>
+
+  <dt>再エクスポート<span class="raw">re-export</span></dt>
+  <dd>プログラムを 直したら、ブラウザ用の ファイル(export/web)を <b>作りなおす</b>こと。これを して はじめて、直した内容が ライブ(本番サイト)に 出ます。</dd>
+
+  <dt>Vercel(ヴァーセル)<span class="raw">置き場所</span></dt>
+  <dd>ゲームを 置いて 公開している サービス。GitHub に push すると、自動で 本番サイトが 更新されます。</dd>
+
+  <dt>セーブ(user://)<span class="raw">進捗の保存</span></dt>
+  <dd>あそんだ 記録(ほしの数・なかよし・行った場所など 数字だけ)を ブラウザの中に 保存。次に ひらくと 続きから。名前・年齢などは 保存しません。</dd>
+</dl>
+</div>
+</section>
+
+<!-- ⑦ ファイル -->
+<section id="files">
+<h2>⑦ ファイルの地図(ざっくり)</h2>
+<p class="lead">「この機能は どこ?」の めやす。すべて <span class="pill">scripts/</span> の下に あります。</p>
+<table>
+  <tr><th>ファイル</th><th>やくわり</th></tr>
+  <tr><td><span class="pill">main.gd</span></td><td>入口。起動時に 遊び心・銀河鉄道などを 後づけ(_spawn_extra)。</td></tr>
+  <tr><td><span class="pill">entities/player.gd</span></td><td>主人公の 動き・手振り・歩行アニメ。</td></tr>
+  <tr><td><span class="pill">entities/train.gd</span></td><td>電車の 見た目・走行・運転・窓の乗客。</td></tr>
+  <tr><td><span class="pill">world/railway.gd</span></td><td>線路網(レール・枕木・バラスト)を 作る。</td></tr>
+  <tr><td><span class="pill">world/route_data.gd</span></td><td>どの線路が どこを通るか・分岐の つなぎ方。</td></tr>
+  <tr><td><span class="pill">world/ride_controller.gd</span></td><td>のる/おりる・視点・運転・分岐2択。</td></tr>
+  <tr><td><span class="pill">world/town.gd</span></td><td>街・道路・踏切の 配置。</td></tr>
+  <tr><td><span class="pill">world/crossing.gd</span></td><td>踏切 1つ分(遮断機・灯・音)。</td></tr>
+  <tr><td><span class="pill">world/game_state.gd</span></td><td>進捗の 一元管理(ほし・なかよし・行った場所)。</td></tr>
+  <tr><td><span class="pill">world/save_system.gd</span></td><td>進捗の 保存/読込。</td></tr>
+  <tr><td><span class="pill">world/*_land.gd / moon_trip / submarine / sky_castle / ginga_railway</span></td><td>7つの 別世界。</td></tr>
+  <tr><td><span class="pill">world/instruments / hide_and_seek / magic_steps / interactables / rare_train …</span></td><td>遊び心の 小ネタ。</td></tr>
+  <tr><td><span class="pill">ui/touch_hud.gd / book.gd / world_select.gd / settings.gd</span></td><td>画面の ボタン・図鑑・おでかけメニュー・親モード。</td></tr>
+  <tr><td><span class="pill">dev/auto_capture.gd</span></td><td>開発用:自動で スクショを撮って 見た目を 確認する。</td></tr>
+</table>
+<div class="note" style="margin-top:12px">
+  📄 もっと くわしい 経緯・判断は <span class="pill">docs/HANDOFF.md</span>、変更の 履歴は <span class="pill">changelog.md</span>、小ネタの 仕様は <span class="pill">docs/PLAYFUL_DETAILS.md</span> に あります。
+</div>
+</section>
+
+<!-- ⑧ 安全 -->
+<section id="safe">
+<h2>⑧ 安全と配信(子供向けの まもりごと)</h2>
+<div class="safe">
+<ul style="margin:0; padding-left:20px">
+  <li><b>個人情報を いっさい 集めない・保存しない</b>(セーブは 数字だけ)。</li>
+  <li><b>外部への 通信なし</b>(広告・アクセス解析・SNS連携は 入れない)。フォントなども ゲームに 同梱。</li>
+  <li><b>入力欄・外部リンクなし</b>(子供が うっかり 外に 出る経路を 作らない)。</li>
+  <li><b>検索に 載せない</b>(noindex / robots.txt)。セキュリティの 設定(CSP など)を 維持。</li>
+  <li><b>怖くない・失敗なし・時間制限なし</b>。漢字を 使わず ひらがな・カタカナだけ。</li>
+</ul>
+</div>
+<p class="lead" style="margin-top:12px">
+配信の 流れ:プログラムを 直す → <b>再エクスポート</b>(ブラウザ用に 作りなおす)→ GitHub に push → <b>Vercel が 自動で 本番サイトを 更新</b> → iPad の Safari で あそぶ。
+</p>
+</section>
+
+<footer>
+  しんかんせんワールド — このガイドは v0.55.0 時点の まとめです。機能が ふえたら 追記してください。<br>
+  くわしい技術メモ:docs/HANDOFF.md・docs/ARCHITECTURE.md・docs/GODOT_NOTES.md
+</footer>
+
+</div>
+</body>
+</html>
