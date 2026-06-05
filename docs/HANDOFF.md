@@ -159,12 +159,14 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-05 — A-5乗客(v0.51.0)/腕削除(v0.51.1)/全機能監査・戻る統一(v0.51.2)/B-5楽器(v0.52.0))
+## 進捗(2026-06-06 — v0.53 B-7 / v0.54 銀河鉄道 / v0.55 本格線路・踏切・道路・各地分岐 / v0.56 ミニマップ・踏切修正)
 
 ### ▶ 現在地(次セッションはここから)
 
 - **ブランチ**: `main`(作業は main 直接)。
-- **コミット状況**: 本番 `origin/main` は **v0.54.0 ソース(`83601e4`)まで push 済**。未 push 多数(v0.54.1/.2 銀河+再export、**v0.55.0 本格線路・踏切・道路・各地分岐 part1-3**)。⚠️ **v0.55.0 でソースが変わったので export/web は旧(v0.54.2)。ライブを v0.55.0 にするには push 後に Web 再エクスポートをやり直すこと**。
+- **コミット状況**: 本番 `origin/main` は **v0.56.0(ミニマップ)+その Web 再エクスポートまで push 済(ライブ=v0.56.0)**。**未 push が 3 つ**: `507884f`(v0.56.1 踏切バグ修正+各地分岐に doctor_yellow/tsubame 追加)→ `db4ddb8`(不具合調査・ミニマップの乗車中ガード整理)→ 本コミット(引き継ぎ更新+`minimap.gd.uid`)。⚠️ **v0.56.1 でソース(crossing/route_data)が変わったので export/web は v0.56.0 のまま。ライブを v0.56.1 にするには `! git push origin main` 後に Web 再エクスポートをやり直すこと**(手順は下記)。
+  - **v0.56.1(踏切バグ修正+電車が自由に行き来)**: 踏切「電車が通る前に閉まる」を修正(`crossing.gd`=`get_route_slug()` で実トラックの編成を追い、弧長 `CLOSE_AHEAD=16`/`PASS_CLEAR=7` で判定)。各地分岐に doctor_yellow・tsubame を追加し 全地上ルート到達可能に。**踏切の開閉タイミングは実機体感確認推奨**。
+  - **不具合調査済み(2026-06-06)**: 実行時エラー一斉チェック + 2観点コードレビュー(電車/分岐/踏切・別世界/ミニマップ/道路)→ **重大な不具合なし**。`AUTO_WORLDSEL` 終了時の ObjectDB leak 警告のみ(終了時の解放漏れ・実害なし)。
   - **v0.55.0 = 本格線路+踏切+道路+電車で各地へ**(改善さんリクエスト「電車を各地へ/本格踏切/街をつなぐ道路/本格線路」):
     - **本格線路**(`railway.gd`): 砂利バラスト道床(`_build_ballast_for`)+枕木を密に(`TIE_SPACING=1.8`)+鋼レール。
     - **踏切 3→8**(`town.gd CROSSINGS`、`crossing.gd` は既存本格版)。
@@ -176,8 +178,8 @@ Claude Code に以下を渡せれば引き継ぎ完了:
   - **v0.54.0 = 第9の目玉 銀河鉄道** + **v0.54.1 = 星々を渡り歩く旅路に作り替え**: 星空を夢の汽車で自動巡航する別世界。新規 `scripts/world/ginga_railway.gd`(`_spawn_extra`・`Main.tscn`/`TouchHUD.tscn` 不変・HUDボタンも実行時生成)。`game_state.visited_ginga`+save "ginga"+mission+おでかけメニュー7枚目。**v0.54.1**: 巡航を「星々を渡る長い旅路」に(`_build_journey`/`GALAXY_R=95`/`STAR_WAVE_Y=22`/速度9.0)。**v0.54.2**: 止まり先を **6つの世界のミニチュア**(そら/ゆき/おかし/つき/きょうりゅう/うみ・浮かぶ島+ひらがなラベル)+大きな星6 に。各 `_build_stop_*` で生成(本物のワールドは不変)。**調整候補**: ミニチュアの見え方/大きさ/並び・旅の長さ/速度/うねり(酔い)・星空の明るさ・メニュー7枚目が画面下に近い(パネル高さ)。`AUTO_GINGA`/`AUTO_WORLDSEL` で確認済。
   - **v0.53.0 = B-7 かくれた でんしゃ(夜のレア車両)**: 夜だけ にじいろ「ゆめ」しんかんせんが専用ルート出現。新規 `scripts/world/rare_train.gd`(`_spawn_extra`)+ `route_data.gd` "yume" ルート + `resources/train_data/yume.tres`。図鑑は .tres 自動で「?」隠し枠。発見=乗車(`boarded_trains` 流用=セーブ増やさない)。**調整候補**: "yume" ルート位置/大きさ・色。`AUTO_RARE` で出現確認済。
   - このセッションの実装: v0.51.0 A-5乗客 → v0.51.1 腕削除 → v0.51.2 全機能監査+月・空の戻る常時表示 → v0.52.0 B-5楽器 → Web再エクスポート → **v0.53.0 B-7レア車両**。
-- **Web 再エクスポート: v0.54.2 まで済(`74d7e04`・未 push)**。検証: `export_presets.cfg` 非破壊・`index.*` 日本語化なし・noindex/robots 維持・pck 6.104MB。push 後ライブで ①起動 ②文字 ③外部通信なし を確認(CLAUDE.md)。再エクスポート手順: `Godot --headless --export-release "Web" export/web/index.html` → 検証 → `git add -u export/web` → commit(`index.wasm`/`index.js`/worklet はテンプレ同一で差分なし=`index.html`+`index.pck` のみ)。
-- **🎯 次セッションの最重要 = 改善さんの実機/ブラウザ体感確認**(v0.50.0〜v0.54.2 の新要素)。新規実装を続けるなら候補は `docs/PLAYFUL_DETAILS.md` の **A-2 動物のしぐさ / C-3 季節と天気** ほか(いずれも `_spawn_extra` 寄生方式で追加可)。
+- **Web 再エクスポート: ライブは v0.56.0 まで(push済)。⚠️ v0.56.1 は未エクスポート**。手順: `! git push origin main` → `Godot --headless --export-release "Web" export/web/index.html` → 検証(`export_presets.cfg` 非破壊・`index.*` 日本語化なし・noindex/robots 維持)→ `git add -u export/web` → commit(差分は実質 `index.html`+`index.pck` のみ)→ push。push 後ライブで ①起動 ②文字 ③外部通信なし を確認(CLAUDE.md)。**push はこの環境でブロック → 改善さんが `! git push origin main`**。
+- **🎯 次セッションの最重要 = 改善さんの実機/ブラウザ体感確認**(v0.50.0〜v0.56.1 の新要素。特に **踏切の開閉タイミング・各地分岐の運転体験・ミニマップの見やすさ**)。新規実装を続けるなら候補は `docs/PLAYFUL_DETAILS.md` の **A-2 動物のしぐさ / C-3 季節と天気** ほか(いずれも `_spawn_extra` 寄生方式で追加可)。
   - **v0.52.0 = B-5 楽器(押すと音)**: 新規 `scripts/world/instruments.gd`(`_spawn_extra` で生成)。**もっきん**(ドレミ8鍵盤・各鍵盤タップでその音・自分でメロディが弾ける・低音ほど長い木琴風)+ **ラッパ**(タップでファンファーレ)。B-2(`interactables.gd`)の物理ピッキング+sound_fx の作法を流用。音量ひかえめ・Master バスのミュート連動。`AUTO_MUSIC`(新規)でスクショ確認済。**置き場所** `XYLO_POS`(12,8)/`TRUMPET_POS`(4,-12) は実機で他構造物と重なれば調整。
   - **v0.51.2(全機能監査+月・空の戻るボタン常時表示)**: 全機能を3観点で点検。実在した不足は「つき/そら の戻るボタンが乗り物近接でしか出ない」のみ(修正済=常時表示に統一、`moon_trip.gd`/`sky_castle.gd`)。他候補(candy gravity・submarine rotation・空 fog・各種ループ)は実コード確認で問題なし。**6ワールドすべて いつでも おうちへ かえれる**。
   - **push は この環境ではブロックされる**ので、改善さんに `! git push origin main` を依頼する運用(プロンプトに `!` 付きで入力 → このセッション内で実行)。push 後 Vercel が自動デプロイ。
