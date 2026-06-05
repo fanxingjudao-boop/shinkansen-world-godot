@@ -18,6 +18,7 @@ func _ready() -> void:
 	_spawn_extra("Instruments", "res://scripts/world/instruments.gd")      # B-5 楽器(押すと音)
 	_spawn_extra("RareTrain", "res://scripts/world/rare_train.gd")         # B-7 かくれた でんしゃ(夜)
 	_spawn_extra("GingaRailway", "res://scripts/world/ginga_railway.gd")   # 銀河鉄道(星空ワールド)
+	_spawn_extra("Minimap", "res://scripts/ui/minimap.gd")                 # ミニマップ(ちず)
 	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
 
 # 指定スクリプトの Node3D を Main 直下に 1 つだけ 足す(同名が居れば 何もしない)。
@@ -27,7 +28,7 @@ func _spawn_extra(node_name: String, script_path: String) -> void:
 	var scr := load(script_path)
 	if scr == null:
 		return
-	var node: Node3D = scr.new()
+	var node: Node = scr.new()   # Node3D でも CanvasLayer でも可(ミニマップ等)
 	node.name = node_name
 	add_child(node)
 
