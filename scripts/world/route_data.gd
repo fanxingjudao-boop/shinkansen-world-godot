@@ -99,6 +99,16 @@ static func specs() -> Array:
 			"elevation": 17.0,
 			"start_ratio": 0.0, "stops": [{ "ratio": 0.5, "kind": "dwell", "seconds": 3.0 }],
 		},
+
+		# === かくれた でんしゃ(B-7)===
+		{
+			# ゆめ: 夜だけ rare_train.gd が出現させる にじいろの夢の新幹線。専用の中ループ
+			# (他ルートと別 Path3D なので衝突しない)。線路は常設・列車は夜だけ走る。
+			# 位置・大きさは実機を見て調整可(他ルートや街と重ならないか)。
+			"slug": "yume", "center": center,
+			"rx": 120.0, "rz": 100.0, "rot_deg": 0.0, "wp_count": 56,
+			"start_ratio": 0.0, "stops": [{ "ratio": 0.0, "kind": "dwell", "seconds": 4.0 }],
+		},
 	]
 
 

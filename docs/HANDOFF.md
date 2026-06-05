@@ -164,13 +164,15 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 ### ▶ 現在地(次セッションはここから)
 
 - **ブランチ**: `main`(作業は main 直接)。
-- **コミット状況**: 本番 `origin/main` は **v0.52.0(`42a4ccc`)まで push 済**。その上に **ローカル未 push が 3 つ**: `25118bf`(引き継ぎ更新)→ `f26f6e0`(**Web 再エクスポート: v0.50.0〜v0.52.0 をライブ反映**)→ 本コミット(引き継ぎ更新+`instruments.gd.uid`)。**`! git push origin main` で push → Vercel 自動デプロイ → ライブが最新化**。このセッションの実装: v0.51.0 A-5乗客 → v0.51.1 腕削除 → v0.51.2 全機能監査+月・空の戻る常時表示 → v0.52.0 B-5楽器 → Web 再エクスポート。
-- **✅ Web 再エクスポート済(`f26f6e0`)**: `export/web` を v0.52.0 まで再生成済(検証: `export_presets.cfg` 非破壊・`index.*` 日本語化なし・noindex/robots 維持・pck 6.07MB)。**push 後にライブで ①起動する ②文字が出る ③外部通信が増えていない を必ず確認**(CLAUDE.md デプロイ確認)。`index.wasm`/`index.js`/worklet はテンプレ同一で差分なし=コミットは `index.html`+`index.pck` のみ。
-- **🎯 次セッションの最重要 = 改善さんの実機/ブラウザ体感確認**(v0.50.0〜v0.52.0 の新要素)。新規実装を続けるなら候補は `docs/PLAYFUL_DETAILS.md` の **A-2 動物のしぐさ / B-7 かくれた でんしゃ / C-3 季節と天気** ほか(いずれも `_spawn_extra` 寄生方式で追加可)。
+- **コミット状況**: 本番 `origin/main` は **v0.52.0+再エクスポート(`5c9d397`)まで push 済**。その上に **v0.53.0(B-7 かくれた でんしゃ)を実装 — コミット予定・未 push**。**push 後に Web 再エクスポートが必要**(v0.53.0 をライブに出すため。下記デプロイ手順)。
+  - **v0.53.0 = B-7 かくれた でんしゃ(夜のレア車両)**: 夜だけ にじいろ「ゆめ」しんかんせんが専用ルート出現。新規 `scripts/world/rare_train.gd`(`_spawn_extra`)+ `route_data.gd` "yume" ルート + `resources/train_data/yume.tres`。図鑑は .tres 自動で「?」隠し枠。発見=乗車(`boarded_trains` 流用=セーブ増やさない)。**調整候補**: "yume" ルート位置/大きさ・色。`AUTO_RARE` で出現確認済。
+  - このセッションの実装: v0.51.0 A-5乗客 → v0.51.1 腕削除 → v0.51.2 全機能監査+月・空の戻る常時表示 → v0.52.0 B-5楽器 → Web再エクスポート → **v0.53.0 B-7レア車両**。
+- **Web 再エクスポート: v0.52.0 までは済・push 済(`f26f6e0`)。⚠️ v0.53.0(B-7)は未エクスポート**。ライブに出すには **ソース push 後に再度** `Godot --headless --export-release "Web" export/web/index.html` → 検証(`export_presets.cfg` 非破壊・`index.*` 日本語化なし・noindex/robots 維持)→ `export/web` コミット → push。デプロイ後は ①起動 ②文字 ③外部通信なし を確認(CLAUDE.md)。`index.wasm`/`index.js`/worklet はテンプレ同一で差分なし=コミットは `index.html`+`index.pck` のみ。
+- **🎯 次セッションの最重要 = 改善さんの実機/ブラウザ体感確認**(v0.50.0〜v0.53.0 の新要素)。新規実装を続けるなら候補は `docs/PLAYFUL_DETAILS.md` の **A-2 動物のしぐさ / C-3 季節と天気** ほか(いずれも `_spawn_extra` 寄生方式で追加可)。
   - **v0.52.0 = B-5 楽器(押すと音)**: 新規 `scripts/world/instruments.gd`(`_spawn_extra` で生成)。**もっきん**(ドレミ8鍵盤・各鍵盤タップでその音・自分でメロディが弾ける・低音ほど長い木琴風)+ **ラッパ**(タップでファンファーレ)。B-2(`interactables.gd`)の物理ピッキング+sound_fx の作法を流用。音量ひかえめ・Master バスのミュート連動。`AUTO_MUSIC`(新規)でスクショ確認済。**置き場所** `XYLO_POS`(12,8)/`TRUMPET_POS`(4,-12) は実機で他構造物と重なれば調整。
   - **v0.51.2(全機能監査+月・空の戻るボタン常時表示)**: 全機能を3観点で点検。実在した不足は「つき/そら の戻るボタンが乗り物近接でしか出ない」のみ(修正済=常時表示に統一、`moon_trip.gd`/`sky_castle.gd`)。他候補(candy gravity・submarine rotation・空 fog・各種ループ)は実コード確認で問題なし。**6ワールドすべて いつでも おうちへ かえれる**。
   - **push は この環境ではブロックされる**ので、改善さんに `! git push origin main` を依頼する運用(プロンプトに `!` 付きで入力 → このセッション内で実行)。push 後 Vercel が自動デプロイ。
-  - **Web 再エクスポートは完了(`f26f6e0`)。** あとは `! git push origin main` で push すれば Vercel が自動デプロイし、ライブが v0.52.0 になる。push 前のライブは旧ビルド(v0.49.0)。
+  - **ライブ状況**: v0.52.0 まで(`f26f6e0`)はエクスポート+push 済 → push すれば Vercel デプロイで反映。**v0.53.0(B-7)はソース実装のみで、まだ再エクスポートしていない**(上記手順で別途)。
 
 - **v0.51.0 = A-5 電車の窓から乗客が手を振る**(`docs/PLAYFUL_DETAILS.md` 第3弾):
   - `scripts/entities/train.gd` に乗客を追加。**静止乗客=車両ごと MultiMesh**(1つおきの窓×両側・110m 距離カリング `_update_passenger_cull`)、**挨拶する乗客=各車両 1 人の実ノード**(胴体のみ、`_wavers`)。公開 `wave_passengers()` が **ぴょこっと上下バウンス**(`animal.wave_back` のやさしい動き)+ ♥(`animal._pop_heart` 流用)。`_wave_cooldown=3.5s`・遠景(>110m)はスキップ。顔なし・真っ黒なし・**音なし**(やさしい音厳守)。**⚠️ v0.51.1 で「腕」を削除**(改善さんフィードバック=細い腕が幼児に怖い)。腕の見た目は今後も復活させない。

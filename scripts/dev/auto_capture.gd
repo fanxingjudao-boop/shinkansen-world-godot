@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -75,6 +75,8 @@ func _ready() -> void:
 			await _capture_greet()
 		CaptureMode.AUTO_MUSIC:
 			await _capture_music()
+		CaptureMode.AUTO_RARE:
+			await _capture_rare()
 	get_tree().quit()
 
 
@@ -498,6 +500,35 @@ func _capture_ride() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _save_screenshot("user://screenshot_alight.png")
+
+
+# B-7 検証: 夜にして ゆめ電車が出現するか。出たらその近くを撮影。
+func _capture_rare() -> void:
+	var dn := get_tree().root.find_child("DayNightCycle", true, false)
+	var rare := get_tree().root.find_child("RareTrain", true, false)
+	if dn == null or rare == null:
+		print("[AutoCapture] DayNightCycle/RareTrain not found")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	dn.set("time_of_day", 0.92)  # 夜にする
+	await get_tree().create_timer(1.3).timeout  # spawner の _process(0.5s間隔)が出現させるのを待つ
+	var t = rare.get("_train")
+	print("[AutoCapture] rare spawned: %s" % str(t != null))
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.fov = 60.0
+	if t != null and t.has_method("get_ride_anchor_position"):
+		var p: Vector3 = t.get_ride_anchor_position()
+		cam.global_position = p + Vector3(10, 7, 14)
+		cam.look_at(p + Vector3(0, 1.5, 0))
+	else:
+		cam.global_position = Vector3(0, 120, 200)
+		cam.look_at(Vector3(0, 2, 0))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_rare_train.png")
 
 
 # B-5 検証: 楽器(もっきん/ラッパ)を デバッグカメラで写す。_ready で組み立て済なので

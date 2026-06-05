@@ -2,6 +2,17 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.53.0 — 2026-06-05 — 遊び心: かくれた でんしゃ(レア車両・夜)(B-7)
+
+`docs/PLAYFUL_DETAILS.md` の B-7。**夜だけ にじいろの「ゆめ」しんかんせんが線路に現れる**(§12 でも本命だった隠し電車)。図鑑の隠し枠で、見つけて乗ると うまる。`Main.tscn` 不変・**セーブ項目を増やさない**(発見=乗車=既存の `boarded_trains` を流用)。
+
+- **専用ルート**(`route_data.gd` に `"yume"` を追加): 中ループ(center(0,0)・rx120/rz100・elevation0)。他編成と別 Path3D なので衝突しない。線路は常設・列車は夜だけ走る。**位置は実機で調整可**。
+- **車両データ**(新規 `resources/train_data/yume.tres`): 表示名「ゆめ」・にじいろ(body=ラベンダー/accent=金)・rounded ノーズ・top_speed 999。図鑑は `.tres` 自動走査なので**追加だけで「?」の隠し枠として出る**(`book.gd` 改変不要)。
+- **出現制御**(新規 `scripts/world/rare_train.gd`、`main.gd` が `_spawn_extra` で生成): `time_of_day < 0.22 or > 0.80`(ホタル/流れ星と同じ夜判定)で `Train.tscn` を instance して `Trains` に追加 → 乗車・図鑑・すれ違い手振りに自動波及。昼になると `queue_free`(ただし**乗車中は降りるまで消さない**)。初めて乗ると「ゆめの でんしゃ みつけた!」通知+ほし+1。
+- 子供配慮: 夜になれば必ず出る(優しい条件)・怖くない・見つけられなくても損しない。
+
+検証: 4 スクリプト構文チェック通過、新規 `AUTO_RARE`(夜に強制→出現待ち→撮影)で **`rare spawned: true`・ゆめ電車が夜の線路に5両編成で描画**されることを確認(`screenshot_rare_train.png`)、実行時エラーなし(`for_mobile=false` 維持・MODE は SINGLE 復帰・save.json 削除)。**改善さんの体感確認待ち**: ルート位置(街/他線/地形と重ならないか)、夜の見やすさ・色、乗りやすさ。**調整候補**: `route_data.gd` の "yume" 位置/大きさ、`yume.tres` の色。
+
 ## v0.52.0 — 2026-06-05 — 遊び心: 楽器(押すと音が鳴る たからもの)(B-5)
 
 `docs/PLAYFUL_DETAILS.md` の B-5。音を出す遊びは子供の根源的な楽しみ。新規 `scripts/world/instruments.gd`(`main.gd` が起動時に `_spawn_extra` で生成)。`Main.tscn` 不変・`load_steps` 据え置き・セーブ項目も増やさない。既存の B-2(`interactables.gd`)の物理ピッキングと sound_fx のプロシージャル音の作法を踏襲。
