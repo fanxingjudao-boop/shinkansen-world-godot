@@ -151,4 +151,8 @@ static func branches() -> Array:
 		{ "from": "e235_yamanote", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.58, "label": "ほんせん" },
 		{ "from": "hayabusa", "at_ratio": 0.85, "to": "oshiro", "to_ratio": 0.3, "label": "おしろ" },
 		{ "from": "oshiro", "at_ratio": 0.3, "to": "hayabusa", "to_ratio": 0.85, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.38, "to": "doctor_yellow", "to_ratio": 0.5, "label": "ドクターイエロー" },
+		{ "from": "doctor_yellow", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.38, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.65, "to": "tsubame", "to_ratio": 0.5, "label": "つばめ(こうか)" },
+		{ "from": "tsubame", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.65, "label": "ほんせん" },
 	]

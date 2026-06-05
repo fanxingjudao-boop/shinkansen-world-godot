@@ -24,8 +24,10 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 @export var trains_path: NodePath = NodePath("../Trains")
 @export var player_path: NodePath = NodePath("../Player")
 
-# 電車の中心がこの距離(m)以内に来たら遮断機を下ろす(接近=閉)。離れたら上げる。
-const APPROACH_DIST: float = 22.0
+# 弧長(線路に沿った距離)で判定する。直線距離だと 小さな環状で「手前なのに閉まる」ため。
+const CLOSE_AHEAD: float = 16.0   # 踏切の手前 これ以内(m)に 電車が来たら 閉じる
+const PASS_CLEAR: float = 7.0     # 通り過ぎてから これだけ(m)進むまで 閉じたまま
+const APPROACH_DIST: float = 22.0 # フォールバック用(ルート長が取れない時の直線距離)
 # 警報音が聞こえる範囲(プレイヤーがこの距離以内のときだけ鳴らす。全踏切が常時鳴るのを防ぐ)
 const RING_HEAR_DIST: float = 34.0
 const BAR_SPEED: float = 2.6          # 遮断機の開閉スピード(rad/s 相当。ゆっくり優しく)
@@ -117,24 +119,42 @@ func _process(delta: float) -> void:
 	_update_ring()
 
 
-# 自ルートの編成が APPROACH_DIST 以内にいるか(=遮断機を閉じるべきか)を判定。
+# この線路を いま走っている編成が、踏切の手前 CLOSE_AHEAD 以内(または通過直後)に
+# いるかを 弧長で判定。分岐で編成が載せ替わっても「実トラック(get_route_slug)」で追う。
 func _update_active() -> void:
-	if _train == null or not is_instance_valid(_train):
+	# キャッシュした編成が この線路から 居なくなったら(分岐で載せ替わったら)探し直す。
+	if _train == null or not is_instance_valid(_train) or _train_route() != route_slug:
 		_train = _find_route_train()
 	if _train == null:
 		_active = false
 		return
-	var tp: Vector3 = _train.get_ride_anchor_position()
-	_active = _world_pos.distance_to(tp) < APPROACH_DIST
+	var length: float = 0.0
+	if _railway and _railway.has_method("get_route_length"):
+		length = _railway.get_route_length(route_slug)
+	if length <= 0.0:
+		# フォールバック: ルート長が取れない時だけ 直線距離
+		_active = _world_pos.distance_to(_train.get_ride_anchor_position()) < APPROACH_DIST
+		return
+	var tr: float = _train.get_progress_ratio() if _train.has_method("get_progress_ratio") else 0.0
+	# 編成 → 踏切 までの「前方」弧長(m)。近づくと 0 に減り、通過すると length 付近へ跳ねる。
+	var ahead: float = fposmod(route_ratio - tr, 1.0) * length
+	_active = ahead < CLOSE_AHEAD or ahead > length - PASS_CLEAR
 
 
-# slug 一致の編成を Trains から探す(1 ルート 1 編成)。
+# キャッシュ編成が いま走っているルート slug。
+func _train_route() -> String:
+	if _train and _train.has_method("get_route_slug"):
+		return String(_train.get_route_slug())
+	return ""
+
+
+# いま この線路(route_slug)を 実際に走っている編成を探す(分岐で載せ替わっても追える)。
 func _find_route_train() -> Node:
 	if _trains == null:
 		return null
 	for t in _trains.get_children():
-		if t.has_method("get_slug") and t.has_method("get_ride_anchor_position") \
-				and String(t.get_slug()) == route_slug:
+		if t.has_method("get_route_slug") and t.has_method("get_progress_ratio") \
+				and String(t.get_route_slug()) == route_slug:
 			return t
 	return null
 
