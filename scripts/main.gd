@@ -17,6 +17,7 @@ func _ready() -> void:
 	_spawn_extra("TrainGreeters", "res://scripts/world/train_greeters.gd") # A-5 乗客が手を振る
 	_spawn_extra("Instruments", "res://scripts/world/instruments.gd")      # B-5 楽器(押すと音)
 	_spawn_extra("RareTrain", "res://scripts/world/rare_train.gd")         # B-7 かくれた でんしゃ(夜)
+	_spawn_extra("GingaRailway", "res://scripts/world/ginga_railway.gd")   # 銀河鉄道(星空ワールド)
 	print("[Main] しんかんせんワールド Phase 1 — シーン準備完了")
 
 # 指定スクリプトの Node3D を Main 直下に 1 つだけ 足す(同名が居れば 何もしない)。

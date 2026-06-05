@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE, AUTO_GINGA }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -77,6 +77,8 @@ func _ready() -> void:
 			await _capture_music()
 		CaptureMode.AUTO_RARE:
 			await _capture_rare()
+		CaptureMode.AUTO_GINGA:
+			await _capture_ginga()
 	get_tree().quit()
 
 
@@ -500,6 +502,42 @@ func _capture_ride() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	await _save_screenshot("user://screenshot_alight.png")
+
+
+# 銀河鉄道 検証: warp_in で星空ワールドへ → 巡航中の汽車まわりを撮影。
+func _capture_ginga() -> void:
+	var ginga := get_tree().root.find_child("GingaRailway", true, false)
+	if ginga == null:
+		print("[AutoCapture] GingaRailway not found")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	if ginga.has_method("warp_in"):
+		ginga.warp_in()
+	await get_tree().create_timer(1.2).timeout  # フェード+到着+巡航開始を待つ
+	print("[AutoCapture] ginga active: %s" % str(ginga.call("is_active")))
+	# プレイヤー(=汽車)を後ろ上から撮る
+	var player := get_tree().root.find_child("Player", true, false) as Node3D
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	var rigp := cam.get_parent()
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	cam.fov = 65.0
+	if player:
+		var p: Vector3 = player.global_position
+		cam.global_position = p + Vector3(9, 6, 12)
+		cam.look_at(p + Vector3(0, 1.0, 0))
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_ginga.png")
+	# 少し進ませて 全景も
+	await get_tree().create_timer(1.0).timeout
+	if player:
+		var p2: Vector3 = player.global_position
+		cam.global_position = p2 + Vector3(0, 40, 55)
+		cam.look_at(p2)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_ginga_wide.png")
 
 
 # B-7 検証: 夜にして ゆめ電車が出現するか。出たらその近くを撮影。

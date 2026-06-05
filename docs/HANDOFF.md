@@ -164,7 +164,8 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 ### ▶ 現在地(次セッションはここから)
 
 - **ブランチ**: `main`(作業は main 直接)。
-- **コミット状況**: 本番 `origin/main` は **v0.53.0 ソース(`18241df`)まで push 済**。その上に **`e55d4a6`(v0.53.0 の Web 再エクスポート)+ 本コミット(引き継ぎ更新+`rare_train.gd.uid`)が未 push**。`! git push origin main` → Vercel 自動デプロイ → ライブが v0.53.0 に。
+- **コミット状況**: 本番 `origin/main` は **v0.53.0+再エクスポート(`68f2f66`)まで push 済**。その上に **v0.54.0(銀河鉄道)を実装 — コミット予定・未 push**。**push 後に Web 再エクスポートが必要**(v0.54.0 をライブに出すため)。
+  - **v0.54.0 = 第9の目玉 銀河鉄道**: 星空を夢の汽車で自動巡航する別世界。新規 `scripts/world/ginga_railway.gd`(`_spawn_extra`・`Main.tscn`/`TouchHUD.tscn` 不変・HUDボタンも実行時生成)。`game_state.visited_ginga`+save "ginga"+mission+おでかけメニュー7枚目。**調整候補**: 星空の明るさ/色・巡航速度・地上ドック(56,24)・メニュー7枚目が画面下に近い(パネル高さ)。`AUTO_GINGA`/`AUTO_WORLDSEL` で確認済。
   - **v0.53.0 = B-7 かくれた でんしゃ(夜のレア車両)**: 夜だけ にじいろ「ゆめ」しんかんせんが専用ルート出現。新規 `scripts/world/rare_train.gd`(`_spawn_extra`)+ `route_data.gd` "yume" ルート + `resources/train_data/yume.tres`。図鑑は .tres 自動で「?」隠し枠。発見=乗車(`boarded_trains` 流用=セーブ増やさない)。**調整候補**: "yume" ルート位置/大きさ・色。`AUTO_RARE` で出現確認済。
   - このセッションの実装: v0.51.0 A-5乗客 → v0.51.1 腕削除 → v0.51.2 全機能監査+月・空の戻る常時表示 → v0.52.0 B-5楽器 → Web再エクスポート → **v0.53.0 B-7レア車両**。
 - **Web 再エクスポート: v0.53.0 まで済(`e55d4a6`・未 push)**。検証: `export_presets.cfg` 非破壊・`index.*` 日本語化なし・noindex/robots 維持・pck 6.076MB。push 後ライブで ①起動 ②文字 ③外部通信なし を確認(CLAUDE.md)。再エクスポート手順: `Godot --headless --export-release "Web" export/web/index.html` → 検証 → `git add -u export/web` → commit(`index.wasm`/`index.js`/worklet はテンプレ同一で差分なし=`index.html`+`index.pck` のみ)。

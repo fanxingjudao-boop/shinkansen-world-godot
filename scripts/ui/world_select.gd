@@ -18,6 +18,7 @@ const WORLDS: Array = [
 	{"name": "おかし", "vehicle": "おかしの きしゃ", "color": Color(1.0, 0.7, 0.82), "node": "CandyLand"},
 	{"name": "きょうりゅう", "vehicle": "サファリカー", "color": Color(0.5, 0.7, 0.4), "node": "DinoLand"},
 	{"name": "ゆき", "vehicle": "そり", "color": Color(0.82, 0.88, 1.0), "node": "YukiLand"},
+	{"name": "ぎんが", "vehicle": "ぎんがてつどう", "color": Color(0.6, 0.55, 0.92), "node": "GingaRailway"},
 ]
 
 @onready var grid: GridContainer = $Root/Panel/VBox/Grid

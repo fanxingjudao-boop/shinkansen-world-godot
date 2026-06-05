@@ -19,6 +19,7 @@ var visited_submarine: bool = false   # せんすいかんで うみの そこ�
 var visited_candy: bool = false       # おかしの きしゃで おかしの くにへ行ったことがある(ミッション用)
 var visited_dino: bool = false        # サファリカーで きょうりゅうランドへ行ったことがある(ミッション用)
 var visited_yuki: bool = false        # そりで ゆきの くにへ行ったことがある(ミッション用)
+var visited_ginga: bool = false       # ぎんがてつどうで 星空へ行ったことがある(ミッション用)
 var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
 var play_count: int = 0         # あそんだ かいすう(起動ごとに +1。親モードで表示)
 # かくれんぼで みつけた子の id(重複なし)。図鑑の「かくれんぼ はかせ」スタンプ用にセーブする。
@@ -100,6 +101,13 @@ func set_yuki_visited() -> void:
 	if visited_yuki:
 		return
 	visited_yuki = true
+	changed.emit()
+
+
+func set_ginga_visited() -> void:
+	if visited_ginga:
+		return
+	visited_ginga = true
 	changed.emit()
 
 
