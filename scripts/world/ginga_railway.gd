@@ -22,10 +22,17 @@ const GINGA_DOCK := Vector2(56.0, 24.0)             # 地上の駐車(草原・�
 const GINGA_POS := Vector3(3200.0, 500.0, 3200.0)   # 銀河(遠く・高い空)
 const ENTER_RANGE := 10.0
 const FADE_TIME := 0.35
-const CRUISE_SPEED := 4.5
+const CRUISE_SPEED := 9.0          # 星から星へ ぐんぐん渡っていく
 const CRUISE_Y := 2.0
-const CRUISE_R := 32.0
-const GET_RANGE := 4.5
+const GALAXY_R := 95.0             # 星々をめぐる大きな輪(渡り歩くイメージ)
+const STAR_WAVE_Y := 22.0          # 上下のうねり(立体的に星を渡る)
+const STAR_STOPS := 12             # 渡り歩く 大きな星の数
+const GET_RANGE := 5.0
+# 渡り歩く 大きな星の いろいろな色(すべての星々)
+const STAR_STOP_COLS := [
+	Color(1.0, 0.95, 0.6), Color(1.0, 0.72, 0.82), Color(0.7, 0.85, 1.0), Color(0.8, 1.0, 0.82),
+	Color(1.0, 0.8, 0.5), Color(0.85, 0.76, 1.0), Color(0.7, 1.0, 0.95), Color(1.0, 0.9, 0.78),
+]
 
 const SKY_C := Color(0.10, 0.12, 0.32)        # 深い藍(真っ黒にしない=怖くない)
 const STAR_C := Color(1.0, 1.0, 0.92)
@@ -404,15 +411,8 @@ func _build_galaxy_world() -> void:
 	_build_milkyway(c)
 	_build_moon(c)
 	_build_planets(c)
-	_build_rails(c)
+	_build_journey(c)   # 大きな星々を 渡り歩く 旅路(レール+巡航+星のかけら)
 	_build_lanterns(c)
-	_build_star_pieces(c)
-	# 巡航ルート(光るレールの輪の上)
-	_cruise.clear()
-	var n: int = 16
-	for i in range(n):
-		var a: float = float(i) / float(n) * TAU
-		_cruise.append(c + Vector3(cos(a) * CRUISE_R, CRUISE_Y, sin(a) * CRUISE_R))
 
 
 # たくさんの星(MultiMesh で 1 draw call)。大きなドーム状に散らす。
@@ -491,17 +491,18 @@ func _build_moon(c: Vector3) -> void:
 
 
 func _build_planets(c: Vector3) -> void:
-	var spots: Array[Vector3] = [Vector3(80, 40, -60), Vector3(-90, 30, 50), Vector3(60, 60, 70)]
+	# 惑星は 旅路(輪 半径 95)の外の 遠景に置く(汽車の通り道と重ならない)。
+	var spots: Array[Vector3] = [Vector3(155, 70, -120), Vector3(-165, 55, 95), Vector3(120, 100, 150)]
 	for i in range(spots.size()):
 		var col: Color = PLANET_COLS[i % PLANET_COLS.size()]
-		var r: float = 6.0 + float(i % 3) * 3.0
+		var r: float = 7.0 + float(i % 3) * 4.0
 		var pl := _lsphere(self, r, c + spots[i], col)
 		var pm := pl.material_override as StandardMaterial3D
 		pm.emission_enabled = true
 		pm.emission = col
 		pm.emission_energy_multiplier = 0.25
 	# 輪のある惑星(土星っぽい)
-	var saturn := _lsphere(self, 8.0, c + Vector3(-50, 48, 60), Color(0.95, 0.85, 0.6))
+	var saturn := _lsphere(self, 10.0, c + Vector3(-140, 85, 135), Color(0.95, 0.85, 0.6))
 	var sm := saturn.material_override as StandardMaterial3D
 	sm.emission_enabled = true
 	sm.emission = Color(0.95, 0.85, 0.6)
@@ -519,33 +520,100 @@ func _build_planets(c: Vector3) -> void:
 	rm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ring.material_override = rm
-	ring.position = c + Vector3(-50, 48, 60)
+	ring.position = c + Vector3(-140, 85, 135)
 	ring.rotation = Vector3(1.1, 0.0, 0.3)
 	add_child(ring)
 
 
-# 光るレールの輪(銀河の上を走る道)。TorusMesh 1枚で表現。
-func _build_rails(c: Vector3) -> void:
-	var ring := MeshInstance3D.new()
-	var tm := TorusMesh.new()
-	tm.inner_radius = CRUISE_R - 0.4
-	tm.outer_radius = CRUISE_R + 0.4
-	tm.rings = 48
-	ring.mesh = tm
+# 星から星へ 渡り歩く 旅路。大きな星を 12 個 大きな輪(上下にうねる)に並べ、
+# その間を 光るレール(点の連なり)でつなぐ。汽車は 星のそばを 次々に通っていく。
+func _build_journey(c: Vector3) -> void:
+	_cruise.clear()
+	var n: int = STAR_STOPS
+	var wp: Array = []
+	for i in range(n):
+		var a: float = float(i) / float(n) * TAU
+		var rad: float = GALAXY_R + sin(a * 3.0) * 16.0          # 輪を ゆらして 単調にしない
+		var y: float = CRUISE_Y + sin(a * 2.0) * STAR_WAVE_Y      # 上下にうねる(立体的)
+		var p := c + Vector3(cos(a) * rad, y, sin(a) * rad)
+		wp.append(p)
+		_cruise.append(p)
+		# 大きな星は 進路の すぐ外側に置く(汽車は そのそばを 通り過ぎる=渡り歩く)
+		var outward := Vector3(cos(a), 0.0, sin(a))
+		_build_big_star(p + outward * 8.0 + Vector3(0, 3.0, 0), i)
+
+	# 光るレール(隣りあう星のあいだを 点の連なりで)。MultiMesh で 1 draw call。
+	var dots: Array = []
+	for i in range(n):
+		var p0: Vector3 = wp[i]
+		var p1: Vector3 = wp[(i + 1) % n]
+		for k in range(5):
+			dots.append(p0.lerp(p1, float(k) / 5.0) + Vector3(0, -0.7, 0))
+		# 区間の まんなかに 星のかけら(ごほうび)を ときどき置く
+		if i % 2 == 0:
+			var mid: Vector3 = p0.lerp(p1, 0.5) + Vector3(0, 0.6, 0)
+			var pc := _lemit(self, 0.5, mid, PIECE_C)
+			pc.scale = Vector3(1.0, 1.4, 1.0)
+			_pieces.append({"node": pc, "base_y": mid.y, "phase": float(i) * 1.1, "taken": false})
+	_build_rail_dots(dots)
+
+
+func _build_rail_dots(dots: Array) -> void:
+	if dots.is_empty():
+		return
+	var s := SphereMesh.new()
+	s.radius = 0.22
+	s.height = 0.44
+	s.radial_segments = 6
+	s.rings = 3
 	var m := StandardMaterial3D.new()
 	m.albedo_color = RAIL_C
 	m.emission_enabled = true
 	m.emission = RAIL_C
 	m.emission_energy_multiplier = 1.6
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	ring.material_override = m
-	ring.position = c + Vector3(0, CRUISE_Y - 0.7, 0)
-	add_child(ring)
-	# まくらぎ風の 光る点を 輪に沿って
-	var n: int = 24
-	for i in range(n):
-		var a: float = float(i) / float(n) * TAU
-		_lemit(self, 0.18, c + Vector3(cos(a) * CRUISE_R, CRUISE_Y - 0.7, sin(a) * CRUISE_R), Color(0.8, 0.95, 1.0))
+	s.material = m
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = s
+	mm.instance_count = dots.size()
+	for j in range(dots.size()):
+		mm.set_instance_transform(j, Transform3D(Basis(), dots[j]))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	add_child(mmi)
+
+
+# 渡り歩く 大きな星(光る玉 + うすい光のかさ + ゆっくり またたく)。
+func _build_big_star(pos: Vector3, i: int) -> void:
+	var col: Color = STAR_STOP_COLS[i % STAR_STOP_COLS.size()]
+	var r: float = 2.6 + float(i % 3) * 0.6
+	var core := _lemit(self, r, pos, col)
+	var cm := core.material_override as StandardMaterial3D
+	cm.emission_energy_multiplier = 2.2
+	# うすい 光のかさ(半透明・大きめ)
+	var halo := MeshInstance3D.new()
+	var hs := SphereMesh.new()
+	hs.radius = r * 1.8
+	hs.height = r * 3.6
+	hs.radial_segments = 12
+	hs.rings = 6
+	halo.mesh = hs
+	var hm := StandardMaterial3D.new()
+	hm.albedo_color = Color(col.r, col.g, col.b, 0.18)
+	hm.emission_enabled = true
+	hm.emission = col
+	hm.emission_energy_multiplier = 0.6
+	hm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	hm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	halo.material_override = hm
+	halo.position = pos
+	add_child(halo)
+	# ゆっくり またたく(やさしい)
+	var tw := create_tween().set_loops()
+	var dur: float = 1.6 + float(i % 4) * 0.3
+	tw.tween_property(cm, "emission_energy_multiplier", 1.2, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	tw.tween_property(cm, "emission_energy_multiplier", 2.6, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 
 
 # ふわふわ浮かぶ 光のランタン(銀河鉄道の夜)
@@ -565,17 +633,7 @@ func _update_lanterns(delta: float) -> void:
 		node.position.y = lt["base_y"] + sin(lt["phase"]) * 0.8
 
 
-# === 星のかけら(ごほうび)===
-
-func _build_star_pieces(c: Vector3) -> void:
-	var spots: Array[float] = [0.4, 1.5, 2.6, 3.8, 5.0]
-	for i in range(spots.size()):
-		var a: float = spots[i]
-		var p := c + Vector3(cos(a) * (CRUISE_R - 4.0), CRUISE_Y + 1.0, sin(a) * (CRUISE_R - 4.0))
-		var mi := _lemit(self, 0.5, p, PIECE_C)
-		mi.scale = Vector3(1.0, 1.4, 1.0)
-		_pieces.append({"node": mi, "base_y": p.y, "phase": float(i) * 1.1, "taken": false})
-
+# === 星のかけら(ごほうび。旅路の途中に置く。_build_journey で生成)===
 
 func _update_pieces(delta: float) -> void:
 	if _pieces.is_empty():
