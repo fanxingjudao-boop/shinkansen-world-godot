@@ -135,4 +135,20 @@ static func branches() -> Array:
 		# N700 ⇄ はやぶさ(ratio 0.72 付近)
 		{ "from": "n700", "at_ratio": 0.72, "to": "hayabusa", "to_ratio": 0.72 },
 		{ "from": "hayabusa", "at_ratio": 0.72, "to": "n700", "to_ratio": 0.72 },
+
+		# === 各地へ(本線 はやぶさ をハブに 名所へ往復)===
+		# 離れたルートでも take_branch はフェード中点で載せ替えるので 飛びは見えない。
+		# 行き先ルートには既に編成がいる(入れ替えで「1ルート1編成」を保つ)。
+		# at_ratio/to_ratio は 各ルートの停車点を避ける(はやぶさ停車0.0・はやぶさ既存0.18/0.72)。
+		# label = 子供向けの行き先名(HUD の2択・通知に使う)。
+		{ "from": "hayabusa", "at_ratio": 0.10, "to": "komachi", "to_ratio": 0.25, "label": "まちの まんなか" },
+		{ "from": "komachi", "at_ratio": 0.25, "to": "hayabusa", "to_ratio": 0.10, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.30, "to": "sl_hitoyoshi", "to_ratio": 0.5, "label": "みずうみ" },
+		{ "from": "sl_hitoyoshi", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.30, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.45, "to": "tsubasa", "to_ratio": 0.5, "label": "やま" },
+		{ "from": "tsubasa", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.45, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.58, "to": "e235_yamanote", "to_ratio": 0.5, "label": "まち" },
+		{ "from": "e235_yamanote", "at_ratio": 0.5, "to": "hayabusa", "to_ratio": 0.58, "label": "ほんせん" },
+		{ "from": "hayabusa", "at_ratio": 0.85, "to": "oshiro", "to_ratio": 0.3, "label": "おしろ" },
+		{ "from": "oshiro", "at_ratio": 0.3, "to": "hayabusa", "to_ratio": 0.85, "label": "ほんせん" },
 	]

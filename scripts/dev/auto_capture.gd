@@ -116,7 +116,8 @@ func _fixcheck() -> void:
 			rc.toggle_driver_mode()
 			await get_tree().create_timer(0.9).timeout
 			rc._branch_cooldown = 999.0  # _check_branch に消されないよう抑止
-			rc._offer_branch({ "from": "hayabusa", "at_ratio": 0.18, "to": "kagayaki", "to_ratio": 0.18 })
+			# 各地への 遠距離分岐(本線→みずうみ sl_hitoyoshi)をテスト: フェードで載せ替え・入れ替え成立か
+			rc._offer_branch({ "from": "hayabusa", "at_ratio": 0.30, "to": "sl_hitoyoshi", "to_ratio": 0.5, "label": "みずうみ" })
 			rc.take_branch()  # 直後に呼ぶ(間に _process を挟まない)
 			await get_tree().create_timer(1.0).timeout  # フェード+スワップ完了待ち
 			var routes := {}
@@ -126,10 +127,10 @@ func _fixcheck() -> void:
 				if routes.has(rs):
 					dup = true
 				routes[rs] = true
-			print("[FixCheck] B2 swap: 編成数=%d 占有ルート数=%d 重複=%s / はやぶさ編成は今 '%s' / かがやき編成は今 '%s'" % [
+			print("[FixCheck] 各地分岐 swap: 編成数=%d 占有ルート数=%d 重複=%s / はやぶさ編成は今 '%s' / SL編成は今 '%s'" % [
 				trains.get_child_count(), routes.size(), str(dup),
 				haya.get_route_slug(),
-				(trains.get_node_or_null("Kagayaki").get_route_slug() if trains.get_node_or_null("Kagayaki") else "?")])
+				(trains.get_node_or_null("SLHitoyoshi").get_route_slug() if trains.get_node_or_null("SLHitoyoshi") else "?")])
 			rc._do_alight()
 			await get_tree().physics_frame
 

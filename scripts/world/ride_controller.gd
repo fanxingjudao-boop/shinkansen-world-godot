@@ -373,7 +373,10 @@ func _check_branch() -> void:
 func _offer_branch(b: Dictionary) -> void:
 	_shown_branch = b
 	var to_train := _find_train_on_route(String(b["to"]), _current_train)
-	var to_name: String = to_train.get_display_name() if to_train else "となりの でんしゃ"
+	# 行き先名は label(子供向けの地名)を優先。なければ行き先の電車名。
+	var to_name: String = String(b.get("label", ""))
+	if to_name == "":
+		to_name = to_train.get_display_name() if to_train else "となりの でんしゃ"
 	var to_color: Color = Color.WHITE
 	if to_train and to_train.train_data:
 		to_color = to_train.train_data.body_color
@@ -416,8 +419,12 @@ func take_branch() -> void:
 		if resident and resident.has_method("switch_route"):
 			resident.switch_route(from_slug, from_path, from_prog, from_len, from_stops, _route_speed(resident, from_len)))
 	if _hud:
-		var label := resident.get_display_name() if resident else to_slug
-		_hud.show_notice("%s の せんろへ!" % label)
+		var place := String(b.get("label", ""))
+		if place != "":
+			_hud.show_notice("%s へ しゅっぱつ!" % place)
+		else:
+			var label := resident.get_display_name() if resident else to_slug
+			_hud.show_notice("%s の せんろへ!" % label)
 
 
 # 直進(2択の「このまま まっすぐ」側が押された)。何もせず2択を畳むだけ。
