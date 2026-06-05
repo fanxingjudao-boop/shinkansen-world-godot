@@ -17,6 +17,7 @@ extends Node3D
 #   ルミナスに)。急に出てこない・自動運転で安心・失敗/落下なし・やさしい音。
 
 const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
+const FONT_BODY = preload("res://assets/fonts/MPLUSRounded1c-Medium.ttf")  # 止まり先の名前ラベル用
 
 const GINGA_DOCK := Vector2(56.0, 24.0)             # 地上の駐車(草原・他の乗り物と離す)
 const GINGA_POS := Vector3(3200.0, 500.0, 3200.0)   # 銀河(遠く・高い空)
@@ -529,7 +530,10 @@ func _build_planets(c: Vector3) -> void:
 # その間を 光るレール(点の連なり)でつなぐ。汽車は 星のそばを 次々に通っていく。
 func _build_journey(c: Vector3) -> void:
 	_cruise.clear()
-	var n: int = STAR_STOPS
+	# 旅の止まり先:大きな星 と 6つの世界(そら/ゆき/おかし/つき/きょうりゅう/うみ)を まぜる。
+	# 汽車は 各止まり先の そばを 次々に通って いろんな所を めぐる。
+	var kinds: Array = ["star", "sora", "star", "yuki", "star", "candy", "star", "tsuki", "star", "dino", "star", "umi"]
+	var n: int = kinds.size()
 	var wp: Array = []
 	for i in range(n):
 		var a: float = float(i) / float(n) * TAU
@@ -538,9 +542,16 @@ func _build_journey(c: Vector3) -> void:
 		var p := c + Vector3(cos(a) * rad, y, sin(a) * rad)
 		wp.append(p)
 		_cruise.append(p)
-		# 大きな星は 進路の すぐ外側に置く(汽車は そのそばを 通り過ぎる=渡り歩く)
 		var outward := Vector3(cos(a), 0.0, sin(a))
-		_build_big_star(p + outward * 8.0 + Vector3(0, 3.0, 0), i)
+		var lp: Vector3 = p + outward * 13.0   # 止まり先は 進路の すぐ外側(汽車が そばを通る)
+		match String(kinds[i]):
+			"sora": _build_stop_sora(lp)
+			"yuki": _build_stop_yuki(lp)
+			"candy": _build_stop_candy(lp)
+			"tsuki": _build_stop_tsuki(lp)
+			"dino": _build_stop_dino(lp)
+			"umi": _build_stop_umi(lp)
+			_: _build_big_star(p + outward * 8.0 + Vector3(0, 3.0, 0), i)
 
 	# 光るレール(隣りあう星のあいだを 点の連なりで)。MultiMesh で 1 draw call。
 	var dots: Array = []
@@ -614,6 +625,104 @@ func _build_big_star(pos: Vector3, i: int) -> void:
 	var dur: float = 1.6 + float(i % 4) * 0.3
 	tw.tween_property(cm, "emission_energy_multiplier", 1.2, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	tw.tween_property(cm, "emission_energy_multiplier", 2.6, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+
+# === 旅の止まり先(各世界のミニチュア。浮かぶ島 + 名前ラベル)===
+
+# 浮かぶ島(低い円盤の土台)
+func _island(pos: Vector3, r: float, color: Color) -> MeshInstance3D:
+	return _lcyl(self, r, 0.7, pos, color, 20)
+
+
+# 名前ラベル(ひらがな・いつもカメラを向く)
+func _label(pos: Vector3, text: String, color: Color) -> void:
+	var l := Label3D.new()
+	l.text = text
+	l.font = FONT_BODY
+	l.font_size = 110
+	l.pixel_size = 0.02
+	l.modulate = color
+	l.outline_size = 14
+	l.outline_modulate = Color(1, 1, 1, 1)
+	l.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	l.position = pos
+	add_child(l)
+
+
+# そら: 雲の上の おしろ
+func _build_stop_sora(p: Vector3) -> void:
+	var cloud := _lsphere(self, 5.0, p, Color(0.95, 0.97, 1.0))
+	cloud.scale = Vector3(1.6, 0.5, 1.6)
+	_lbox(self, Vector3(3.0, 3.0, 3.0), p + Vector3(0, 2.6, 0), Color(0.96, 0.93, 0.88))
+	_lcone(self, 2.2, 2.0, p + Vector3(0, 5.0, 0), Color(0.5, 0.72, 0.95))
+	for sx in [-1.6, 1.6]:
+		_lbox(self, Vector3(1.0, 2.4, 1.0), p + Vector3(sx, 2.2, 0), Color(0.96, 0.93, 0.88))
+		_lcone(self, 0.8, 1.2, p + Vector3(sx, 4.0, 0), Color(0.5, 0.72, 0.95))
+	_label(p + Vector3(0, 8.0, 0), "そら", Color(0.5, 0.72, 0.95))
+
+
+# ゆき: ゆきだるま と もみの木
+func _build_stop_yuki(p: Vector3) -> void:
+	_island(p, 5.0, Color(0.86, 0.9, 0.96))
+	_lsphere(self, 1.1, p + Vector3(0, 1.3, 0), Color(0.95, 0.97, 1.0))
+	_lsphere(self, 0.8, p + Vector3(0, 2.6, 0), Color(0.95, 0.97, 1.0))
+	_lcone(self, 0.16, 0.5, p + Vector3(0, 2.6, -0.8), Color(1.0, 0.6, 0.3)).rotation.x = -PI * 0.5
+	for sx in [-0.25, 0.25]:
+		_lemit(self, 0.08, p + Vector3(sx, 2.8, -0.7), Color(0.12, 0.12, 0.14))
+	_lcyl(self, 0.3, 1.2, p + Vector3(2.2, 1.0, 1.0), Color(0.5, 0.36, 0.24), 8)
+	_lcone(self, 1.0, 1.8, p + Vector3(2.2, 2.3, 1.0), Color(0.32, 0.5, 0.42))
+	_lcone(self, 0.8, 0.5, p + Vector3(2.2, 3.1, 1.0), Color(0.95, 0.97, 1.0))
+	_label(p + Vector3(0, 5.2, 0), "ゆき", Color(0.6, 0.78, 0.95))
+
+
+# おかし: ロリポップ と カップケーキ
+func _build_stop_candy(p: Vector3) -> void:
+	_island(p, 5.0, Color(1.0, 0.8, 0.88))
+	_lcyl(self, 0.1, 2.2, p + Vector3(-1.5, 1.5, 0), Color(1.0, 1.0, 1.0), 8)
+	_lsphere(self, 0.9, p + Vector3(-1.5, 2.9, 0), Color(1.0, 0.45, 0.6))
+	_lcyl(self, 0.8, 0.8, p + Vector3(1.5, 1.0, 0), Color(0.85, 0.6, 0.4), 14)
+	_lsphere(self, 0.9, p + Vector3(1.5, 1.8, 0), Color(1.0, 0.72, 0.82))
+	_lemit(self, 0.2, p + Vector3(1.5, 2.6, 0), Color(1.0, 0.25, 0.35))
+	_label(p + Vector3(0, 5.2, 0), "おかし", Color(1.0, 0.5, 0.7))
+
+
+# つき: クレーターのある まるい月
+func _build_stop_tsuki(p: Vector3) -> void:
+	var moon := _lsphere(self, 4.5, p + Vector3(0, 2.0, 0), Color(0.96, 0.94, 0.82))
+	var mm := moon.material_override as StandardMaterial3D
+	mm.emission_enabled = true
+	mm.emission = Color(1.0, 0.96, 0.8)
+	mm.emission_energy_multiplier = 0.4
+	for s in [Vector3(1.5, 3.2, -1.0), Vector3(-1.8, 1.6, 0.5), Vector3(0.5, 3.9, 1.2)]:
+		_lsphere(self, 0.6, p + s, Color(0.85, 0.83, 0.7)).scale = Vector3(1, 0.5, 1)
+	_label(p + Vector3(0, 8.0, 0), "つき", Color(1.0, 0.95, 0.7))
+
+
+# きょうりゅう: やさしい くびながの恐竜
+func _build_stop_dino(p: Vector3) -> void:
+	_island(p, 5.0, Color(0.55, 0.7, 0.45))
+	var col := Color(0.45, 0.65, 0.42)
+	_lsphere(self, 1.3, p + Vector3(0, 1.9, 0), col).scale = Vector3(1.6, 1.0, 1.0)
+	_lcyl(self, 0.4, 2.2, p + Vector3(-1.2, 3.0, 0), col, 10).rotation.z = 0.7
+	_lsphere(self, 0.6, p + Vector3(-2.1, 4.0, 0), col)
+	for sx in [-0.7, 0.7]:
+		for sz in [-0.5, 0.5]:
+			_lcyl(self, 0.3, 1.4, p + Vector3(sx, 1.0, sz), col, 8)
+	_lcone(self, 0.5, 2.2, p + Vector3(1.9, 1.9, 0), col).rotation.z = PI * 0.5
+	_label(p + Vector3(0, 5.6, 0), "きょうりゅう", Color(0.5, 0.78, 0.42))
+
+
+# うみ: 水の島 と くじら
+func _build_stop_umi(p: Vector3) -> void:
+	var water := _island(p, 5.0, Color(0.35, 0.6, 0.85))
+	var wm := water.material_override as StandardMaterial3D
+	wm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	wm.albedo_color = Color(0.35, 0.6, 0.85, 0.7)
+	var col := Color(0.42, 0.52, 0.72)
+	_lsphere(self, 1.2, p + Vector3(0, 1.6, 0), col).scale = Vector3(2.2, 1.0, 1.0)
+	_lcone(self, 0.8, 1.2, p + Vector3(2.4, 1.9, 0), col).rotation.z = -PI * 0.5
+	_lemit(self, 0.25, p + Vector3(-0.6, 3.0, 0), Color(0.8, 0.95, 1.0))
+	_label(p + Vector3(0, 5.0, 0), "うみ", Color(0.4, 0.7, 0.95))
 
 
 # ふわふわ浮かぶ 光のランタン(銀河鉄道の夜)
