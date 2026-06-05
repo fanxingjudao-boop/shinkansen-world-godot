@@ -15,14 +15,19 @@ const RAIL_RADIUS: float = 0.14
 const RAIL_CROSS_SEGMENTS: int = 8
 const RAIL_HEIGHT_OFFSET: float = 0.3
 const RAIL_SEG_SPACING: float = 3.8  # レール断面リングの弧長間隔(m)
-const TIE_SIZE: Vector3 = Vector3(2.5, 0.18, 0.5)
+const TIE_SIZE: Vector3 = Vector3(2.6, 0.16, 0.34)  # 本格化: やや細く・実物に近い枕木
 const TIE_HEIGHT_OFFSET: float = 0.18
-const TIE_SPACING: float = 3.8       # 枕木の弧長間隔(m)
+const TIE_SPACING: float = 1.8       # 枕木の弧長間隔(m)。本格化で密に(旧 3.8)
 
-const RAIL_COLOR: Color = Color(0.6, 0.6, 0.6)    # #999999 メタリック灰
-const TIE_COLOR: Color = Color(0.42, 0.27, 0.14)  # #6b4423 茶
-const PIER_COLOR: Color = Color(0.72, 0.72, 0.76) # 高架・橋脚のコンクリ灰
-const PIER_MIN_H: float = 2.5                     # この高さ以上で橋脚を立てる
+const RAIL_COLOR: Color = Color(0.62, 0.63, 0.66)  # 鋼のメタリック灰
+const TIE_COLOR: Color = Color(0.40, 0.27, 0.16)   # 茶(まくらぎ)
+const PIER_COLOR: Color = Color(0.72, 0.72, 0.76)  # 高架・橋脚のコンクリ灰
+const PIER_MIN_H: float = 2.5                       # この高さ以上で橋脚を立てる
+
+# バラスト(砂利の道床)。本格的な線路の土台。1 ルート 1 枚の ArrayMesh(軽量)。
+const BALLAST_WIDTH: float = 3.2
+const BALLAST_DROP: float = 0.34     # レール面(curve Y)からの下げ
+const BALLAST_COLOR: Color = Color(0.52, 0.49, 0.46)  # 砂利のグレー
 
 @export var terrain_path: NodePath
 
@@ -62,6 +67,11 @@ func _build_route(spec: Dictionary) -> void:
 	path.name = String(spec["slug"])
 	path.curve = curve
 	_routes_root.add_child(path)
+
+	# バラスト(砂利の道床)を まず敷く(レール・枕木より下)。
+	var ballast := MeshInstance3D.new()
+	_routes_root.add_child(ballast)
+	_build_ballast_for(curve, ballast, true)
 
 	var rails := MeshInstance3D.new()
 	_routes_root.add_child(rails)
@@ -309,8 +319,53 @@ func _build_rails_for(curve: Curve3D, mesh_inst: MeshInstance3D, loop: bool) -> 
 
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = RAIL_COLOR
-	mat.metallic = 0.6
-	mat.roughness = 0.4
+	mat.metallic = 0.8
+	mat.roughness = 0.28   # 本格化: 鋼らしい てかり
+	mesh_inst.material_override = mat
+
+
+# 指定 Curve3D に沿って バラスト(砂利の道床)の帯を ArrayMesh で生成し mesh_inst に設定。
+# レール・枕木の下に やや幅広の グレーの帯を敷いて「本格的な線路」の土台にする。
+func _build_ballast_for(curve: Curve3D, mesh_inst: MeshInstance3D, loop: bool) -> void:
+	var length: float = curve.get_baked_length()
+	if length <= 0.0:
+		return
+	var segs: int = max(int(length / RAIL_SEG_SPACING), 12)
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var indices := PackedInt32Array()
+	var half: float = BALLAST_WIDTH * 0.5
+	for ip in range(segs + 1):
+		var off: float = length * float(ip) / float(segs)
+		var center: Vector3 = curve.sample_baked(min(off, length), true)
+		var tan3: Vector3 = _curve_tangent(curve, off, length, loop)
+		var perp: Vector3 = Vector3(-tan3.z, 0.0, tan3.x)
+		var y: float = center.y - BALLAST_DROP
+		verts.append(Vector3(center.x + perp.x * half, y, center.z + perp.z * half))   # left
+		verts.append(Vector3(center.x - perp.x * half, y, center.z - perp.z * half))   # right
+		normals.append(Vector3.UP)
+		normals.append(Vector3.UP)
+	for ip in range(segs):
+		var a: int = ip * 2
+		var b: int = ip * 2 + 1
+		var c2: int = (ip + 1) * 2
+		var d: int = (ip + 1) * 2 + 1
+		indices.append(a); indices.append(c2); indices.append(b)
+		indices.append(b); indices.append(c2); indices.append(d)
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	mesh_inst.mesh = mesh
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = BALLAST_COLOR
+	mat.roughness = 0.98
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED   # 帯なので両面(巻き方向の事故回避)
 	mesh_inst.material_override = mat
 
 
