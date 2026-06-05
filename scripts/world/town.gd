@@ -21,12 +21,24 @@ const VILLAGE_CENTERS: Array = [
 	Vector2(-40.0, -110.0),
 	Vector2(120.0, -150.0),
 ]
-# 踏切を置く { ルート, 全長比 }(地表を走るループの上)
+# 踏切を置く { ルート, 全長比 }(地表を走るループの上)。本格化で増設。
 const CROSSINGS: Array = [
 	{ "slug": "komachi", "ratio": 0.0 },
 	{ "slug": "komachi", "ratio": 0.25 },
+	{ "slug": "komachi", "ratio": 0.6 },
+	{ "slug": "e235_yamanote", "ratio": 0.0 },
+	{ "slug": "e235_yamanote", "ratio": 0.25 },
 	{ "slug": "e235_yamanote", "ratio": 0.5 },
+	{ "slug": "e235_yamanote", "ratio": 0.75 },
+	{ "slug": "doctor_yellow", "ratio": 0.5 },
 ]
+# 街と街をつなぐ道路(メインの街 ↔ 各集落)。VILLAGE_CENTERS の index で結ぶ。
+const ROADS: Array = [
+	{ "a": 0, "b": 1 }, { "a": 0, "b": 2 }, { "a": 0, "b": 3 },
+]
+const ROAD_C: Color = Color(0.5, 0.49, 0.47)        # アスファルト灰
+const ROAD_LINE_C: Color = Color(0.95, 0.92, 0.7)   # まんなかの線
+const ROAD_WIDTH: float = 5.0
 
 const WALL_COLORS: Array = [
 	Color(1.0, 0.85, 0.85), Color(0.85, 0.92, 1.0), Color(1.0, 0.97, 0.8),
@@ -49,6 +61,8 @@ const POLE_C: Color = Color(0.32, 0.32, 0.35)
 func _ready() -> void:
 	_railway = get_node_or_null(railway_path)
 	seed(TOWN_SEED)
+	# 街と街をつなぐ道路(集落より先に敷いて、上に建物が乗らないようにする)
+	_build_roads()
 	# メインの街 + いくつかの集落(広域マップのクリア地)
 	for i in range(VILLAGE_CENTERS.size()):
 		_build_village(VILLAGE_CENTERS[i], 9 if i == 0 else 4, i == 0)
@@ -64,6 +78,60 @@ func _ready() -> void:
 			cr.route_ratio = float(c["ratio"])
 			cr.set_sources(_railway, trains, player)
 			add_child(cr)
+
+
+# === 街と街をつなぐ道路 ===
+
+func _build_roads() -> void:
+	for r in ROADS:
+		var a: Vector2 = VILLAGE_CENTERS[int(r["a"])]
+		var b: Vector2 = VILLAGE_CENTERS[int(r["b"])]
+		_road_ribbon(a, b, ROAD_WIDTH, ROAD_C, 0.07)
+		_road_ribbon(a, b, 0.35, ROAD_LINE_C, 0.09)   # まんなかの白線
+
+
+# 2 点 a→b を結ぶ 帯メッシュ(地形に沿う・ArrayMesh 1枚)。道路と中央線に使う。
+func _road_ribbon(a: Vector2, b: Vector2, width: float, color: Color, y_off: float) -> void:
+	var dist: float = a.distance_to(b)
+	if dist < 0.5:
+		return
+	var n: int = max(int(dist / 4.0), 2)
+	var dir: Vector2 = (b - a).normalized()
+	var perp: Vector2 = Vector2(-dir.y, dir.x) * (width * 0.5)
+	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
+	var indices := PackedInt32Array()
+	for i in range(n + 1):
+		var t: float = float(i) / float(n)
+		var p: Vector2 = a.lerp(b, t)
+		var l: Vector2 = p + perp
+		var rr: Vector2 = p - perp
+		verts.append(Vector3(l.x, TerrainHeight.compute_height(l.x, l.y) + y_off, l.y))
+		verts.append(Vector3(rr.x, TerrainHeight.compute_height(rr.x, rr.y) + y_off, rr.y))
+		normals.append(Vector3.UP)
+		normals.append(Vector3.UP)
+	for i in range(n):
+		var i0: int = i * 2
+		var i1: int = i * 2 + 1
+		var i2: int = (i + 1) * 2
+		var i3: int = (i + 1) * 2 + 1
+		indices.append(i0); indices.append(i2); indices.append(i1)
+		indices.append(i1); indices.append(i2); indices.append(i3)
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.roughness = 0.95
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	add_child(mi)
 
 
 # === 集落 ===
