@@ -159,13 +159,14 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 3. Claude Code に「`CLAUDE.md` を読んで、`docs/ROADMAP.md` の Phase 0 から始めてください」と指示
 4. Claude Code は verification-agent LIGHT モードで作業、changelog.md に履歴記録
 
-## 進捗(2026-06-06 — v0.53 B-7 / v0.54 銀河鉄道 / v0.55 本格線路・踏切・道路・各地分岐 / v0.56 ミニマップ・踏切修正)
+## 進捗(2026-06-06 — v0.53 B-7 / v0.54 銀河鉄道 / v0.55 本格線路・踏切・道路・各地分岐 / v0.56 ミニマップ・踏切修正 / v0.57 主人公えらび)
 
 ### ▶ 現在地(次セッションはここから)
 
-- **🆕 v0.57.0 = 主人公を えらべる(うんてんしさん / きつね)**(改善さんリクエスト「キャラクターを選べる形に」): タイトルの「だれで あそぶ?」で 主人公を選べる。新規 `scripts/entities/characters/`(`character_visual.gd` 基底 / `driver_character.gd` 従来の運転士を切り出し / `fox_character.gd` キツネ=handoff 忠実再現 / `character_roster.gd` 名簿)。`player.gd` は移動・物理だけ残し 見た目/アニメを 選択キャラへ委譲(`set_character(id)`)。`game_state.gd`+`save_system.gd` に `selected_character` を永続化。`title.gd` に絵カード選択 UI。**新主人公の追加 = 基底継承スクリプト+名簿1行**。`AUTO_CHARSEL`(新規)で両キャラ接写・保存を確認済。`Main.tscn` 不変(player は子ノードを実行時生成)。**未コミット**(まだ commit していない)。**調整候補**: `fox_character.gd MODEL_SCALE`(0.55)・きつねの名前/色(`character_roster.gd`)。⚠️ **export/web 未更新**(ソース変更のみ)。
+- **🆕 v0.57.0 = 主人公を えらべる(うんてんしさん / きつね)**(改善さんリクエスト「キャラクターを選べる形に」): タイトルの「だれで あそぶ?」で 主人公を選べる。新規 `scripts/entities/characters/`(`character_visual.gd` 基底 / `driver_character.gd` 従来の運転士を切り出し / `fox_character.gd` キツネ=handoff 忠実再現 / `character_roster.gd` 名簿)。`player.gd` は移動・物理だけ残し 見た目/アニメを 選択キャラへ委譲(`set_character(id)`)。`game_state.gd`+`save_system.gd` に `selected_character` を永続化。`title.gd` に絵カード選択 UI。**新主人公の追加 = 基底継承スクリプト+名簿1行**(player/title は触らない)。`AUTO_CHARSEL`(新規)で両キャラ接写・保存(driver→fox)を確認済。`Main.tscn` 不変(player は子ノードを実行時生成)。**調整候補**: `fox_character.gd MODEL_SCALE`(0.55)・きつねの名前/色(`character_roster.gd`)・タイトルのカード寸法(240×170)。
+  - **🎯 次セッション最初にやること = 改善さんに `! git push origin main` を依頼 → ライブ確認**(①起動 ②文字「だれで あそぶ?/うんてんしさん/きつねさん/はじめる」が出る ③外部通信が増えていない)。push 後 Vercel 自動デプロイで **ライブが v0.57.0** に。続けてキツネの体感(大きさ・耳/尻尾の可愛さ・怖くないか・切替の分かりやすさ)。
 - **ブランチ**: `main`(作業は main 直接)。
-- **コミット状況**: 本番 `origin/main` は **v0.56.0(ミニマップ)+その Web 再エクスポートまで push 済(ライブ=v0.56.0)**。**未 push が 3 つ**: `507884f`(v0.56.1 踏切バグ修正+各地分岐に doctor_yellow/tsubame 追加)→ `db4ddb8`(不具合調査・ミニマップの乗車中ガード整理)→ 本コミット(引き継ぎ更新+`minimap.gd.uid`)。⚠️ **v0.56.1 でソース(crossing/route_data)が変わったので export/web は v0.56.0 のまま。ライブを v0.56.1 にするには `! git push origin main` 後に Web 再エクスポートをやり直すこと**(手順は下記)。
+- **コミット状況(2026-06-06 更新)**: `5e9fe53`(v0.57.0 主人公えらび + Web 再エクスポート)が **コミット済み・未 push**。`origin/main` は `5cc467a`(=ライブ v0.56.1。前回 `5cc467a` まで push 済 + その時点で Web も v0.56.1 に再エクスポート反映済)。**残タスクは push のみ**: `! git push origin main` でライブが v0.57.0 に。**export/web は v0.57.0 を含めて再エクスポート済**(`index.html`+`index.pck` を `5e9fe53` に同梱・presets 非破壊/`index.*` 日本語化なし/noindex・robots 維持を確認済)。
   - **v0.56.1(踏切バグ修正+電車が自由に行き来)**: 踏切「電車が通る前に閉まる」を修正(`crossing.gd`=`get_route_slug()` で実トラックの編成を追い、弧長 `CLOSE_AHEAD=16`/`PASS_CLEAR=7` で判定)。各地分岐に doctor_yellow・tsubame を追加し 全地上ルート到達可能に。**踏切の開閉タイミングは実機体感確認推奨**。
   - **不具合調査済み(2026-06-06)**: 実行時エラー一斉チェック + 2観点コードレビュー(電車/分岐/踏切・別世界/ミニマップ/道路)→ **重大な不具合なし**。`AUTO_WORLDSEL` 終了時の ObjectDB leak 警告のみ(終了時の解放漏れ・実害なし)。
   - **v0.55.0 = 本格線路+踏切+道路+電車で各地へ**(改善さんリクエスト「電車を各地へ/本格踏切/街をつなぐ道路/本格線路」):
