@@ -22,6 +22,9 @@ var visited_yuki: bool = false        # そりで ゆきの くにへ行った�
 var visited_ginga: bool = false       # ぎんがてつどうで 星空へ行ったことがある(ミッション用)
 var drove_train: bool = false   # うんてんしゅモードになったことがある(ミッション用)
 var play_count: int = 0         # あそんだ かいすう(起動ごとに +1。親モードで表示)
+# 選んでいる主人公の id(character_roster.gd の id。氏名等の個人情報ではない)。
+# タイトルの選ぶ画面で決め、セーブして 次回も同じ主人公で始まる。
+var selected_character: String = "driver"
 # かくれんぼで みつけた子の id(重複なし)。図鑑の「かくれんぼ はかせ」スタンプ用にセーブする。
 var hidden_found: Array[String] = []
 # かくれんぼの子の ぜんぶの数(hide_and_seek.gd が起動時にセット。図鑑の「○/△」表示用。セーブ不要)。
@@ -115,6 +118,14 @@ func set_drove_train() -> void:
 	if drove_train:
 		return
 	drove_train = true
+	changed.emit()
+
+
+# 主人公を選び直したとき(同じなら何もしない)。changed で SaveSystem が保存する。
+func set_character(id: String) -> void:
+	if id == "" or id == selected_character:
+		return
+	selected_character = id
 	changed.emit()
 
 

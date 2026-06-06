@@ -2,6 +2,18 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## v0.57.0 — 2026-06-06 — 主人公を えらべる(うんてんしさん / きつね)
+
+改善さんリクエスト「キャラクターを選べる形に」。`docs/design_handoff_fox_character/` のキツネを追加し、タイトルで主人公を選べるようにした。
+
+- **選べる主人公の枠組み**(新規 `scripts/entities/characters/`): `character_visual.gd`(見た目の基底クラス=パーツ生成ヘルパー+`build()`/`animate_walk()`/`wave()`/`celebrate()` の口)、`driver_character.gd`(従来の うんてんしさんを切り出し・見た目/寸法そのまま)、`fox_character.gd`(キツネ・新規)、`character_roster.gd`(名簿レジストリ)。**新しい主人公を増やすときは 基底を継承したスクリプト+名簿に1行 でよい**(player/title は触らない)。
+- **キツネ**(`fox_character.gd`): handoff の Three.js モデル(`_buildModel`)を Godot プリミティブで忠実再現。オレンジの体・大きな白いむね・**段重ねの長い耳**(さびオレンジ→オレンジ→ピーチ→白→暗い先)・**赤いスカーフ**・**うるうるアンバーの目**(アーモンド枠+虹彩+大きな瞳+キラキラ)・ひげ・**巨大なふさふさ尻尾**(オレンジ→クリーム→白)。歩くと前足がゆれ・尻尾と耳がゆれ・ときどき まばたき。元モデルは +Z 向き全高~3.4 なので 内部グループを 180°回転(顔=-Z に統一)+`MODEL_SCALE=0.55` でうんてんしさんと近い背丈に。
+- **player.gd の改修**: 移動・物理だけ残し、見た目とアニメ(歩行/てをふる/よろこび)を 選択中の主人公(`character_visual.gd` の子孫)へ委譲。`set_character(id)` で 古い見た目を消して 新しく生成し GameState に保存。`_ready` で セーブ済み(既定 driver)の主人公を生成。
+- **タイトルで選ぶ**(`title.gd`): 「だれで あそぶ?」+ 主人公の絵カード(名簿から自動生成・イメージ色・タッチターゲット 240×170)。タップで `Player.set_character` を呼び **その場で切替**(背景が半透明なので 後ろの主人公が切り替わるのが見える)。選択中は白い太枠+ぷにっと拡大。
+- **保存**: `game_state.gd` に `selected_character`(英数字 id・氏名等の個人情報ではない)+`set_character()`、`save_system.gd` で `"character"` を永続化。次回も同じ主人公で始まる。
+
+検証: 全スクリプト構文チェック通過、`AUTO_CHARSEL`(新規)で うんてんしさん/きつね を切り替えて接写・GameState 保存(driver→fox)を確認、Main 本体クリーン起動・実行時エラーなし、`export_presets.cfg` 無変更・MODE は SINGLE に復帰・save.json 削除。**改善さんの体感確認待ち**: キツネの見た目(大きさ `MODEL_SCALE`・耳/尻尾の可愛さ・怖くないか)、タイトルの選ぶ導線、切替の分かりやすさ。**調整候補**: `fox_character.gd MODEL_SCALE`、`character_roster.gd` の名前(`きつねさん`)/色、タイトルのカード寸法。
+
 ## v0.56.1 — 2026-06-06 — 踏切バグ修正 + 電車が さらに自由に行き来
 
 改善さんフィードバック「踏切が 電車が通る前に閉まる」「環状で遅い・すべての電車が自由に行き来できるように」。

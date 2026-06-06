@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fox Character — Isolated Viewer</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #cdeaff; font-family: system-ui, sans-serif; }
+  #c { display: block; width: 100%; height: 100%; }
+  .panel {
+    position: fixed; top: 14px; left: 14px; display: flex; gap: 8px; align-items: center;
+    background: rgba(255,255,255,0.85); border-radius: 999px; padding: 6px 8px 6px 14px;
+    box-shadow: 0 6px 20px rgba(60,40,20,0.18); font-weight: 700; color: #3a2417; font-size: 14px;
+  }
+  .panel button {
+    border: none; background: #f3762a; color: #fff; font-family: inherit; font-weight: 800;
+    padding: 7px 14px; border-radius: 999px; cursor: pointer; font-size: 13px;
+  }
+  .panel button.alt { background: #6a4a2e; }
+  .hint { position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+    background: rgba(58,36,23,0.5); color: #fff; border-radius: 999px; padding: 6px 16px; font-size: 12px; font-weight: 700; }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="panel">
+    <span>Fox Character</span>
+    <button id="toggle">スタイル切替: 3Dモデル</button>
+  </div>
+  <div class="hint">ドラッグで回転 / ホイールでズーム</div>
+
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script>
+    // The billboard style loads this illustration. Point it at wherever you host the asset.
+    window.FoxCharacter = window.FoxCharacter || {};
+  </script>
+  <script src="fox.js"></script>
+  <script>
+    FoxCharacter.BILLBOARD_SRC = 'fox-cutout.png';
+
+    const canvas = document.getElementById('c');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if (renderer.outputColorSpace !== undefined) renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xcdeaff);
+
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
+
+    // ── lights (mirrors the game's key + fill + rim setup) ──
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x6a7a55, 0.6));
+    const amb = new THREE.AmbientLight(0x88aacc, 0.5); scene.add(amb);
+    const sun = new THREE.DirectionalLight(0xfff4e0, 1.1);
+    sun.position.set(6, 10, 6); sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { near: 1, far: 40, left: -6, right: 6, top: 6, bottom: -6 });
+    sun.shadow.bias = -0.0004; scene.add(sun); scene.add(sun.target);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.45); fill.position.set(-4, 4, 6); scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xbfe0ff, 0.7); rim.position.set(0, 5, -8); scene.add(rim);
+
+    // ── ground (also acts as the collider the fox stands on) ──
+    const ground = new THREE.Mesh(new THREE.CylinderGeometry(6, 6, 1, 40),
+      new THREE.MeshStandardMaterial({ color: 0x7bbf57, roughness: 1 }));
+    ground.position.y = -0.5; ground.receiveShadow = true;
+    const groundTop = new THREE.Mesh(new THREE.CircleGeometry(6, 40), new THREE.MeshBasicMaterial({ visible: false }));
+    groundTop.rotation.x = -Math.PI / 2; groundTop.position.y = 0; scene.add(groundTop);
+    scene.add(ground);
+
+    // FoxCharacter.update() raycasts against a global World.colliders array — provide the ground.
+    window.World = { colliders: [groundTop] };
+
+    // ── build the fox ──
+    const fox = new FoxCharacter(scene);
+    fox.pos.set(0, 0, 0);
+    fox.onGround = true;
+    fox.setStyle('model');
+
+    document.getElementById('toggle').addEventListener('click', (e) => {
+      const next = fox.style === 'model' ? 'billboard' : 'model';
+      fox.setStyle(next);
+      e.target.textContent = 'スタイル切替: ' + (next === 'model' ? 'ビルボード' : '3Dモデル');
+      e.target.classList.toggle('alt', next === 'billboard');
+    });
+
+    // ── turntable camera with drag + wheel ──
+    let yaw = 0.5, pitch = 0.12, dist = 9.5, dragging = false, lx = 0, ly = 0;
+    canvas.addEventListener('mousedown', (e) => { dragging = true; lx = e.clientX; ly = e.clientY; });
+    addEventListener('mouseup', () => dragging = false);
+    addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      yaw -= (e.clientX - lx) * 0.008; pitch -= (e.clientY - ly) * 0.006;
+      pitch = Math.max(-0.4, Math.min(1.2, pitch)); lx = e.clientX; ly = e.clientY;
+    });
+    canvas.addEventListener('wheel', (e) => { e.preventDefault(); dist = Math.max(3.5, Math.min(14, dist + e.deltaY * 0.01)); }, { passive: false });
+
+    let autoturn = true;
+    canvas.addEventListener('pointerdown', () => autoturn = false);
+
+    function resize() {
+      const w = innerWidth, h = innerHeight;
+      renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+    }
+    addEventListener('resize', resize); resize();
+
+    const clock = new THREE.Clock();
+    const target = new THREE.Vector3(0, 1.5, 0);
+    (function loop() {
+      requestAnimationFrame(loop);
+      const dt = Math.min(0.04, clock.getDelta());
+      if (autoturn) yaw += dt * 0.4;
+      // idle update (no input) drives breathing, blink, tail/ear sway, and gravity-settle
+      fox.update(dt, { x: 0, y: 0, jumpPressed: false }, yaw, scene);
+      sun.target.position.copy(fox.pos);
+      const hd = dist * Math.cos(pitch);
+      camera.position.set(target.x - Math.sin(yaw) * hd, target.y + dist * Math.sin(pitch) + 0.2, target.z - Math.cos(yaw) * hd);
+      camera.lookAt(target);
+      renderer.render(scene, camera);
+    })();
+  </script>
+</body>
+</html>

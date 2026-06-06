@@ -163,6 +163,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ### ▶ 現在地(次セッションはここから)
 
+- **🆕 v0.57.0 = 主人公を えらべる(うんてんしさん / きつね)**(改善さんリクエスト「キャラクターを選べる形に」): タイトルの「だれで あそぶ?」で 主人公を選べる。新規 `scripts/entities/characters/`(`character_visual.gd` 基底 / `driver_character.gd` 従来の運転士を切り出し / `fox_character.gd` キツネ=handoff 忠実再現 / `character_roster.gd` 名簿)。`player.gd` は移動・物理だけ残し 見た目/アニメを 選択キャラへ委譲(`set_character(id)`)。`game_state.gd`+`save_system.gd` に `selected_character` を永続化。`title.gd` に絵カード選択 UI。**新主人公の追加 = 基底継承スクリプト+名簿1行**。`AUTO_CHARSEL`(新規)で両キャラ接写・保存を確認済。`Main.tscn` 不変(player は子ノードを実行時生成)。**未コミット**(まだ commit していない)。**調整候補**: `fox_character.gd MODEL_SCALE`(0.55)・きつねの名前/色(`character_roster.gd`)。⚠️ **export/web 未更新**(ソース変更のみ)。
 - **ブランチ**: `main`(作業は main 直接)。
 - **コミット状況**: 本番 `origin/main` は **v0.56.0(ミニマップ)+その Web 再エクスポートまで push 済(ライブ=v0.56.0)**。**未 push が 3 つ**: `507884f`(v0.56.1 踏切バグ修正+各地分岐に doctor_yellow/tsubame 追加)→ `db4ddb8`(不具合調査・ミニマップの乗車中ガード整理)→ 本コミット(引き継ぎ更新+`minimap.gd.uid`)。⚠️ **v0.56.1 でソース(crossing/route_data)が変わったので export/web は v0.56.0 のまま。ライブを v0.56.1 にするには `! git push origin main` 後に Web 再エクスポートをやり直すこと**(手順は下記)。
   - **v0.56.1(踏切バグ修正+電車が自由に行き来)**: 踏切「電車が通る前に閉まる」を修正(`crossing.gd`=`get_route_slug()` で実トラックの編成を追い、弧長 `CLOSE_AHEAD=16`/`PASS_CLEAR=7` で判定)。各地分岐に doctor_yellow・tsubame を追加し 全地上ルート到達可能に。**踏切の開閉タイミングは実機体感確認推奨**。

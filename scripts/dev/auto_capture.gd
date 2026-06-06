@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE, AUTO_GINGA }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE, AUTO_GINGA, AUTO_CHARSEL }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -79,7 +79,59 @@ func _ready() -> void:
 			await _capture_rare()
 		CaptureMode.AUTO_GINGA:
 			await _capture_ginga()
+		CaptureMode.AUTO_CHARSEL:
+			await _capture_charsel()
 	get_tree().quit()
+
+
+# 主人公えらび 検証: Player.set_character で うんてんしさん / きつね を切り替えて
+# それぞれ接写。GameState への保存も確認。タイトルの選ぶカードも撮る。
+func _capture_charsel() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var gs := get_tree().root.find_child("GameState", true, false)
+	var cam := get_viewport().get_camera_3d() as Camera3D
+	if player == null or cam == null:
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var rigp := cam.get_parent()
+	if rigp and rigp.get_script() != null:
+		rigp.set_process(false)
+	player.global_position = Vector3(0, 0, 0)
+	player.rotation.y = 0.0   # -Z(=カメラの方)を向く
+	await get_tree().physics_frame
+
+	# 接写カメラ(顔を 斜め前から)
+	cam.global_position = Vector3(1.7, 1.5, -3.7)
+	cam.look_at(Vector3(0, 0.9, 0))
+	cam.fov = 42.0
+
+	# うんてんしさん
+	player.set_character("driver")
+	await get_tree().create_timer(0.4).timeout
+	await _save_screenshot("user://screenshot_char_driver.png")
+	print("[AutoCapture] charsel driver: selected=%s" % str(gs.selected_character if gs else "?"))
+
+	# きつね
+	player.set_character("fox")
+	await get_tree().create_timer(0.4).timeout
+	await _save_screenshot("user://screenshot_char_fox.png")
+	print("[AutoCapture] charsel fox: selected=%s (fox なら保存OK)" % str(gs.selected_character if gs else "?"))
+
+	# きつねを 横からも(尻尾・耳の立体感)
+	cam.global_position = Vector3(3.4, 1.6, -1.0)
+	cam.look_at(Vector3(0, 0.9, 0))
+	cam.fov = 46.0
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await _save_screenshot("user://screenshot_char_fox_side.png")
+
+	# タイトルの選ぶカードを撮る(再表示してフルスクリーン)
+	var title := get_tree().root.find_child("TitleScreen", true, false)
+	if title:
+		title.visible = true
+		await get_tree().process_frame
+		await get_tree().process_frame
+		await _save_screenshot("user://screenshot_charsel_title.png")
 
 
 # 親モード検証: 「おとな」→ 数字ゲート → 設定画面 を撮る。
