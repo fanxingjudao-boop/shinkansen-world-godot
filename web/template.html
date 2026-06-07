@@ -30,7 +30,14 @@
 			user-select: none;
 			font-family: 'M PLUS Rounded 1c', 'Hiragino Maru Gothic ProN', sans-serif;
 		}
-		body { display: flex; align-items: center; justify-content: center; }
+		body {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-sizing: border-box;
+			/* ノッチ/丸角のスマホで UI が隠れないよう セーフエリアの余白をとる */
+			padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+		}
 		#canvas {
 			display: block;
 			width: 100%;
@@ -73,6 +80,33 @@
 			color: #2868c9;
 			opacity: 0.85;
 		}
+		/* たて持ちのとき「よこむきに してね」を案内(よこ持ちでは消える) */
+		#rotate {
+			display: none;
+			position: fixed;
+			inset: 0;
+			z-index: 20;
+			background: #7ec8f5;
+			color: #2868c9;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			font-size: 30px;
+			font-weight: bold;
+			gap: 20px;
+		}
+		#rotate .phone {
+			font-size: 84px;
+			animation: rock 1.8s ease-in-out infinite;
+		}
+		@keyframes rock {
+			0%, 100% { transform: rotate(-10deg); }
+			50% { transform: rotate(80deg); }
+		}
+		@media (orientation: portrait) {
+			#rotate { display: flex; }
+		}
 	</style>
 	$GODOT_HEAD_INCLUDE
 </head>
@@ -85,6 +119,11 @@
 		<div>よみこみちゅう...</div>
 		<div id="status-progress"><div id="status-progress-fill"></div></div>
 		<div id="status-message">しゅっぱつ じゅんびちゅう</div>
+	</div>
+
+	<div id="rotate">
+		<div class="phone">📱</div>
+		<div>よこむきに してね</div>
 	</div>
 
 	<script src="$GODOT_URL"></script>
