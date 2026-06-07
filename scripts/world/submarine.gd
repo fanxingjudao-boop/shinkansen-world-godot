@@ -19,7 +19,9 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const SUB_DOCK := Vector2(-78.0, 130.0)            # 湖の中(発着)。湖中心(-88,140)から少し岸より
 const SEA_POS := Vector3(-2000.0, -600.0, 2000.0)  # 海の世界(遠く・深所)。砂の床が SEA_POS.y
 const ENTER_RANGE := 10.0
-const FADE_TIME := 0.35
+const WorldRefs = preload("res://scripts/world/world_refs.gd")
+const WorldConstants = preload("res://scripts/world/world_constants.gd")
+const FADE_TIME := WorldConstants.FADE_TIME
 const CRUISE_SPEED := 3.6           # 自動巡航の速さ(ゆっくり=酔わない)
 const CRUISE_Y := 9.0               # 床から上の 巡航する高さ
 const CRUISE_R := 24.0              # 巡航ループの半径(サンゴの庭を囲む)
@@ -68,14 +70,14 @@ var _earth_fog_enabled: bool = true
 
 func _ready() -> void:
 	var root := get_tree().root
-	_player = root.find_child("Player", true, false) as CharacterBody3D
-	_rig = root.find_child("CameraRig", true, false)
-	_dn = root.find_child("DayNightCycle", true, false)
-	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
-	_hud = root.find_child("TouchHUD", true, false)
-	_ride = root.find_child("RideController", true, false)
-	_gs = root.find_child("GameState", true, false)
+	_player = WorldRefs.req(root, "Player", "Sub") as CharacterBody3D
+	_rig = WorldRefs.req(root, "CameraRig", "Sub")
+	_dn = WorldRefs.req(root, "DayNightCycle", "Sub")
+	_env = WorldRefs.req(root, "WorldEnvironment", "Sub") as WorldEnvironment
+	_sun = WorldRefs.req(root, "Sun", "Sub") as DirectionalLight3D
+	_hud = WorldRefs.req(root, "TouchHUD", "Sub")
+	_ride = WorldRefs.req(root, "RideController", "Sub")
+	_gs = WorldRefs.req(root, "GameState", "Sub")
 	_petals = root.find_child("CherryPetals", true, false) as GPUParticles3D
 	_btn = root.find_child("SubButton", true, false) as BaseButton
 	if _btn:

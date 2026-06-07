@@ -18,7 +18,9 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const SLED_DOCK := Vector2(-56.0, 8.0)              # 地上の駐車(草原・他の乗り物と離す)
 const YUKI_POS := Vector3(0.0, 60.0, -2600.0)       # ゆきの くに(遠く・雪原が YUKI_POS.y)
 const ENTER_RANGE := 10.0
-const FADE_TIME := 0.35
+const WorldRefs = preload("res://scripts/world/world_refs.gd")
+const WorldConstants = preload("res://scripts/world/world_constants.gd")
+const FADE_TIME := WorldConstants.FADE_TIME
 const CRUISE_SPEED := 3.6
 const CRUISE_Y := 1.6
 const CRUISE_R := 28.0
@@ -64,14 +66,14 @@ var _earth_fog_enabled: bool = true
 
 func _ready() -> void:
 	var root := get_tree().root
-	_player = root.find_child("Player", true, false) as CharacterBody3D
-	_rig = root.find_child("CameraRig", true, false)
-	_dn = root.find_child("DayNightCycle", true, false)
-	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
-	_hud = root.find_child("TouchHUD", true, false)
-	_ride = root.find_child("RideController", true, false)
-	_gs = root.find_child("GameState", true, false)
+	_player = WorldRefs.req(root, "Player", "Yuki") as CharacterBody3D
+	_rig = WorldRefs.req(root, "CameraRig", "Yuki")
+	_dn = WorldRefs.req(root, "DayNightCycle", "Yuki")
+	_env = WorldRefs.req(root, "WorldEnvironment", "Yuki") as WorldEnvironment
+	_sun = WorldRefs.req(root, "Sun", "Yuki") as DirectionalLight3D
+	_hud = WorldRefs.req(root, "TouchHUD", "Yuki")
+	_ride = WorldRefs.req(root, "RideController", "Yuki")
+	_gs = WorldRefs.req(root, "GameState", "Yuki")
 	_petals = root.find_child("CherryPetals", true, false) as GPUParticles3D
 	_btn = root.find_child("YukiButton", true, false) as BaseButton
 	if _btn:

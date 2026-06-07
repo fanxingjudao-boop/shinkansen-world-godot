@@ -163,6 +163,7 @@ Claude Code に以下を渡せれば引き継ぎ完了:
 
 ### ▶ 現在地(次セッションはここから)
 
+- **🆕 (2026-06-07) コード掃除(挙動不変・採点対応)**: 採点(総合 A−、唯一の弱点=保守性)を受けた**低リスク掃除**。①`main.gd` の不要 print 削除。②新規 `scripts/world/world_refs.gd`=別世界7スクリプトの `_ready` の Main 常駐ノード取得を `WorldRefs.req()` 経由にし null 時 `push_warning`(返り値は従来同一=挙動不変。`CherryPetals`=削除済 と HUDボタン は対象外)。③新規 `scripts/world/world_constants.gd`=7世界一致の `FADE_TIME` のみ集約(値がバラつく `ENTER_RANGE`/取得距離 は挙動変化を避けて据え置き)。両新規は preload 規約(class_name 不使用)。検証=全10 .gd 構文OK・Main クリーン起動(必須ノード警告0)・`AUTO_MOON` ワープ+惑星歩行OK・presets 無変更/MODE 復帰/save.json 削除。**未コミット → このあとコミット予定**。大物の **③ BaseWorld 抽出(別世界5000行重複統合)は見送り=別タスク**。
 - **🆕 v0.57.0 = 主人公を えらべる(うんてんしさん / きつね)**(改善さんリクエスト「キャラクターを選べる形に」): タイトルの「だれで あそぶ?」で 主人公を選べる。新規 `scripts/entities/characters/`(`character_visual.gd` 基底 / `driver_character.gd` 従来の運転士を切り出し / `fox_character.gd` キツネ=handoff 忠実再現 / `character_roster.gd` 名簿)。`player.gd` は移動・物理だけ残し 見た目/アニメを 選択キャラへ委譲(`set_character(id)`)。`game_state.gd`+`save_system.gd` に `selected_character` を永続化。`title.gd` に絵カード選択 UI。**新主人公の追加 = 基底継承スクリプト+名簿1行**(player/title は触らない)。`AUTO_CHARSEL`(新規)で両キャラ接写・保存(driver→fox)を確認済。`Main.tscn` 不変(player は子ノードを実行時生成)。**調整候補**: `fox_character.gd MODEL_SCALE`(0.55)・きつねの名前/色(`character_roster.gd`)・タイトルのカード寸法(240×170)。
   - **🎯 次セッション最初にやること = 改善さんに `! git push origin main` を依頼 → ライブ確認**(①起動 ②文字「だれで あそぶ?/うんてんしさん/きつねさん/はじめる」が出る ③外部通信が増えていない)。push 後 Vercel 自動デプロイで **ライブが v0.57.0** に。続けてキツネの体感(大きさ・耳/尻尾の可愛さ・怖くないか・切替の分かりやすさ)。
 - **ブランチ**: `main`(作業は main 直接)。

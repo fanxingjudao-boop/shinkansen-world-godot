@@ -21,7 +21,9 @@ const MOON_POS := Vector3(2000.0, 60.0, 2000.0) # 月のてっぺん(球の中�
 const PLANET_R := 22.0                          # 月=小さな惑星の半径。裏側まで ぐるっと歩ける大きさ
 const ENTER_RANGE := 8.5                        # ロケットにこの距離で「つきへ いく」が出る
 const MOON_GRAVITY := 0.42                      # 惑星の重力倍率(ふわっと跳べるが 跳びすぎない)
-const FADE_TIME := 0.35
+const WorldRefs = preload("res://scripts/world/world_refs.gd")
+const WorldConstants = preload("res://scripts/world/world_constants.gd")
+const FADE_TIME := WorldConstants.FADE_TIME
 const DANGO_GET_RANGE := 2.8                    # もちだんごに近づくと獲得
 const BUGGY_RANGE := 4.5                        # 月面カーに近づくと「のる」
 const BUGGY_SPEED_SCALE := 1.8                  # 月面カーに のると はやく走れる
@@ -66,14 +68,14 @@ var _moon_btn_text: String = "" # 月でのボタン表示テキスト(変化時
 
 func _ready() -> void:
 	var root := get_tree().root
-	_player = root.find_child("Player", true, false) as CharacterBody3D
-	_rig = root.find_child("CameraRig", true, false)
-	_dn = root.find_child("DayNightCycle", true, false)
-	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
-	_hud = root.find_child("TouchHUD", true, false)
-	_ride = root.find_child("RideController", true, false)
-	_gs = root.find_child("GameState", true, false)
+	_player = WorldRefs.req(root, "Player", "Moon") as CharacterBody3D
+	_rig = WorldRefs.req(root, "CameraRig", "Moon")
+	_dn = WorldRefs.req(root, "DayNightCycle", "Moon")
+	_env = WorldRefs.req(root, "WorldEnvironment", "Moon") as WorldEnvironment
+	_sun = WorldRefs.req(root, "Sun", "Moon") as DirectionalLight3D
+	_hud = WorldRefs.req(root, "TouchHUD", "Moon")
+	_ride = WorldRefs.req(root, "RideController", "Moon")
+	_gs = WorldRefs.req(root, "GameState", "Moon")
 	_petals = root.find_child("CherryPetals", true, false) as GPUParticles3D
 	_btn = root.find_child("MoonButton", true, false) as BaseButton
 	if _btn:

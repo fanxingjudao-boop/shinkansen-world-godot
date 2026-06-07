@@ -20,7 +20,9 @@ const AIRSTRIP_POS := Vector2(-34.0, 18.0)       # 地上の飛行場(原点・�
 const SKY_POS := Vector3(-2000.0, 400.0, -2000.0) # 空の城(遠く・高所。島の上面が SKY_POS.y)
 const SKY_GRAVITY := 0.4                          # 空の城の重力(ふわっと、月ほど低くない)
 const ENTER_RANGE := 9.0                          # 飛行機にこの距離でボタンが出る
-const FADE_TIME := 0.35
+const WorldRefs = preload("res://scripts/world/world_refs.gd")
+const WorldConstants = preload("res://scripts/world/world_constants.gd")
+const FADE_TIME := WorldConstants.FADE_TIME
 const FLIGHT_TIME := 2.6                          # 自動上昇飛行の時間(見て楽しい長さ)
 const ISLAND_R := 24.0                            # 雲の島(あそべる ひろさ)
 
@@ -66,14 +68,14 @@ var _btn_text: String = ""
 
 func _ready() -> void:
 	var root := get_tree().root
-	_player = root.find_child("Player", true, false) as CharacterBody3D
-	_rig = root.find_child("CameraRig", true, false)
-	_dn = root.find_child("DayNightCycle", true, false)
-	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
-	_hud = root.find_child("TouchHUD", true, false)
-	_ride = root.find_child("RideController", true, false)
-	_gs = root.find_child("GameState", true, false)
+	_player = WorldRefs.req(root, "Player", "Sky") as CharacterBody3D
+	_rig = WorldRefs.req(root, "CameraRig", "Sky")
+	_dn = WorldRefs.req(root, "DayNightCycle", "Sky")
+	_env = WorldRefs.req(root, "WorldEnvironment", "Sky") as WorldEnvironment
+	_sun = WorldRefs.req(root, "Sun", "Sky") as DirectionalLight3D
+	_hud = WorldRefs.req(root, "TouchHUD", "Sky")
+	_ride = WorldRefs.req(root, "RideController", "Sky")
+	_gs = WorldRefs.req(root, "GameState", "Sky")
 	_petals = root.find_child("CherryPetals", true, false) as GPUParticles3D
 	_btn = root.find_child("AirplaneButton", true, false) as BaseButton
 	if _btn:

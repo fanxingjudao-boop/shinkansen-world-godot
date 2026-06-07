@@ -2,6 +2,18 @@
 
 verification-agent LIGHT モードで Claude Code が変更を記録します。
 
+## (保守) 2026-06-07 — コード掃除(挙動は不変)
+
+採点(総合 A−)で唯一の弱点だった保守性のうち、**低リスクで挙動を変えない掃除**だけを実施。大物の BaseWorld 抽出(別世界の重複統合)は別タスクとして見送り。
+
+- **不要 print の削除**: `scripts/main.gd` の起動ログ print を削除(本番コードに残る print はこれのみだった。`scripts/dev/auto_capture.gd` の print は dev 専用=エクスポート対象外なので据え置き)。
+- **find_child の null 警告化**(新規 `scripts/world/world_refs.gd`): 別世界7スクリプト(moon_trip / sky_castle / submarine / candy_land / dino_land / yuki_land / ginga_railway)が `_ready` で集める Main 常駐ノード(Player / CameraRig / DayNightCycle / WorldEnvironment / Sun / TouchHUD / RideController / GameState)を `WorldRefs.req()` 経由にし、**見つからなければ `push_warning`** を出すよう統一(コア系 train/animal/station 等が既に使う規約に合わせた)。返り値は従来 `find_child` と同一=**ランタイム挙動は不変**。配線ミスを早期検知できる利点のみ。
+  - ⚠️ **任意ノードは対象外**: `CherryPetals`(v0.42.0 で削除済=常に null・`if _petals:` ガード有)と 各世界の HUD ボタン(`if _btn:` ガード有 / ginga は実行時生成)は 素の `find_child` のまま残した。
+- **ワールド定数の一部集約**(新規 `scripts/world/world_constants.gd`): 7世界で**完全一致**していた `FADE_TIME(0.35)` のみ単一情報源化(各世界は `WorldConstants.FADE_TIME` を参照)。値がバラついている `ENTER_RANGE`(8.5〜10.0)・アイテム取得距離(2.8〜4.0)は**統一すると挙動が変わる**ため あえて触らず(③ BaseWorld 抽出 or 実機調整時に検討)。
+- どちらの新規ファイルも `class_name` ではなく **preload 規約**(既存 `TerrainHeight` と同じ)で取り込み=新規グローバルクラス未登録による `--check-only` 失敗・`.uid` 依存を回避。
+
+検証: 編集・新規 全10 `.gd` の構文チェック通過、Main 本体クリーン起動(ロードエラー0・**新規 `必須ノード` 警告0**=全参照が解決)、`AUTO_MOON` で月へのワープ(FADE_TIME 遷移)+惑星歩行(r=22 一定・updot 連続変化)が従来どおり動作、`export_presets.cfg` 無変更(`for_mobile=false` 維持)・MODE は SINGLE に復帰・save.json 削除。
+
 ## v0.57.0 — 2026-06-06 — 主人公を えらべる(うんてんしさん / きつね)
 
 改善さんリクエスト「キャラクターを選べる形に」。`docs/design_handoff_fox_character/` のキツネを追加し、タイトルで主人公を選べるようにした。

@@ -18,7 +18,9 @@ const TerrainHeight = preload("res://scripts/world/terrain_height.gd")
 const SAFARI_DOCK := Vector2(8.0, -58.0)            # 地上の駐車(草原・他の乗り物と離す)
 const DINO_POS := Vector3(2600.0, 60.0, 0.0)        # きょうりゅうランド(遠く・地面が DINO_POS.y)
 const ENTER_RANGE := 10.0
-const FADE_TIME := 0.35
+const WorldRefs = preload("res://scripts/world/world_refs.gd")
+const WorldConstants = preload("res://scripts/world/world_constants.gd")
+const FADE_TIME := WorldConstants.FADE_TIME
 const CRUISE_SPEED := 3.4            # 自動巡航(ゆっくり=酔わない)
 const CRUISE_Y := 2.4                # 地面から サファリカーの高さ
 const CRUISE_R := 28.0               # 巡航ループ半径
@@ -66,14 +68,14 @@ var _earth_fog_enabled: bool = true
 
 func _ready() -> void:
 	var root := get_tree().root
-	_player = root.find_child("Player", true, false) as CharacterBody3D
-	_rig = root.find_child("CameraRig", true, false)
-	_dn = root.find_child("DayNightCycle", true, false)
-	_env = root.find_child("WorldEnvironment", true, false) as WorldEnvironment
-	_sun = root.find_child("Sun", true, false) as DirectionalLight3D
-	_hud = root.find_child("TouchHUD", true, false)
-	_ride = root.find_child("RideController", true, false)
-	_gs = root.find_child("GameState", true, false)
+	_player = WorldRefs.req(root, "Player", "Dino") as CharacterBody3D
+	_rig = WorldRefs.req(root, "CameraRig", "Dino")
+	_dn = WorldRefs.req(root, "DayNightCycle", "Dino")
+	_env = WorldRefs.req(root, "WorldEnvironment", "Dino") as WorldEnvironment
+	_sun = WorldRefs.req(root, "Sun", "Dino") as DirectionalLight3D
+	_hud = WorldRefs.req(root, "TouchHUD", "Dino")
+	_ride = WorldRefs.req(root, "RideController", "Dino")
+	_gs = WorldRefs.req(root, "GameState", "Dino")
 	_petals = root.find_child("CherryPetals", true, false) as GPUParticles3D
 	_btn = root.find_child("DinoButton", true, false) as BaseButton
 	if _btn:
