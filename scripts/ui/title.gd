@@ -25,6 +25,25 @@ func _ready() -> void:
 	# 念のため、押下時のミュート解除に備えてオーディオバスを有効化
 	AudioServer.set_bus_mute(0, false)
 	_build_character_select()
+	# 画面が低いと 縦並び(タイトル〜はじめる)が画面の上下に はみ出して切れる。
+	# 内容が入りきらないときだけ 全体を縮小して 必ず収める(高い画面ではそのまま)。
+	get_viewport().size_changed.connect(_fit_to_screen)
+	call_deferred("_fit_to_screen")
+
+
+# 縦並びの合計高さが画面の高さを超えるとき、VBox 全体を中央基準で縮小して収める。
+func _fit_to_screen() -> void:
+	await get_tree().process_frame  # コンテナのレイアウト確定を待つ
+	if not is_instance_valid(_vbox):
+		return
+	var avail: float = get_viewport().get_visible_rect().size.y
+	var need: float = _vbox.get_combined_minimum_size().y
+	var margin: float = 32.0  # 上下の最低あき
+	var s: float = 1.0
+	if need + margin > avail and need > 0.0:
+		s = clampf((avail - margin) / need, 0.55, 1.0)
+	_vbox.pivot_offset = _vbox.size * 0.5
+	_vbox.scale = Vector2(s, s)
 
 
 func _on_start() -> void:
