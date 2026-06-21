@@ -267,7 +267,7 @@ func _apply_dino_env() -> void:
 		var e := _env.environment
 		e.background_color = DINO_SKY
 		e.ambient_light_color = Color(0.85, 0.9, 0.8)
-		e.ambient_light_energy = 0.75           # 明るい昼(暗くしない=怖くない)
+		e.ambient_light_energy = 0.6            # 明るい昼(暗くしない=怖くない)。0.75→0.6 で白っぽさを抑える
 		e.fog_enabled = true
 		e.fog_density = 0.0016                   # ふんわり遠景
 		e.fog_light_color = Color(0.7, 0.85, 0.7)

@@ -87,7 +87,7 @@ func _make_streak() -> MeshInstance3D:
 	mat.albedo_color = STAR_COLOR
 	mat.emission_enabled = true
 	mat.emission = STAR_COLOR
-	mat.emission_energy_multiplier = 4.0
+	mat.emission_energy_multiplier = 2.6
 	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mi.material_override = mat

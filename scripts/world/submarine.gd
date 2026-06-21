@@ -272,7 +272,7 @@ func _apply_sea_env() -> void:
 		var e := _env.environment
 		e.background_color = SEA_BG
 		e.ambient_light_color = Color(0.6, 0.78, 0.86)
-		e.ambient_light_energy = 0.7          # 明るい水中(暗くしない=怖くない)
+		e.ambient_light_energy = 0.6          # 明るい水中(暗くしない=怖くない)。0.7→0.6
 		e.fog_enabled = true
 		e.fog_density = 0.013                 # 水中の遠近フェード(でも近くは よく見える)
 		e.fog_light_color = Color(0.35, 0.66, 0.78)

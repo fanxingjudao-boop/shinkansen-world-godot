@@ -95,7 +95,8 @@ static func specs() -> Array:
 		{
 			# そらでんしゃ: お城の上空を周回する高架ループ(+17m、railway が自動で橋脚)。
 			"slug": "sora", "center": Vector2(150.0, 135.0),
-			"rx": 22.0, "rz": 22.0, "rot_deg": 0.0, "wp_count": 44,
+			"rx": 25.0, "rz": 19.0, "rot_deg": 0.0, "wp_count": 44,
+			"wave_amp": 0.10, "wave_freq": 3.0,  # 単純な円→蛇行する楕円(空をうねって飛ぶ感じ)
 			"elevation": 17.0,
 			"start_ratio": 0.0, "stops": [{ "ratio": 0.5, "kind": "dwell", "seconds": 3.0 }],
 		},

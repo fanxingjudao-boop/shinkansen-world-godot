@@ -205,7 +205,7 @@ func _apply_candy_env() -> void:
 		var e := _env.environment
 		e.background_color = CANDY_SKY
 		e.ambient_light_color = Color(1.0, 0.95, 0.95)
-		e.ambient_light_energy = 0.85           # 明るい(暗くしない=怖くない)
+		e.ambient_light_energy = 0.6            # 明るい(暗くしない=怖くない)。0.85→0.6 で白飛び防止・パステルの発色を保つ
 		e.fog_enabled = true
 		e.fog_density = 0.0016                   # ふんわり遠景(でも近くは よく見える)
 		e.fog_light_color = Color(1.0, 0.88, 0.92)
