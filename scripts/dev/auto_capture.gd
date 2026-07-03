@@ -11,7 +11,7 @@ extends Node
 #   PLAYER / BIRD / SIDE
 
 enum ViewMode { PLAYER, BIRD, SIDE, LAKE, TRAIN_CLOSE, STATION, ANIMAL, STEAM, CHAR, TOWN, TUNNEL }
-enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE, AUTO_GINGA, AUTO_CHARSEL }
+enum CaptureMode { SINGLE, FOUR_TIMES, AUTO_RIDE, AUTO_BEFRIEND, AUTO_BOOK, AUTO_DRIVE, AUTO_CROSSING, AUTO_COLLISION, AUTO_CASTLE, AUTO_MOON, AUTO_MENU, AUTO_FIXCHECK, AUTO_SETTINGS, AUTO_SKY, AUTO_SEA, AUTO_CANDY, AUTO_DINO, AUTO_YUKI, AUTO_WORLDSEL, AUTO_REWARD, AUTO_GREET, AUTO_MUSIC, AUTO_RARE, AUTO_GINGA, AUTO_CHARSEL, AUTO_STORY }
 
 const DELAY_SEC: float = 2.0
 const VIEW: ViewMode = ViewMode.PLAYER
@@ -81,7 +81,38 @@ func _ready() -> void:
 			await _capture_ginga()
 		CaptureMode.AUTO_CHARSEL:
 			await _capture_charsel()
+		CaptureMode.AUTO_STORY:
+			await _capture_story()
 	get_tree().quit()
+
+
+# えほんのき 検証: 木の前へワープ → ボタン表示 → 絵本を開く → ページ送り → おしまい。
+func _capture_story() -> void:
+	var player := get_tree().root.find_child("Player", true, false) as CharacterBody3D
+	var tree_node := get_tree().root.find_child("StoryTree", true, false)
+	if player == null or tree_node == null:
+		print("[AutoCapture] story: Player/StoryTree が見つからない")
+		await _save_screenshot(SCREENSHOT_PATH)
+		return
+	var tp: Vector3 = tree_node.tree_position()
+	player.global_position = tp + Vector3(0, 1.2, 4.5)
+	player.rotation.y = 0.0
+	await get_tree().create_timer(1.0).timeout
+	await _save_screenshot("user://screenshot_story_tree.png")
+	print("[AutoCapture] story: button visible = %s" % str(tree_node.get("_btn").visible))
+	tree_node.open_book()
+	await get_tree().create_timer(0.5).timeout
+	await _save_screenshot("user://screenshot_story_page1.png")
+	tree_node.next_page()
+	await get_tree().create_timer(0.4).timeout
+	await _save_screenshot("user://screenshot_story_page2.png")
+	tree_node.next_page()
+	await get_tree().create_timer(0.4).timeout
+	await _save_screenshot("user://screenshot_story_page3.png")
+	tree_node.next_page()   # 最終ページで「おしまい!」→ とじて 木がはずむ
+	await get_tree().create_timer(0.5).timeout
+	await _save_screenshot("user://screenshot_story_closed.png")
+	print("[AutoCapture] story: paused after close = %s (false なら OK)" % str(get_tree().paused))
 
 
 # 主人公えらび 検証: Player.set_character で うんてんしさん / きつね を切り替えて
