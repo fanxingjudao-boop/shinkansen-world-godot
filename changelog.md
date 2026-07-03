@@ -1,6 +1,12 @@
 # Changelog
 
-verification-agent LIGHT モードで Claude Code が変更を記録します。
+Claude Code が変更を記録します(検証の流儀は `.claude/skills/` の godot-check / godot-screenshot / web-export)。
+
+## 開発環境 — 2026-07-03 — CLAUDE.md 最適化 + プロジェクトスキル導入(ゲーム本体は無変更)
+
+- `.claude/skills/` を新設し、毎セッション再構築していた検証手順をスキル化: **godot-check**(構文+シーン起動検証)/ **godot-screenshot**(AutoCapture スクショ確認)/ **web-export**(再エクスポート〜デプロイ正規手順)。
+- `CLAUDE.md` の陳腐化を解消: 存在しない verification-agent スキル参照を実在のスキルに置換、Godot 4.3→4.6、「Phase 0 から開始」→「HANDOFF の現在地から再開」、言語/レンダラー選択の経緯を要点+HANDOFF ポインタに圧縮、必読ドキュメントを「HANDOFF 現在地は必読・他は作業内容に応じて」に変更(セッション開始コストの削減)。
+- ゲームのコード・シーン・エクスポート物は一切触っていない(Web 再エクスポート不要)。
 
 ## v0.58.2 — 2026-06-21 — まぶしさを抑える + 線路の単調さ解消
 

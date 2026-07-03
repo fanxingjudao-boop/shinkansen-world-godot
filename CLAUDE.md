@@ -1,7 +1,12 @@
 # しんかんせんワールド (Godot 4 版) — Claude Code 作業指示書
 
 このファイルは Claude Code がこのプロジェクトで作業するときに最初に読むファイルです。
-作業開始前に必ず `docs/HANDOFF.md` `docs/ARCHITECTURE.md` `docs/ROADMAP.md` `docs/GODOT_NOTES.md` も読んでください。
+作業開始前に必ず `docs/HANDOFF.md` の冒頭「▶ 現在地」を読んでください。
+そのほかのドキュメントは作業内容に応じて参照します:
+
+- `docs/ARCHITECTURE.md` — 構造・設計に関わる変更をするとき
+- `docs/ROADMAP.md` / `docs/PLAYFUL_DETAILS.md` — 新機能・遊び心を検討するとき
+- `docs/GODOT_NOTES.md` — Godot / Web Export の技術詳細が必要なとき
 
 ## プロジェクトの本質
 
@@ -14,7 +19,7 @@
 
 ## 技術スタック(確定事項)
 
-- **エンジン**: Godot 4.3 以降(最新安定版を使用)
+- **エンジン**: Godot 4.6(最新安定版に追従。CLI パスは `.claude/skills/godot-check/SKILL.md` 参照)
 - **言語**: GDScript(C# ではない、後述)
 - **レンダラー**: Compatibility(Web Export 用)
 - **配信**: Web Export(PWA)を主、将来 iOS ネイティブ展開も視野
@@ -22,28 +27,17 @@
 - **バージョン管理**: Git + GitHub
 - **ホスティング**: GitHub Pages または Vercel(改善さんが選択)
 
-### 重要: 言語選択の経緯
+### 重要: 言語は GDScript で確定(C# にしない)
 
-当初 C# が候補に挙がったが、以下の理由で GDScript を採用しました:
+C# の Web Export は実験的でビルドサイズが数倍になり、iPad Safari でのロードが現実的でないため。
+将来の移植への備えは、言語ではなく**ゲームロジックを明確にモジュール化する設計**で対応します。
+詳しい経緯は `docs/HANDOFF.md`。
 
-1. **C# の Web Export は現状実験的**で、Godot 公式が「開発中」と明言している領域
-2. C# Web Export はビルドサイズが GDScript の数倍(30〜80MB)で、iPad Safari でのロードが現実的でない
-3. 改善さんの Python ベースのスキルセットと GDScript の親和性が高い
-4. 将来 Unity に移植する場合でも、設計思想を共有していればコスト差は限定的
+### 重要: レンダラーは Compatibility で確定
 
-「将来 C# も使うかもしれない」考慮は、**ゲームロジックを明確にモジュール化する設計**で代替します。
-言語ではなく設計の継承で対応する方針です。
-
-### 重要: レンダラー選択の経緯
-
-当初「ガッチリ作り込んだグラフィック(PBR、ポストエフェクト、SDFGI)」が希望でしたが、以下を考慮して中間品質に調整:
-
-1. Godot 4 の Web Export は **Compatibility レンダラー**(WebGL2 準拠)が標準で、Forward+/Mobile の高度な機能の多くが使えない
-2. SDFGI、Volumetric Fog、SSAO、Screen Space Reflection 等は Web では動かない
-3. それでも以下は使える: **PBR マテリアル**、**標準シャドウ**、**Glow(部分的)**、**カスタムシェーダー**、**Particles**
-
-つまり「**作り込み**」の方向性は、**最先端ポストエフェクト**ではなく、**手の込んだシェーダーとマテリアル設計**にシフトします。
-子供向けかわいい世界では、写実性より「光って、はじけて、ふわふわする」表現の方が刺さります。これは Compatibility レンダラーでも十分実現可能です。
+Web Export では SDFGI・Volumetric Fog・SSAO・SSR は動きません。使えるのは **PBR マテリアル・標準シャドウ・Glow(部分的)・カスタムシェーダー・Particles**。
+「作り込み」の方向性は最先端ポストエフェクトではなく**手の込んだシェーダーとマテリアル設計**です。
+子供向けかわいい世界では、写実性より「光って、はじけて、ふわふわする」表現の方が刺さります。詳しい経緯は `docs/HANDOFF.md`。
 
 ## 創作の方向性
 
@@ -120,11 +114,19 @@ ROADMAP に書いた以上のことをやって構いません。
 
 ## 開発フロー
 
-- **verification-agent スキルを使ってください**(LIGHT モード可)
+検証はプロジェクトスキル(`.claude/skills/`)を使います:
+
+- **godot-check** — .gd を変更したらコミット前に必ず。構文チェック+シーン起動検証
+- **godot-screenshot** — 見た目に関わる変更後に。AutoCapture で Claude が自分でスクショ確認(シェーダーは headless で検証できないのでこれが必須)
+- **web-export** — ゲーム挙動・UI を変えたときの Web 再エクスポート〜デプロイの正規手順
+
+そのほかの流儀:
+
 - 子供向け体験に直結する変更は実機テスト推奨(iPad 実機)
-- 「ハマったポイント」は failure-log への抽象化対象
+- push はこの環境ではブロックされるので、改善さんに `! git push origin main` を依頼する
 - 改善さんの確認を取ってから完了宣言
-- changelog.md に変更履歴を記録
+- changelog.md に変更履歴を記録し、`docs/HANDOFF.md` の「▶ 現在地」を更新する
+- ハマったポイントは抽象化してメモリ(feedback)に残す
 
 ## 既存資産
 
@@ -141,10 +143,9 @@ Godot 版を作るとき、「あの時の演出はどうだった?」と振り�
 
 ## やってほしいこと
 
-1. **Phase 0**: Godot 4 プロジェクト初期化、最小限のシーン(キャラが歩く、カメラが追従する)
-2. **Phase 1〜**: `docs/ROADMAP.md` に従って段階的に作成
-3. 改善さんのお子さん・お孫さんのフィードバックを反映
-4. 自由なアイデアの追加(改善さんに確認の上)
+1. `docs/HANDOFF.md` の「▶ 現在地」から作業を再開する(初期 Phase は完了済み。現在は v0.58 台=遊び心と磨き込みの段階)
+2. 改善さんのお子さん・お孫さんのフィードバックを反映
+3. 自由なアイデアの追加(改善さんに確認の上。候補リストは `docs/PLAYFUL_DETAILS.md`)
 
 ## やらないこと
 
